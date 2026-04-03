@@ -1,0 +1,18 @@
+[server]
+host = "0.0.0.0"
+port = 3000
+
+[database]
+url = "sqlite://data.db?mode=rwc"
+
+[jwt]
+secret = "inkforge-change-me-in-production"
+expires_in = 604800  # 7 days in seconds
+
+[upload]
+dir = "uploads"
+max_size_mb = 10
+
+[paths]
+theme_static_dir = "themes/default/static"
+admin_dist_dir = "src/admin/dist"
