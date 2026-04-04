@@ -56,7 +56,9 @@ footer { padding: 32px 0; color: var(--muted); font-size: 14px; }
 <body>
 <div class="wrap">
   <header>
-    <span class="badge">InkForge</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <a class="badge" href="/admin" style="text-decoration:none;">InkForge 管理后台</a>
+    </div>
     <h1>{{ site_title }}</h1>
     <p class="lead">{{ site_description }}</p>
   </header>
@@ -83,4 +85,5 @@ footer { padding: 32px 0; color: var(--muted); font-size: 14px; }
   <footer>Powered by InkForge</footer>
 </div>
 </body>
-</html>
+</html>
+

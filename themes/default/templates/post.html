@@ -45,7 +45,7 @@ h1 { margin: 0 0 12px; font-size: 36px; }
 </head>
 <body>
 <div class="wrap">
-  <p><a href="/">← 返回首页</a></p>
+  <p><a href="/">← 返回首页</a> · <a href="/admin">管理后台</a></p>
   <article>
     <header>
       <div class="meta">{{ post.author_display_name }}{% if post.category_name %} · {{ post.category_name }}{% endif %} · {{ post.published_at or post.created_at }}</div>
@@ -71,4 +71,5 @@ h1 { margin: 0 0 12px; font-size: 36px; }
   </section>
 </div>
 </body>
-</html>
+</html>
+
