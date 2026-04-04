@@ -7,14 +7,8 @@ use std::{path::PathBuf, sync::Arc};
 
 use crate::state::AppState;
 
-pub async fn admin_page() -> impl IntoResponse {
-    let html = include_str!("./admin.html");
-    (
-        [(header::CONTENT_TYPE, "text/html; charset=utf-8")],
-        html,
-    )
-}
-
+/// Serves /admin and /admin/* paths from the dist directory.
+/// admin.html lives inside dist/ so all files come from one place.
 pub async fn admin_static(
     Path(path): Path<String>,
     State(state): State<Arc<AppState>>,
@@ -48,7 +42,7 @@ pub async fn admin_static(
 
     let full_path: PathBuf = state.admin_dist_dir.join(&path);
 
-    match tokio::fs::read(full_path).await {
+    match tokio::fs::read(&full_path).await {
         Ok(d) => ([(header::CONTENT_TYPE, mime)], d).into_response(),
         Err(_) => (
             [(header::CONTENT_TYPE, "text/plain")],

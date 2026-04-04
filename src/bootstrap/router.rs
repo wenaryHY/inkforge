@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use axum::{
+    extract::{Path, State},
     routing::{delete, get, patch, post},
     Router,
 };
@@ -14,6 +15,13 @@ use tower_http::{
 
 use crate::{admin, modules, state::AppState};
 
+/// Handler for GET /admin → serves admin.html from dist directory.
+pub async fn serve_admin_index(
+    State(state): State<Arc<AppState>>,
+) -> impl axum::response::IntoResponse {
+    admin::admin_static(Path("admin.html".to_string()), State(state)).await
+}
+
 pub fn build_router(state: Arc<AppState>) -> Router {
     let upload_dir = state.upload_dir.clone();
 
@@ -21,7 +29,7 @@ pub fn build_router(state: Arc<AppState>) -> Router {
         .route("/", get(modules::theme::handler::render_home))
         .route("/posts/:slug", get(modules::theme::handler::render_post))
         .route("/static/*path", get(modules::theme::handler::serve_active_static))
-        .route("/admin", get(admin::admin_page))
+        .route("/admin", get(serve_admin_index))
         .route("/admin/*path", get(admin::admin_static))
         .route("/api/auth/register", post(modules::auth::handler::register))
         .route("/api/auth/login", post(modules::auth::handler::login))
