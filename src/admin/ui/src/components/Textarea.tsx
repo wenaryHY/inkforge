@@ -3,10 +3,11 @@ import { type TextareaHTMLAttributes, forwardRef } from 'react';
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
+  minRows?: number;
 }
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ label, error, className = '', id, ...props }, ref) => {
+  ({ label, error, className = '', id, minRows, style, ...props }, ref) => {
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
@@ -17,6 +18,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         <textarea
           ref={ref}
           id={id}
+          style={{ minHeight: minRows ? `${minRows * 1.75}rem` : undefined, ...style }}
           className={`w-full px-3.5 py-2.5 border border-border rounded-lg text-sm
             outline-none bg-white text-text-main resize-y
             transition-all duration-150

@@ -1,21 +1,22 @@
-import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
-import { api, getToken, setToken, removeToken } from '../lib/api';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { apiData, getToken, removeToken, setToken } from '../lib/api';
 import type { CurrentUser } from '../types';
-
-interface AuthContextValue {
-  user: CurrentUser | null;
-  token: string;
-  login: (username: string, password: string) => Promise<{ success: boolean; message?: string }>;
-  register: (data: RegisterData) => Promise<{ success: boolean; message?: string }>;
-  logout: () => void;
-  isLoading: boolean;
-}
 
 interface RegisterData {
   username: string;
   email: string;
   password: string;
   display_name?: string;
+}
+
+interface AuthContextValue {
+  user: CurrentUser | null;
+  token: string;
+  login: (login: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  register: (data: RegisterData) => Promise<{ success: boolean; message?: string }>;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
+  isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -25,64 +26,91 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState(() => getToken());
   const [isLoading, setIsLoading] = useState(true);
 
-  const updateToken = useCallback((newToken: string | null) => {
-    if (newToken) {
-      setToken(newToken);
-      setTokenState(newToken);
-    } else {
-      removeToken();
-      setTokenState('');
+  const clearAuth = useCallback(() => {
+    removeToken();
+    setTokenState('');
+    setUser(null);
+  }, []);
+
+  const applyToken = useCallback((nextToken: string) => {
+    setToken(nextToken);
+    setTokenState(nextToken);
+  }, []);
+
+  const refreshUser = useCallback(async () => {
+    if (!getToken()) {
+      setUser(null);
+      return;
     }
+    const me = await apiData<CurrentUser>('/api/me');
+    setUser(me);
   }, []);
 
   useEffect(() => {
-    // 启动时验证 token 是否有效（后端 /api/me 只支持 POST）
-    if (token) {
-      api('/api/me', { method: 'POST' }).then((r) => {
-        if (r.code === 0 && r.data) {
-          setUser(r.data as unknown as CurrentUser);
-        } else {
-          updateToken(null);
-        }
-      }).catch(() => updateToken(null)).finally(() => setIsLoading(false));
-    } else {
+    if (!token) {
       setIsLoading(false);
+      return;
     }
-  }, [token, updateToken]);
 
-  const login = useCallback(async (username: string, password: string) => {
-    const r = await api<{ token: string }>('/api/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    });
-    if (r.code === 0 && r.data) {
-      // r.data 是 { token: "xxx" }，需要提取 token 字段
-      const tokenStr = (r.data as unknown as { token: string }).token;
-      updateToken(tokenStr);
+    refreshUser()
+      .catch(() => clearAuth())
+      .finally(() => setIsLoading(false));
+  }, [token, refreshUser, clearAuth]);
+
+  const login = useCallback(async (loginValue: string, password: string) => {
+    try {
+      const payload = await apiData<{ token: string }>('/api/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ login: loginValue, password }),
+      });
+      applyToken(payload.token);
+      await refreshUser();
       return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '��¼ʧ��';
+      clearAuth();
+      return { success: false, message };
     }
-    return { success: false, message: r.message || '登录失败' };
-  }, [updateToken]);
+  }, [applyToken, clearAuth, refreshUser]);
 
   const register = useCallback(async (data: RegisterData) => {
-    const r = await api('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-    if (r.code === 0) return { success: true };
-    return { success: false, message: r.message || '注册失败' };
-  }, []);
+    try {
+      const payload = await apiData<{ token: string }>('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      applyToken(payload.token);
+      await refreshUser();
+      return { success: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'ע��ʧ��';
+      return { success: false, message };
+    }
+  }, [applyToken, refreshUser]);
 
-  const logout = useCallback(() => {
-    updateToken(null);
-    setUser(null);
-  }, [updateToken]);
+  const logout = useCallback(async () => {
+    try {
+      if (getToken()) {
+        await apiData('/api/auth/logout', { method: 'POST' });
+      }
+    } catch {
+      // ignore server-side logout failure and always clear local auth
+    } finally {
+      clearAuth();
+    }
+  }, [clearAuth]);
 
-  return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, isLoading }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value = useMemo<AuthContextValue>(() => ({
+    user,
+    token,
+    login,
+    register,
+    logout,
+    refreshUser,
+    isLoading,
+  }), [user, token, login, register, logout, refreshUser, isLoading]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

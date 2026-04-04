@@ -2,8 +2,13 @@ target/
 data.db
 data.db-shm
 data.db-wal
+inkforge.db
+inkforge.db-shm
+inkforge.db-wal
 uploads/*
 !uploads/.gitkeep
 .env
 *.log
 .DS_Store
+node_modules/
+Thumbs.db

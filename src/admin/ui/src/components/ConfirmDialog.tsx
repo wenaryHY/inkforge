@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import { IconAlertCircle } from './Icons';
 import { Modal } from './Modal';
 import { Button } from './Button';
@@ -34,12 +33,18 @@ export function ConfirmDialog({
   const style = variantStyles[variant];
 
   return (
-    <Modal open={open} onClose={onClose} title={title} width="420px" actions={
-      <>
-        <Button variant="ghost" onClick={onClose}>{cancelText}</Button>
-        <Button variant={buttonVariant} onClick={() => { onConfirm(); onClose(); }}>{confirmText}</Button>
-      </>
-    }>
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={title}
+      width="420px"
+      actions={
+        <>
+          <Button variant="ghost" onClick={onClose}>{cancelText}</Button>
+          <Button variant={buttonVariant} onClick={() => { onConfirm(); onClose(); }}>{confirmText}</Button>
+        </>
+      }
+    >
       <div className={`flex items-start gap-3 p-4 rounded-lg ${style.bg}`}>
         <IconAlertCircle className={`${style.icon} flex-shrink-0 mt-0.5`} size={20} />
         <p className="text-sm text-text-secondary leading-relaxed">{message}</p>

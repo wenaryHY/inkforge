@@ -1,0 +1,56 @@
+use serde::Serialize;
+use uuid::Uuid;
+
+#[derive(Debug, Serialize)]
+pub struct ApiResponse<T: Serialize> {
+    pub code: i32,
+    pub message: String,
+    pub data: Option<T>,
+    pub request_id: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PaginationMeta {
+    pub page: i64,
+    pub page_size: i64,
+    pub total: i64,
+}
+
+#[derive(Debug, Serialize)]
+pub struct PaginatedResponse<T: Serialize> {
+    pub items: Vec<T>,
+    pub pagination: PaginationMeta,
+}
+
+impl<T: Serialize> ApiResponse<T> {
+    pub fn success(data: T) -> Self {
+        Self {
+            code: 0,
+            message: "ok".into(),
+            data: Some(data),
+            request_id: Uuid::new_v4().to_string(),
+        }
+    }
+
+    pub fn error(code: i32, message: impl Into<String>) -> Self {
+        Self {
+            code,
+            message: message.into(),
+            data: None,
+            request_id: Uuid::new_v4().to_string(),
+        }
+    }
+}
+
+impl<T: Serialize> PaginatedResponse<T> {
+    pub fn new(items: Vec<T>, page: i64, page_size: i64, total: i64) -> Self {
+        Self {
+            items,
+            pagination: PaginationMeta {
+                page,
+                page_size,
+                total,
+            },
+        }
+    }
+}

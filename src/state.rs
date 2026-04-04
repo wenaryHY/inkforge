@@ -1,15 +1,26 @@
+use std::path::PathBuf;
+
 use sqlx::SqlitePool;
-use tokio::sync::broadcast;
-use crate::ws::ServerEvent;
+
+use crate::bootstrap::config::AppConfig;
 
 #[derive(Clone)]
 pub struct AppState {
     pub pool: SqlitePool,
-    pub upload_dir: String,
-    pub theme_static_dir: String,  // 前台静态资源绝对路径
-    pub admin_dist_dir: String,    // 管理后台 React 产物绝对路径
-    pub jwt_secret: String,
-    pub jwt_expires_in: i64,
-    pub max_upload_size: u64,
-    pub event_tx: broadcast::Sender<ServerEvent>,
+    pub config: AppConfig,
+    pub upload_dir: PathBuf,
+    pub theme_dir: PathBuf,
+    pub admin_dist_dir: PathBuf,
+}
+
+impl AppState {
+    pub fn new(config: AppConfig, pool: SqlitePool) -> anyhow::Result<Self> {
+        Ok(Self {
+            upload_dir: AppConfig::resolve_path(&config.storage.upload_dir)?,
+            theme_dir: AppConfig::resolve_path(&config.theme.theme_dir)?,
+            admin_dist_dir: AppConfig::resolve_path(&config.paths.admin_dist_dir)?,
+            pool,
+            config,
+        })
+    }
 }

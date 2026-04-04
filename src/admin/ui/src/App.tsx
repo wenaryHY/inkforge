@@ -1,6 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useAuth } from './contexts/AuthContext';
-import { useWebSocket } from './hooks/useWebSocket';
 import { Sidebar } from './components/Sidebar';
 import { PostsSkeleton } from './components/Skeleton';
 import Login from './pages/Login';
@@ -14,15 +13,6 @@ import Upload from './pages/Upload';
 export default function App() {
   const { token, isLoading } = useAuth();
   const [activePage, setActivePage] = useState('posts');
-  const [wsTrigger, setWsTrigger] = useState(0);
-  const wsTriggerRef = useRef(wsTrigger);
-  wsTriggerRef.current = wsTrigger;
-
-  useWebSocket((event) => {
-    if (['comment_created', 'comment_approved', 'comment_deleted'].includes(event.type)) {
-      setWsTrigger(t => t + 1);
-    }
-  });
 
   if (isLoading) {
     return (
@@ -43,7 +33,7 @@ export default function App() {
         {activePage === 'posts' && <Posts />}
         {activePage === 'categories' && <Categories />}
         {activePage === 'tags' && <Tags />}
-        {activePage === 'comments' && <Comments refreshTrigger={wsTrigger} />}
+        {activePage === 'comments' && <Comments />}
         {activePage === 'settings' && <Settings />}
         {activePage === 'upload' && <Upload />}
       </main>
