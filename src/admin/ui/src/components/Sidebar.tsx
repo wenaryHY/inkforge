@@ -1,7 +1,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import {
   IconFileText, IconFolderOpen, IconTag, IconMessageSquare,
-  IconUpload, IconSettings, IconUser, IconLogOut, IconHome,
+  IconUpload, IconSettings, IconUser, IconLogOut,
 } from './Icons';
 
 interface NavItem {
@@ -17,19 +17,19 @@ interface NavGroup {
 
 const navGroups: NavGroup[] = [
   {
-    section: '����',
+    section: '内容',
     items: [
-      { key: 'posts', icon: <IconFileText />, label: '����' },
-      { key: 'categories', icon: <IconFolderOpen />, label: '����' },
-      { key: 'tags', icon: <IconTag />, label: '��ǩ' },
-      { key: 'comments', icon: <IconMessageSquare />, label: '����' },
+      { key: 'posts', icon: <IconFileText />, label: '文章' },
+      { key: 'categories', icon: <IconFolderOpen />, label: '分类' },
+      { key: 'tags', icon: <IconTag />, label: '标签' },
+      { key: 'comments', icon: <IconMessageSquare />, label: '评论' },
     ],
   },
   {
-    section: 'ϵͳ',
+    section: '系统',
     items: [
-      { key: 'upload', icon: <IconUpload />, label: 'ý��' },
-      { key: 'settings', icon: <IconSettings />, label: '����' },
+      { key: 'upload', icon: <IconUpload />, label: '上传' },
+      { key: 'settings', icon: <IconSettings />, label: '设置' },
     ],
   },
 ];
@@ -43,64 +43,169 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
   const { user, logout } = useAuth();
 
   return (
-    <aside className="w-60 bg-sidebar text-white flex flex-col flex-shrink-0 relative z-10">
-      <div className="absolute top-0 right-0 w-px h-full bg-white/5" />
-
+    <aside
+      style={{
+        width: '224px',
+        background: '#1c1c1e',
+        color: '#ffffff',
+        display: 'flex',
+        flexDirection: 'column',
+        flexShrink: 0,
+        height: '100vh',
+        overflowY: 'auto',
+        overflowX: 'hidden',
+        position: 'relative',
+        zIndex: 10,
+      }}
+    >
+      {/* 顶部品牌 */}
       <div
-        className="px-5 py-5 border-b border-white/5 flex items-center gap-3 cursor-pointer transition-all duration-200 hover:bg-white/10 group"
         onClick={() => window.open('/', '_blank')}
-        title="������ҳ"
+        style={{
+          padding: '18px 20px',
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          cursor: 'pointer',
+          transition: 'background 0.2s',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
-        <div className="w-9 h-9 rounded-[10px] bg-gradient-to-br from-primary via-primary to-violet-500 flex items-center justify-center text-base flex-shrink-0 shadow-lg shadow-primary/25 group-hover:shadow-primary/40 transition-shadow duration-200">
-          <IconHome size={18} className="text-white" />
+        {/* Logo 圆 */}
+        <div
+          style={{
+            width: '36px', height: '36px', borderRadius: '10px',
+            background: 'linear-gradient(135deg, #ff6b35 0%, #ff8a4c 100%)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            boxShadow: '0 4px 12px rgba(255,107,53,0.35)',
+          }}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" opacity="0.9"/>
+            <path d="M2 17l10 5 10-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.7"/>
+            <path d="M2 12l10 5 10-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.5"/>
+          </svg>
         </div>
-        <div className="flex flex-col">
-          <span className="text-sm font-bold text-white leading-tight tracking-tight">InkForge</span>
-          <span className="text-[11px] text-sidebar-text font-normal">v0.2.0</span>
+        <div>
+          <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', lineHeight: 1.2, letterSpacing: '-0.2px' }}>
+            InkForge
+          </div>
+          <div style={{ fontSize: '11px', color: '#666', marginTop: '1px' }}>
+            管理后台
+          </div>
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 py-2">
-        {navGroups.map((group) => (
-          <div key={group.section}>
-            <div className="px-3 pt-5 pb-1.5 text-[11px] font-semibold text-white/30 uppercase tracking-wider">
+      {/* 导航 */}
+      <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
+        {navGroups.map(group => (
+          <div key={group.section} style={{ marginBottom: '4px' }}>
+            {/* 分组标题 */}
+            <div style={{
+              padding: '14px 10px 6px',
+              fontSize: '11px',
+              fontWeight: 700,
+              color: 'rgba(255,255,255,0.25)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+            }}>
               {group.section}
             </div>
-            {group.items.map((item) => (
-              <button
-                key={item.key}
-                onClick={() => onNavigate(item.key)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium mb-0.5 cursor-pointer transition-all duration-200
-                  ${activePage === item.key
-                    ? 'text-white shadow-[0_4px_12px_rgba(99,102,241,0.35)]'
-                    : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white/90'
-                  }`}
-                style={activePage === item.key ? { background: 'linear-gradient(135deg, rgba(99,102,241,0.9), rgba(129,140,248,0.85))' } : undefined}
-              >
-                <span className="w-5 text-center flex-shrink-0 transition-transform duration-200">{item.icon}</span>
-                <span>{item.label}</span>
-              </button>
-            ))}
+            {/* 菜单项 */}
+            {group.items.map(item => {
+              const isActive = activePage === item.key;
+              return (
+                <button
+                  key={item.key}
+                  onClick={() => onNavigate(item.key)}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 10px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: isActive ? 'linear-gradient(135deg, rgba(255,107,53,0.9), rgba(255,138,76,0.85))' : 'transparent',
+                    color: isActive ? '#ffffff' : '#888',
+                    fontSize: '14px',
+                    fontWeight: isActive ? 600 : 400,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    textAlign: 'left',
+                    marginBottom: '2px',
+                    boxShadow: isActive ? '0 4px 12px rgba(255,107,53,0.3)' : 'none',
+                  }}
+                  onMouseEnter={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
+                      e.currentTarget.style.color = '#ddd';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = '#888';
+                    }
+                  }}
+                >
+                  <span style={{ width: '20px', textAlign: 'center', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         ))}
       </nav>
 
-      <div className="p-3 border-t border-white/5">
-        <div className="flex items-center gap-3 px-3 py-2 mb-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/80 to-violet-500/80 flex items-center justify-center flex-shrink-0 shadow-md">
-            <IconUser size={15} />
+      {/* 底部用户区 */}
+      <div style={{ padding: '12px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', marginBottom: '4px' }}>
+          <div
+            style={{
+              width: '32px', height: '32px', borderRadius: '8px',
+              background: 'linear-gradient(135deg, rgba(255,107,53,0.6), rgba(255,138,76,0.5))',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <IconUser size={14} />
           </div>
-          <div className="flex flex-col min-w-0">
-            <span className="text-xs font-semibold text-white/90 truncate">{user?.display_name || '����Ա'}</span>
-            <span className="text-[11px] text-sidebar-text">{user?.role || 'member'}</span>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {user?.display_name || '管理员'}
+            </div>
+            <div style={{ fontSize: '11px', color: '#555' }}>{user?.role || 'member'}</div>
           </div>
         </div>
         <button
           onClick={() => void logout()}
-          className="w-full bg-transparent text-sidebar-text border-none px-3 py-2 rounded-lg cursor-pointer font-medium text-xs flex items-center gap-2 transition-all duration-200 hover:bg-red-500/15 text-red-400 hover:text-red-300"
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 10px',
+            borderRadius: '8px',
+            border: 'none',
+            background: 'transparent',
+            color: '#e05252',
+            fontSize: '13px',
+            fontWeight: 500,
+            cursor: 'pointer',
+            transition: 'background 0.15s',
+            textAlign: 'left',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,50,50,0.12)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
           <IconLogOut />
-          <span>�˳���¼</span>
+          <span>退出登录</span>
         </button>
       </div>
     </aside>

@@ -9,11 +9,31 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantClasses: Record<string, { base: string; hover: string; shadow: string }> = {
-  primary: { base: 'bg-primary text-white', hover: 'hover:bg-primary-dark', shadow: 'shadow-[0_2px_8px_rgba(99,102,241,0.25)]' },
-  danger:  { base: 'bg-danger text-white', hover: 'hover:bg-red-600', shadow: '' },
-  success: { base: 'bg-success text-white', hover: 'hover:bg-emerald-600', shadow: '' },
-  ghost:   { base: 'bg-white text-text-secondary border border-border', hover: 'hover:bg-bg-secondary hover:border-text-muted/50 hover:text-text-main', shadow: '' },
-  warning: { base: 'bg-warning text-white', hover: 'hover:bg-amber-600', shadow: '' },
+  primary: {
+    base: 'bg-primary text-white',
+    hover: 'hover:bg-primary-dark',
+    shadow: 'shadow-[0_2px_8px_rgba(255,107,53,0.3)]',
+  },
+  danger: {
+    base: 'bg-danger text-white',
+    hover: 'hover:bg-red-600',
+    shadow: '',
+  },
+  success: {
+    base: 'bg-success text-white',
+    hover: 'hover:bg-emerald-600',
+    shadow: '',
+  },
+  ghost: {
+    base: 'bg-white text-text-secondary border border-border',
+    hover: 'hover:bg-bg-secondary hover:border-[var(--color-text-muted)]/50 hover:text-text-main',
+    shadow: '',
+  },
+  warning: {
+    base: 'bg-warning text-white',
+    hover: 'hover:bg-amber-600',
+    shadow: '',
+  },
 };
 
 const sizeClasses = {
