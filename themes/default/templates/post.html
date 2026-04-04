@@ -45,10 +45,10 @@ h1 { margin: 0 0 12px; font-size: 36px; }
 </head>
 <body>
 <div class="wrap">
-  <p><a href="/">¡û ·µ»ØÊ×Ò³</a></p>
+  <p><a href="/">â† è¿”å›é¦–é¡µ</a></p>
   <article>
     <header>
-      <div class="meta">{{ post.author_display_name }}{% if post.category_name %} ¡¤ {{ post.category_name }}{% endif %} ¡¤ {{ post.published_at or post.created_at }}</div>
+      <div class="meta">{{ post.author_display_name }}{% if post.category_name %} Â· {{ post.category_name }}{% endif %} Â· {{ post.published_at or post.created_at }}</div>
       <h1>{{ post.title }}</h1>
       {% if post.excerpt %}<div class="meta">{{ post.excerpt }}</div>{% endif %}
     </header>
@@ -56,19 +56,19 @@ h1 { margin: 0 0 12px; font-size: 36px; }
   </article>
 
   <section class="comments">
-    <h2>ÆÀÂÛ</h2>
+    <h2>è¯„è®º</h2>
     {% if comments | length > 0 %}
       {% for comment in comments %}
       <div class="comment">
-        <div class="comment-meta">{{ comment.display_name }} ¡¤ {{ comment.created_at }}</div>
+        <div class="comment-meta">{{ comment.display_name }} Â· {{ comment.created_at }}</div>
         <div>{{ comment.content }}</div>
       </div>
       {% endfor %}
     {% else %}
-      <div class="empty">»¹Ã»ÓĞÆÀÂÛ¡£</div>
+      <div class="empty">è¿˜æ²¡æœ‰è¯„è®ºã€‚</div>
     {% endif %}
-    <div class="note">ÆÀÂÛĞèµÇÂ¼ºóÍ¨¹ı API Ìá½»¡£Ç°Ì¨±íµ¥½«ÔÚºóĞøºóÌ¨ÊÊÅäÍê³ÉºóÒ»²¢½ÓÈë¡£</div>
+    <div class="note">è¯„è®ºéœ€ç™»å½•åé€šè¿‡ API æäº¤ã€‚å‰å°è¡¨å•å°†åœ¨åç»­åå°é€‚é…å®Œæˆåä¸€å¹¶æ¥å…¥ã€‚</div>
   </section>
 </div>
 </body>
-</html>
+</html>

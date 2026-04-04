@@ -65,10 +65,10 @@ footer { padding: 32px 0; color: var(--muted); font-size: 14px; }
     {% if posts | length > 0 %}
       {% for post in posts %}
       <a class="card" href="/posts/{{ post.slug }}">
-        <div class="meta">{{ post.author_display_name }} ¡¤ {{ post.published_at or post.created_at }}</div>
+        <div class="meta">{{ post.author_display_name }} Â· {{ post.published_at or post.created_at }}</div>
         <h2 class="title">{{ post.title }}</h2>
         {% if post.category_name %}
-        <div class="meta">·ÖÀà£º{{ post.category_name }}</div>
+        <div class="meta">åˆ†ç±»ï¼š{{ post.category_name }}</div>
         {% endif %}
         {% if post.excerpt %}
         <p class="excerpt">{{ post.excerpt }}</p>
@@ -76,11 +76,11 @@ footer { padding: 32px 0; color: var(--muted); font-size: 14px; }
       </a>
       {% endfor %}
     {% else %}
-      <div class="empty">»¹Ã»ÓĞÒÑ·¢²¼ÎÄÕÂ¡£</div>
+      <div class="empty">è¿˜æ²¡æœ‰å·²å‘å¸ƒæ–‡ç« ã€‚</div>
     {% endif %}
   </main>
 
   <footer>Powered by InkForge</footer>
 </div>
 </body>
-</html>
+</html>
