@@ -2,11 +2,55 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiData } from '../lib/api';
 import type { Setting, ThemeSummary } from '../types';
 import { PageHeader } from '../components/PageHeader';
-import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Select } from '../components/Select';
 import { useToast } from '../contexts/ToastContext';
+
+/* 样式常量 */
+const sectionStyle: React.CSSProperties = {
+  background: 'var(--if-bg-card)',
+  border: '1px solid var(--if-border-light)',
+  borderRadius: '14px',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+  marginBottom: '20px',
+  overflow: 'hidden',
+};
+const secHeadStyle: React.CSSProperties = {
+  padding: '18px 24px', borderBottom: '1px solid var(--if-border-light)',
+};
+const secTitleStyle: React.CSSProperties = {
+  fontSize: '15px', fontWeight: 700, color: 'var(--if-text)', letterSpacing: '-0.2px',
+};
+const secDescStyle: React.CSSProperties = { fontSize: '12.5px', color: 'var(--if-text-muted)', marginTop: '3px' };
+const secBodyStyle: React.CSSProperties = { padding: '24px', display: 'flex', flexDirection: 'column' as const, gap: '18px' };
+const formRowStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: '160px 1fr', gap: '12px', alignItems: 'start' };
+const labelStyle: React.CSSProperties = { fontSize: '13.5px', fontWeight: 600, color: 'var(--if-text-secondary)', paddingTop: '10px' };
+const hintStyle: React.CSSProperties = { fontSize: '12px', color: 'var(--if-text-muted)', opacity: 0.8 };
+
+function SettingSection({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
+  return (
+    <div style={sectionStyle}>
+      <div style={secHeadStyle}>
+        <h3 style={secTitleStyle}>{title}</h3>
+        {description && <p style={secDescStyle}>{description}</p>}
+      </div>
+      <div style={secBodyStyle}>{children}</div>
+    </div>
+  );
+}
+
+function FormRow({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+  return (
+    <div style={formRowStyle}>
+      <span style={labelStyle}>{label}</span>
+      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '5px' }}>
+        {children}
+        {hint && <span style={hintStyle}>{hint}</span>}
+      </div>
+    </div>
+  );
+}
 
 export default function Settings() {
   const toast = useToast();
@@ -22,22 +66,14 @@ export default function Settings() {
       ]);
       setThemes(themeItems);
       const nextKv: Record<string, string> = {};
-      settingItems.forEach((item) => {
-        nextKv[item.key] = item.value;
-      });
+      settingItems.forEach((item) => { nextKv[item.key] = item.value; });
       setKv(nextKv);
-    } catch (error) {
-      toast(error instanceof Error ? error.message : '加载设置失败', 'error');
-    }
+    } catch (error) { toast(error instanceof Error ? error.message : '加载设置失败', 'error'); }
   }, [toast]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  useEffect(() => { void load(); }, [load]);
 
-  function update(key: string, value: string) {
-    setKv((prev) => ({ ...prev, [key]: value }));
-  }
+  function update(key: string, value: string) { setKv((prev) => ({ ...prev, [key]: value })); }
 
   async function handleSave() {
     setSaving(true);
@@ -53,95 +89,137 @@ export default function Settings() {
         ['comment_max_length', kv.comment_max_length || '2000'],
         ['theme_default_mode', kv.theme_default_mode || 'system'],
       ];
-
-      for (const [key, value] of items) {
-        await apiData('/api/admin/settings', { method: 'PATCH', body: JSON.stringify({ key, value }) });
-      }
-
-      if (kv.active_theme) {
-        await apiData(`/api/admin/themes/${kv.active_theme}/activate`, { method: 'POST' });
-      }
-
+      for (const [key, value] of items) await apiData('/api/admin/settings', { method: 'PATCH', body: JSON.stringify({ key, value }) });
+      if (kv.active_theme) await apiData(`/api/admin/themes/${kv.active_theme}/activate`, { method: 'POST' });
       toast('设置已保存', 'success');
       await load();
-    } catch (error) {
-      toast(error instanceof Error ? error.message : '保存设置失败', 'error');
-    } finally {
-      setSaving(false);
-    }
+    } catch (error) { toast(error instanceof Error ? error.message : '保存设置失败', 'error'); }
+    finally { setSaving(false); }
   }
 
-  const activeThemeOptions = useMemo(
-    () => themes.map((theme) => ({ value: theme.manifest.slug, label: theme.manifest.name })),
-    [themes],
-  );
+  const activeThemeOptions = useMemo(() => themes.map((t) => ({ value: t.manifest.slug, label: t.manifest.name })), [themes]);
 
   return (
     <>
-      <PageHeader
-        title="站点设置"
-        subtitle="配置站点、评论和主题基础选项"
-        actions={<Button onClick={handleSave} disabled={saving} loading={saving}>保存设置</Button>}
-      />
+      <PageHeader title="站点设置" subtitle="管理博客的基础配置、评论规则和主题外观"
+        actions={<Button onClick={handleSave} disabled={saving} loading={saving}>保存更改</Button>} />
 
-      <Card header={<h3 className="text-sm font-semibold text-text-main">基础信息</h3>}>
-        <div className="p-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input label="站点标题" value={kv.site_title || ''} onChange={(e) => update('site_title', e.target.value)} placeholder="InkForge" />
-            <Input label="站点描述" value={kv.site_description || ''} onChange={(e) => update('site_description', e.target.value)} placeholder="A personal blog powered by InkForge" />
-            <Input label="站点 URL" value={kv.site_url || ''} onChange={(e) => update('site_url', e.target.value)} placeholder="http://localhost:3000" />
-            <Input label="评论最大长度" type="number" value={kv.comment_max_length || '2000'} onChange={(e) => update('comment_max_length', e.target.value)} />
+      <SettingSection title="基础信息" description="站点名称、描述等核心信息">
+        <FormRow label="站点标题">
+          <Input value={kv.site_title || ''} onChange={(e) => update('site_title', e.target.value)} placeholder="InkForge" />
+        </FormRow>
+        <FormRow label="站点描述" hint="用于 SEO 和页面 meta 描述，建议不超过 160 字符">
+          <Input value={kv.site_description || ''} onChange={(e) => update('site_description', e.target.value)} placeholder="A personal blog powered by InkForge" />
+        </FormRow>
+        <FormRow label="站点 URL" hint="博客的完整访问地址，包含协议前缀">
+          <Input value={kv.site_url || ''} onChange={(e) => update('site_url', e.target.value)} placeholder="http://localhost:3000" />
+        </FormRow>
+      </SettingSection>
+
+      <SettingSection title="评论与注册" description="控制用户交互和内容审核策略">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '18px' }}>
+            <FormRow label="公开注册">
+              <Select value={kv.allow_register || 'true'} onChange={(e) => update('allow_register', e.target.value)}>
+                <option value="true">允许新用户注册</option><option value="false">关闭注册</option>
+              </Select>
+            </FormRow>
+            <FormRow label="允许评论">
+              <Select value={kv.allow_comment || 'true'} onChange={(e) => update('allow_comment', e.target.value)}>
+                <option value="true">允许评论</option><option value="false">全局关闭评论</option>
+              </Select>
+            </FormRow>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '18px' }}>
+            <FormRow label="评论需登录">
+              <Select value={kv.comment_require_login || 'true'} onChange={(e) => update('comment_require_login', e.target.value)}>
+                <option value="true">是 — 仅登录可评论</option><option value="false">否 — 游客也可评论</option>
+              </Select>
+            </FormRow>
+            <FormRow label="审核策略">
+              <Select value={kv.comment_moderation_mode || 'all'} onChange={(e) => update('comment_moderation_mode', e.target.value)}>
+                <option value="all">全部待审</option><option value="first_comment">首条待审，后续放行</option><option value="none">无需审核，直接发布</option>
+              </Select>
+            </FormRow>
           </div>
         </div>
-      </Card>
+        <FormRow label="评论最大长度" hint="单条评论允许的最大字符数">
+          <Input type="number" value={kv.comment_max_length || '2000'} onChange={(e) => update('comment_max_length', e.target.value)} />
+        </FormRow>
+      </SettingSection>
 
-      <Card header={<h3 className="text-sm font-semibold text-text-main">评论与注册</h3>}>
-        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Select label="公开注册" value={kv.allow_register || 'true'} onChange={(e) => update('allow_register', e.target.value)}>
-            <option value="true">允许</option>
-            <option value="false">关闭</option>
-          </Select>
-          <Select label="允许评论" value={kv.allow_comment || 'true'} onChange={(e) => update('allow_comment', e.target.value)}>
-            <option value="true">允许</option>
-            <option value="false">关闭</option>
-          </Select>
-          <Select label="评论需要登录" value={kv.comment_require_login || 'true'} onChange={(e) => update('comment_require_login', e.target.value)}>
-            <option value="true">是</option>
-            <option value="false">否</option>
-          </Select>
-          <Select label="评论审核策略" value={kv.comment_moderation_mode || 'all'} onChange={(e) => update('comment_moderation_mode', e.target.value)}>
-            <option value="all">全部待审</option>
-            <option value="first_comment">首条待审</option>
-            <option value="none">无需审核</option>
-          </Select>
+      <SettingSection title="主题与外观" description="切换和管理已安装的前台主题">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '18px' }}>
+            <FormRow label="当前主题">
+              <Select value={kv.active_theme || activeThemeOptions[0]?.value || 'default'}
+                onChange={(e) => update('active_theme', e.target.value)}>
+                {activeThemeOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </Select>
+            </FormRow>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '18px' }}>
+            <FormRow label="默认模式">
+              <Select value={kv.theme_default_mode || 'system'} onChange={(e) => update('theme_default_mode', e.target.value)}>
+                <option value="system">跟随系统</option><option value="light">浅色模式</option><option value="dark">深色模式</option>
+              </Select>
+            </FormRow>
+          </div>
         </div>
-      </Card>
 
-      <Card header={<h3 className="text-sm font-semibold text-text-main">主题</h3>}>
-        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Select label="默认主题" value={kv.active_theme || activeThemeOptions[0]?.value || 'default'} onChange={(e) => update('active_theme', e.target.value)}>
-            {activeThemeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-          </Select>
-          <Select label="默认模式" value={kv.theme_default_mode || 'system'} onChange={(e) => update('theme_default_mode', e.target.value)}>
-            <option value="system">跟随系统</option>
-            <option value="light">浅色</option>
-            <option value="dark">深色</option>
-          </Select>
+        {/* 已安装主题 */}
+        <div style={{ marginTop: '22px', paddingTop: '18px', borderTop: '1px solid var(--if-border-light)' }}>
+          <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--if-text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '16px' }}>
+            已安装的主题
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
+            {themes.map((theme) => (
+              <div
+                key={theme.manifest.slug}
+                style={{
+                  border: `1.5px solid ${theme.active ? 'rgba(255,107,53,0.4)' : 'var(--if-border)'}`,
+                  borderRadius: '10px',
+                  padding: '18px', transition: 'all 0.2s ease',
+                  background: theme.active ? 'rgba(255,107,53,0.03)' : 'var(--if-bg-card)',
+                  position: 'relative',
+                  boxShadow: theme.active ? '0 2px 12px rgba(255,107,53,0.08)' : undefined,
+                }}
+                onMouseEnter={(e) => {
+                  if (!theme.active) { e.currentTarget.style.borderColor = '#ff6b35'; e.currentTarget.style.boxShadow = '0 1px 6px rgba(0,0,0,0.06)'; }
+                }}
+                onMouseLeave={(e) => {
+                  if (!theme.active) { e.currentTarget.style.borderColor = 'var(--if-border)'; e.currentTarget.style.boxShadow = 'none'; }
+                }}
+              >
+                {theme.active && (
+                  <span style={{
+                    position: 'absolute', top: '-9px', right: '16px',
+                    background: 'linear-gradient(135deg, #ff6b35, #e55a28)',
+                    color: '#fff', fontSize: '10px', fontWeight: 700,
+                    padding: '3px 10px', borderRadius: '999px', letterSpacing: '0.06em',
+                    textTransform: 'uppercase', boxShadow: '0 2px 8px rgba(255,107,53,0.3)',
+                  }}>使用中</span>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
+                  <div style={{
+                    width: '40px', height: '40px', borderRadius: '11px',
+                    background: theme.active ? 'rgba(255,107,53,0.10)' : 'var(--if-bg-secondary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px',
+                  }}>📄</div>
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: theme.active ? '#ff6b35' : 'var(--if-text)' }}>{theme.manifest.name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--if-text-muted)', fontFamily: 'monospace', marginTop: '1px' }}>v{theme.manifest.version} · {theme.manifest.slug}</div>
+                  </div>
+                </div>
+                <p style={{ fontSize: '13px', color: 'var(--if-text-secondary)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{theme.manifest.description}</p>
+                <div style={{ marginTop: '14px', paddingTop: '13px', borderTop: '1px solid var(--if-border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11.5px', color: 'var(--if-text-muted)' }}>作者：{theme.manifest.author}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
-      </Card>
-
-      <Card header={<h3 className="text-sm font-semibold text-text-main">已安装主题</h3>}>
-        <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-          {themes.map((theme) => (
-            <div key={theme.manifest.slug} className={`rounded-xl border p-4 ${theme.active ? 'border-primary bg-primary-50/50' : 'border-border bg-bg-secondary/50'}`}>
-              <div className="font-semibold text-text-main">{theme.manifest.name}</div>
-              <div className="text-xs text-text-muted mt-1">{theme.manifest.slug} · {theme.manifest.version}</div>
-              <div className="text-sm text-text-secondary mt-2">{theme.manifest.description}</div>
-              <div className="text-xs text-text-muted mt-3">作者：{theme.manifest.author}</div>
-            </div>
-          ))}
-        </div>
-      </Card>
+      </SettingSection>
     </>
   );
 }

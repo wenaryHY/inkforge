@@ -2,21 +2,33 @@ interface StatusBadgeProps {
   status: string;
 }
 
-const config: Record<string, { label: string; className: string; dotClass: string }> = {
-  published: { label: '�ѷ���', className: 'bg-success-bg/70 text-emerald-700 border border-success-border/60', dotClass: '!bg-emerald-500' },
-  draft: { label: '�ݸ�', className: 'bg-warning-bg/70 text-amber-700 border border-warning-border/60', dotClass: '!bg-amber-500' },
-  trashed: { label: '����վ', className: 'bg-danger-bg/70 text-red-700 border border-danger-border/60', dotClass: '!bg-red-500' },
-  pending: { label: '�����', className: 'bg-info-bg/70 text-blue-700 border border-info-border/60', dotClass: '!bg-blue-500' },
-  approved: { label: '��ͨ��', className: 'bg-success-bg/70 text-emerald-700 border border-success-border/60', dotClass: '!bg-emerald-500' },
-  rejected: { label: '�Ѿܾ�', className: 'bg-danger-bg/70 text-red-700 border border-danger-border/60', dotClass: '!bg-red-500' },
-  deleted: { label: '��ɾ��', className: 'bg-bg-secondary text-text-muted border border-border', dotClass: '!bg-text-muted' },
+const CONFIG: Record<string, { label: string; bg: string; dot: string; textColor: string }> = {
+  published: { label: '已发布', bg: '#ecfdf5', dot: '#10b981', textColor: '#047857' },
+  draft:     { label: '草稿',   bg: '#fffbeb', dot: '#f59e0b', textColor: '#b45309' },
+  trashed:   { label: '回收站', bg: '#fef2f2', dot: '#ef4444', textColor: '#b91c1c' },
+  pending:   { label: '待审核', bg: '#eff6ff', dot: '#3b82f6', textColor: '#1d4ed8' },
+  approved:  { label: '已通过', bg: '#ecfdf5', dot: '#10b981', textColor: '#047857' },
+  rejected:  { label: '已拒绝', bg: '#fef2f2', dot: '#ef4444', textColor: '#b91c1c' },
+  deleted:   { label: '已删除', bg: '#f0f1f3', dot: '#9494a6', textColor: '#5a5a6e' },
 };
 
 export function StatusBadge({ status }: StatusBadgeProps) {
-  const c = config[status] || { label: status, className: 'bg-bg-secondary text-text-muted border border-border', dotClass: '!bg-text-muted' };
+  const c = CONFIG[status] || { label: status, bg: '#f0f1f3', dot: '#9494a6', textColor: '#5a5a6e' };
   return (
-    <span className={`inline-flex items-center gap-[6px] px-[10px] py-[3px] rounded-full text-xs font-semibold ${c.className}`}>
-      <span className={`w-[5px] h-[5px] rounded-full bg-current ${c.dotClass}`} />
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '7px',
+      padding: '3px 12px',
+      borderRadius: '999px',
+      fontSize: '12px', fontWeight: 600,
+      background: c.bg,
+      color: c.textColor,
+      letterSpacing: '0.02em',
+    }}>
+      <span style={{
+        width: '6px', height: '6px', borderRadius: '50%',
+        background: c.dot,
+        boxShadow: `0 0 4px ${c.dot}50`,
+      }} />
       {c.label}
     </span>
   );

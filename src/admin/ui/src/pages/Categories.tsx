@@ -14,6 +14,18 @@ import { CardTableSkeleton } from '../components/Skeleton';
 import { IconFolderOpen, IconPlus, IconPencil, IconTrash2 } from '../components/Icons';
 import { useToast } from '../contexts/ToastContext';
 
+/* 样式 */
+const TH = {
+  padding: '14px 20px', textAlign: 'left' as const, fontSize: '11.5px',
+  fontWeight: 700, color: 'var(--if-text-muted)', textTransform: 'uppercase' as const,
+  letterSpacing: '0.06em', background: 'var(--if-bg-secondary)',
+  borderBottom: '2px solid var(--if-border-light)',
+};
+const TD = {
+  padding: '15px 20px', fontSize: '13.5px', color: 'var(--if-text)',
+  borderBottom: '1px solid var(--if-border-light)', verticalAlign: 'middle',
+};
+
 export default function Categories() {
   const toast = useToast();
   const [items, setItems] = useState<Category[]>([]);
@@ -27,100 +39,83 @@ export default function Categories() {
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);
-    try {
-      setItems(await apiData<Category[]>('/api/categories'));
-    } catch (error) {
-      toast(error instanceof Error ? error.message : '���ط���ʧ��', 'error');
-    } finally {
-      setLoading(false);
-    }
+    try { setItems(await apiData<Category[]>('/api/categories')); }
+    catch (error) { toast(error instanceof Error ? error.message : '加载分类失败', 'error'); }
+    finally { setLoading(false); }
   }, [toast]);
 
   useEffect(() => { void fetchCategories(); }, [fetchCategories]);
 
   function openEditor(item?: Category) {
-    setEditing(item || null);
-    setName(item?.name || '');
-    setSlug(item?.slug || '');
-    setDesc(item?.description || '');
-    setEditorOpen(true);
+    setEditing(item || null); setName(item?.name || ''); setSlug(item?.slug || '');
+    setDesc(item?.description || ''); setEditorOpen(true);
   }
 
   async function handleSave() {
-    if (!name.trim()) {
-      toast('�������Ʋ���Ϊ��', 'error');
-      return;
-    }
+    if (!name.trim()) { toast('分类名称不能为空', 'error'); return; }
     try {
       const body = { name: name.trim(), slug: slug || undefined, description: desc || null };
-      if (editing?.id) {
-        await apiData(`/api/admin/categories/${editing.id}`, { method: 'PATCH', body: JSON.stringify(body) });
-      } else {
-        await apiData('/api/admin/categories', { method: 'POST', body: JSON.stringify(body) });
-      }
-      toast('����ɹ�', 'success');
-      setEditorOpen(false);
-      await fetchCategories();
-    } catch (error) {
-      toast(error instanceof Error ? error.message : '����ʧ��', 'error');
-    }
+      if (editing?.id) await apiData(`/api/admin/categories/${editing.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      else await apiData('/api/admin/categories', { method: 'POST', body: JSON.stringify(body) });
+      toast('保存成功', 'success'); setEditorOpen(false); await fetchCategories();
+    } catch (error) { toast(error instanceof Error ? error.message : '保存失败', 'error'); }
   }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
     try {
       await apiData(`/api/admin/categories/${deleteTarget.id}`, { method: 'DELETE' });
-      toast('ɾ���ɹ�', 'success');
-      await fetchCategories();
-    } catch (error) {
-      toast(error instanceof Error ? error.message : 'ɾ��ʧ��', 'error');
-    } finally {
-      setDeleteTarget(null);
-    }
+      toast('删除成功', 'success'); await fetchCategories();
+    } catch (error) { toast(error instanceof Error ? error.message : '删除失败', 'error'); }
+    finally { setDeleteTarget(null); }
   }
 
   if (loading) return <CardTableSkeleton cols={3} rows={4} />;
 
   return (
     <>
-      <PageHeader title="�������" subtitle={`�� ${items.length} ������`} actions={<Button onClick={() => openEditor()}><IconPlus /> �½�����</Button>} />
+      <PageHeader title="分类管理" subtitle={`共 ${items.length} 个分类`}
+        actions={<Button onClick={() => openEditor()}><IconPlus /> 新建分类</Button>} />
+
       <Card>
-        <table className="w-full border-collapse">
-          <thead>
-            <tr>
-              <th className="th-cell">����</th>
-              <th className="th-cell">Slug</th>
-              <th className="th-cell">����</th>
-              <th className="th-cell">����</th>
-            </tr>
-          </thead>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead><tr>
+            <th style={TH}>名称</th><th style={TH}>Slug</th><th style={TH}>描述</th><th style={TH}>操作</th>
+          </tr></thead>
           <tbody>
-            {items.length > 0 ? items.map((category) => (
-              <tr key={category.id} className="table-row-hover">
-                <td className="td-cell"><span className="font-medium">{esc(category.name)}</span></td>
-                <td className="td-cell"><code className="bg-bg-secondary px-2 py-0.5 rounded text-xs text-text-muted font-mono">{esc(category.slug)}</code></td>
-                <td className="td-cell text-text-secondary text-sm">{esc(category.description || '��')}</td>
-                <td className="td-cell">
-                  <div className="flex gap-1.5 items-center">
-                    <Button size="sm" variant="ghost" onClick={() => openEditor(category)}><IconPencil /></Button>
-                    <Button size="sm" variant="danger" onClick={() => setDeleteTarget({ id: category.id, name: category.name })}><IconTrash2 /></Button>
+            {items.length > 0 ? items.map((cat) => (
+              <tr key={cat.id}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--if-primary-50)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                style={{ transition: 'background 0.12s ease' }}
+              >
+                <td style={{ ...TD, fontWeight: 600 }}>{esc(cat.name)}</td>
+                <td style={TD}><span style={{
+                  background: 'var(--if-bg-secondary)', padding: '3px 8px', borderRadius: '6px',
+                  fontSize: '12px', fontFamily: 'monospace', color: 'var(--if-text-muted)',
+                }}>{esc(cat.slug)}</span></td>
+                <td style={{ ...TD, color: 'var(--if-text-secondary)' }}>{esc(cat.description || '—')}</td>
+                <td style={TD}>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    <Button size="sm" variant="ghost" onClick={() => openEditor(cat)}><IconPencil /></Button>
+                    <Button size="sm" variant="danger" onClick={() => setDeleteTarget({ id: cat.id, name: cat.name })}><IconTrash2 /></Button>
                   </div>
                 </td>
               </tr>
-            )) : (
-              <tr><td colSpan={4}><EmptyState icon={<IconFolderOpen size={28} />} message="���޷���" /></td></tr>
-            )}
+            )) : (<tr><td colSpan={4}><EmptyState icon={<IconFolderOpen size={28} />} message="暂无分类" /></td></tr>)}
           </tbody>
         </table>
       </Card>
 
-      <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={confirmDelete} title="ɾ������" message={`ȷ��Ҫɾ�����ࡶ${deleteTarget?.name || ''}����`} variant="danger" />
+      <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={confirmDelete}
+        title="删除分类" message={`确定要删除分类「${deleteTarget?.name || ''}」吗？`} variant="danger" />
 
-      <Modal open={editorOpen} onClose={() => setEditorOpen(false)} title={editing ? '�༭����' : '�½�����'} actions={<><Button variant="ghost" onClick={() => setEditorOpen(false)}>ȡ��</Button><Button onClick={handleSave}>����</Button></>}>
-        <div className="flex flex-col gap-4">
-          <Input label="����" value={name} onChange={(e) => setName(e.target.value)} placeholder="��������" />
-          <Input label="Slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="������Զ�����" />
-          <Textarea label="����" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="��Ҫ��������" minRows={3} />
+      <Modal open={editorOpen} onClose={() => setEditorOpen(false)} title={editing ? '编辑分类' : '新建分类'}
+        actions={<><Button variant="ghost" onClick={() => setEditorOpen(false)}>取消</Button><Button onClick={handleSave}>保存</Button></>}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <Input label="名称" value={name} onChange={(e) => setName(e.target.value)} placeholder="分类名称" />
+          <Input label="Slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="可选，URL别名" />
+          <Textarea label="描述" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="可选，简要描述" minRows={3} />
         </div>
       </Modal>
     </>

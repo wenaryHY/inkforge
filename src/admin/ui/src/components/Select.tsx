@@ -5,31 +5,55 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   error?: string;
 }
 
+const s = {
+  wrap:    { display: 'flex', flexDirection: 'column' as const, gap: '6px' },
+  label:   { fontSize: '13px', fontWeight: 600, color: 'var(--if-text-secondary)', letterSpacing: '0.01em' },
+  select:  {
+    width: '100%',
+    appearance: 'none' as const,
+    WebkitAppearance: 'none' as const,
+    height: '42px',
+    padding: '0 36px 0 14px',
+    border: '1.5px solid var(--if-border)',
+    borderRadius: 'var(--if-radius-md)',
+    fontSize: '14px',
+    color: 'var(--if-text)',
+    background: `var(--if-bg-card) url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") no-repeat right 12px center`,
+    backgroundSize: '16px 16px',
+    outline: 'none',
+    cursor: 'pointer',
+    transition: 'var(--if-transition)',
+    boxSizing: 'border-box' as const,
+  },
+};
+
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
-  ({ label, error, className = '', id, children, ...props }, ref) => {
+  ({ label, error, className, id, children, style, ...props }, ref) => {
     return (
-      <div className="flex flex-col gap-1.5">
-        {label && (
-          <label htmlFor={id} className="text-sm font-medium text-text-secondary">
-            {label}
-          </label>
-        )}
+      <div style={s.wrap} className={className}>
+        {label && <label htmlFor={id} style={s.label}>{label}</label>}
         <select
           ref={ref}
           id={id}
-          className={`w-full px-3.5 py-2.5 border border-border rounded-lg text-sm
-            outline-none bg-white text-text-main
-            transition-all duration-150 appearance-none
-            focus:border-primary focus:ring-2 focus:ring-primary/20
-            disabled:bg-bg-secondary disabled:cursor-not-allowed
-            ${error ? 'border-danger focus:ring-danger/20' : ''}
-            ${className}`}
-          style={{ backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`, backgroundPosition: 'right 0.75rem center', backgroundRepeat: 'no-repeat', backgroundSize: '1.25em 1.25em', paddingRight: '2.5rem' }}
           {...props}
+          style={{
+            ...s.select,
+            ...style,
+            ...(error ? { borderColor: 'var(--if-danger)' } : {}),
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = 'var(--if-border-focus)';
+            e.currentTarget.style.boxShadow = '0 0 0 4px var(--if-primary-glow)';
+            props.onFocus?.(e);
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = error ? 'var(--if-danger)' : 'var(--if-border)';
+            e.currentTarget.style.boxShadow = 'none';
+            props.onBlur?.(e);
+          }}
         >
           {children}
         </select>
-        {error && <span className="text-xs text-danger mt-0.5">{error}</span>}
       </div>
     );
   }

@@ -22,25 +22,69 @@ export function Modal({ open, onClose, title, children, actions, width = '560px'
 
   return (
     <div
-      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[1000] animate-in fade-in duration-150"
+      className="if-fade-in"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{
+        position: 'fixed', inset: 0,
+        background: 'rgba(0,0,0,0.40)',
+        backdropFilter: 'blur(4px)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        zIndex: 1000,
+        padding: '20px',
+      }}
     >
       <div
-        className="bg-white rounded-2xl overflow-y-auto max-h-[85vh] shadow-2xl animate-in zoom-in-95 duration-150"
-        style={{ width, maxWidth: width === '90%' ? '960px' : undefined }}
+        className="if-scale-in"
+        style={{
+          background: 'var(--if-bg-card)',
+          borderRadius: '18px',
+          boxShadow: 'var(--if-shadow-lg), 0 0 0 1px rgba(0,0,0,0.03)',
+          width: width === '90%' ? '92%' : width,
+          maxWidth: width === '90%' ? '900px' : undefined,
+          maxHeight: '85vh',
+          overflowY: 'auto',
+          display: 'flex', flexDirection: 'column',
+        }}
       >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
-          <h3 className="text-base font-semibold text-text-main">{title}</h3>
+        {/* Header */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '20px 24px',
+          borderBottom: '1px solid var(--if-border-light)',
+          flexShrink: 0,
+        }}>
+          <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--if-text)' }}>
+            {title}
+          </h3>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center border-none bg-transparent text-text-muted cursor-pointer rounded-lg hover:bg-bg-secondary hover:text-text-main transition-colors duration-150"
+            style={{
+              width: '32px', height: '32px',
+              display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '8px', border: 'none', background: 'transparent',
+              color: 'var(--if-text-muted)', cursor: 'pointer',
+              transition: 'var(--if-transition)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--if-bg-secondary)'; e.currentTarget.style.color = 'var(--if-text)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--if-text-muted)'; }}
           >
             <IconX />
           </button>
         </div>
-        <div className="px-6 py-5">{children}</div>
+        {/* Body */}
+        <div style={{ padding: '24px' }}>
+          {children}
+        </div>
+        {/* Footer */}
         {actions && (
-          <div className="flex gap-2 justify-end px-6 py-4 border-t border-border-light bg-bg-secondary/50 rounded-b-2xl">
+          <div style={{
+            display: 'flex', justifyContent: 'flex-end', gap: '10px',
+            padding: '16px 24px',
+            borderTop: '1px solid var(--if-border-light)',
+            background: 'var(--if-bg-secondary)',
+            flexShrink: 0,
+            borderRadius: '0 0 18px 18px',
+          }}>
             {actions}
           </div>
         )}

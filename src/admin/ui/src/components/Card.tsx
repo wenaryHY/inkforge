@@ -4,16 +4,29 @@ interface CardProps {
   children: ReactNode;
   header?: ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
-export function Card({ children, header, className = '' }: CardProps) {
+const s = {
+  card: {
+    background: 'var(--if-bg-card)',
+    border: '1px solid var(--if-border-light)',
+    borderRadius: 'var(--if-radius-lg)',
+    boxShadow: 'var(--if-shadow-sm)',
+    overflow: 'hidden' as const,
+  },
+  header: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '18px 24px',
+    borderBottom: '1px solid var(--if-border-light)',
+  },
+  body: {},
+};
+
+export function Card({ children, header, className, style }: CardProps) {
   return (
-    <div className={`bg-white rounded-xl border border-border shadow-sm ${className}`}>
-      {header && (
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border-light">
-          {header}
-        </div>
-      )}
+    <div style={{ ...s.card, ...style }} className={className}>
+      {header && <div style={s.header}>{header}</div>}
       <div>{children}</div>
     </div>
   );

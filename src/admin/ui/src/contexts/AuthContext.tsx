@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await refreshUser();
       return { success: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : '��¼ʧ��';
+      const message = error instanceof Error ? error.message : '登录失败';
       clearAuth();
       return { success: false, message };
     }
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await refreshUser();
       return { success: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'ע��ʧ��';
+      const message = error instanceof Error ? error.message : '注册失败';
       return { success: false, message };
     }
   }, [applyToken, refreshUser]);

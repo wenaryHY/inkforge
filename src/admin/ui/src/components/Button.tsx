@@ -8,62 +8,109 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
-const variantClasses: Record<string, { base: string; hover: string; shadow: string }> = {
+const VARIANTS = {
   primary: {
-    base: 'bg-primary text-white',
-    hover: 'hover:bg-primary-dark',
-    shadow: 'shadow-[0_2px_8px_rgba(255,107,53,0.3)]',
+    bg:       'linear-gradient(135deg, #ff6b35 0%, #e55a28 100%)',
+    color:    '#ffffff',
+    shadow:   '0 4px 14px rgba(255,107,53,0.30)',
+    hoverBg:  'linear-gradient(135deg, #e55a28 0%, #cc4d22 100%)',
+    hoverSh:  '0 6px 20px rgba(255,107,53,0.40)',
   },
   danger: {
-    base: 'bg-danger text-white',
-    hover: 'hover:bg-red-600',
-    shadow: '',
+    bg:       '#ef4444', color: '#ffffff',
+    shadow:   '0 3px 10px rgba(239,68,68,0.25)',
+    hoverBg:  '#dc2626', hoverSh: '0 4px 14px rgba(239,68,68,0.35)',
   },
   success: {
-    base: 'bg-success text-white',
-    hover: 'hover:bg-emerald-600',
-    shadow: '',
-  },
-  ghost: {
-    base: 'bg-white text-text-secondary border border-border',
-    hover: 'hover:bg-bg-secondary hover:border-[var(--color-text-muted)]/50 hover:text-text-main',
-    shadow: '',
+    bg:       '#10b981', color: '#ffffff',
+    shadow:   '0 3px 10px rgba(16,185,129,0.25)',
+    hoverBg:  '#059669', hoverSh: '0 4px 14px rgba(16,185,129,0.35)',
   },
   warning: {
-    base: 'bg-warning text-white',
-    hover: 'hover:bg-amber-600',
-    shadow: '',
+    bg:       '#f59e0b', color: '#ffffff',
+    shadow:   '0 3px 10px rgba(245,158,11,0.25)',
+    hoverBg:  '#d97706', hoverSh: '0 4px 14px rgba(245,158,11,0.35)',
+  },
+  ghost: {
+    bg:       '#ffffff', color: 'var(--if-text-secondary)',
+    border:   '1.5px solid var(--if-border)',
+    shadow:   'none',
+    hoverBg:  'var(--if-bg-secondary)', hoverSh: 'none',
+    hoverBorder: 'var(--if-text-muted)',
+    hoverColor:  'var(--if-text)',
   },
 };
 
-const sizeClasses = {
-  sm: 'px-2.5 py-1.5 text-xs gap-1.5 rounded-md',
-  md: 'px-4 py-2 text-sm gap-2 rounded-lg',
-  lg: 'px-5 py-2.5 text-base gap-2 rounded-lg',
+const SIZES = {
+  sm: { height: '32px', padding: '0 12px', fontSize: '12px', radius: '8px' },
+  md: { height: '40px', padding: '0 20px', fontSize: '14px', radius: '10px' },
+  lg: { height: '48px', padding: '0 24px', fontSize: '15px', radius: '12px' },
 };
 
 export function Button({
-  variant = 'primary',
-  size = 'md',
-  loading = false,
-  className = '',
-  children,
-  disabled,
+  variant = 'primary', size = 'md', loading = false,
+  children, disabled, style,
+  className,
+  onMouseEnter, onMouseLeave,
   ...props
 }: ButtonProps) {
-  const v = variantClasses[variant] || variantClasses.primary;
+  const v = VARIANTS[variant];
+  const sz = SIZES[size];
   const isDisabled = disabled || loading;
+
+  const baseStyle: React.CSSProperties = {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
+    height: sz.height, padding: sz.padding,
+    border: variant === 'ghost' ? (v as typeof VARIANTS.ghost).border : 'none',
+    borderRadius: sz.radius,
+    fontSize: sz.fontSize,
+    fontWeight: 600,
+    color: v.color,
+    background: v.bg,
+    boxShadow: v.shadow,
+    cursor: isDisabled ? 'not-allowed' : 'pointer',
+    opacity: isDisabled ? 0.55 : 1,
+    transform: isDisabled ? undefined : undefined,
+    transition: 'var(--if-transition)',
+    whiteSpace: 'nowrap' as const,
+    fontFamily: 'inherit',
+    letterSpacing: '0.02em',
+    ...style,
+  };
 
   return (
     <button
-      className={`inline-flex items-center justify-center font-semibold cursor-pointer
-        transition-all duration-150
-        active:scale-[0.97]
-        ${v.base} ${v.hover} ${v.shadow}
-        ${sizeClasses[size]}
-        ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}
-        ${className}`}
+      className={className}
       disabled={isDisabled}
+      style={baseStyle}
+      onMouseEnter={(e) => {
+        if (!isDisabled) {
+          if (variant === 'ghost') {
+            e.currentTarget.style.background = (v as typeof VARIANTS.ghost).hoverBg;
+            e.currentTarget.style.borderColor = (v as typeof VARIANTS.ghost).hoverBorder!;
+            e.currentTarget.style.color = (v as typeof VARIANTS.ghost).hoverColor!;
+          } else {
+            e.currentTarget.style.background = v.hoverBg;
+            e.currentTarget.style.boxShadow = v.hoverSh;
+            e.currentTarget.style.transform = 'translateY(-1px)';
+          }
+        }
+        onMouseEnter?.(e);
+      }}
+      onMouseLeave={(e) => {
+        if (!isDisabled) {
+          e.currentTarget.style.background = v.bg;
+          e.currentTarget.style.boxShadow = v.shadow;
+          e.currentTarget.style.transform = 'translateY(0)';
+          if (variant === 'ghost') {
+            e.currentTarget.style.color = v.color;
+            e.currentTarget.style.borderColor = (v as typeof VARIANTS.ghost).border!;
+          }
+        }
+        onMouseLeave?.(e);
+      }}
+      onMouseDown={(e) => { if (!isDisabled) e.currentTarget.style.transform = 'scale(0.97)'; }}
+      onMouseUp={(e) => { if (!isDisabled) e.currentTarget.style.transform = 'translateY(-1px)'; }}
       {...props}
     >
       {loading && <Spinner size={size === 'sm' ? 14 : 16} />}

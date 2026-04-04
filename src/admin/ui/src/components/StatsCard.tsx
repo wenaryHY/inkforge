@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react';
 
-type StatsTheme = 'indigo' | 'emerald' | 'amber' | 'blue' | 'rose' | 'violet';
+type StatsTheme = 'orange' | 'emerald' | 'amber' | 'blue' | 'rose' | 'violet';
 
-const themeConfig: Record<StatsTheme, { bg: string; iconBg: string }> = {
-  indigo:   { bg: 'bg-indigo-50',  iconBg: 'from-indigo-500 to-indigo-600' },
-  emerald:  { bg: 'bg-emerald-50', iconBg: 'from-emerald-500 to-emerald-600' },
-  amber:    { bg: 'bg-amber-50',   iconBg: 'from-amber-500 to-amber-500' },
-  blue:     { bg: 'bg-blue-50',    iconBg: 'from-blue-500 to-blue-600' },
-  rose:     { bg: 'bg-rose-50',    iconBg: 'from-rose-500 to-rose-600' },
-  violet:   { bg: 'bg-violet-50',  iconBg: 'from-violet-500 to-violet-600' },
+const THEME_MAP: Record<StatsTheme, { iconBg: string; accent: string }> = {
+  orange:  { iconBg: 'linear-gradient(135deg, #ff6b35, #e55a28)',   accent: '#ff6b35' },
+  emerald: { iconBg: 'linear-gradient(135deg, #10b981, #059669)',   accent: '#10b981' },
+  amber:   { iconBg: 'linear-gradient(135deg, #f59e0b, #d97706)',   accent: '#f59e0b' },
+  blue:    { iconBg: 'linear-gradient(135deg, #3b82f6, #2563eb)',   accent: '#3b82f6' },
+  rose:    { iconBg: 'linear-gradient(135deg, #f43f5e, #e11d48)',   accent: '#f43f5e' },
+  violet:  { iconBg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',   accent: '#8b5cf6' },
 };
 
 interface StatsCardProps {
@@ -18,17 +18,39 @@ interface StatsCardProps {
   theme?: StatsTheme;
 }
 
-export function StatsCard({ icon, value, label, theme = 'indigo' }: StatsCardProps) {
-  const config = themeConfig[theme];
+export function StatsCard({ icon, value, label, theme = 'orange' }: StatsCardProps) {
+  const t = THEME_MAP[theme];
+
   return (
-    <div className="bg-white rounded-xl p-5 border border-border shadow-sm hover:shadow-md transition-shadow duration-200">
-      <div className="flex items-center justify-between mb-3">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center bg-gradient-to-br ${config.iconBg} shadow-sm`}>
-          <span className="text-white">{icon}</span>
-        </div>
+    <div style={{
+      background: 'var(--if-bg-card)',
+      borderRadius: '14px',
+      padding: '20px 22px',
+      border: '1px solid var(--if-border-light)',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+      transition: 'box-shadow 0.2s, transform 0.2s',
+      cursor: 'default',
+    }}
+    onMouseEnter={(e) => {
+      e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.03)';
+      e.currentTarget.style.transform = 'translateY(-2px)';
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)';
+      e.currentTarget.style.transform = 'translateY(0)';
+    }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 12,
+          background: t.iconBg,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff',
+        }}
+        >{icon}</div>
       </div>
-      <div className="text-2xl font-bold text-text-main leading-tight">{value}</div>
-      <div className="text-xs text-text-muted mt-1 font-medium">{label}</div>
+      <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--if-text)', letterSpacing: '-0.5px', lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--if-text-muted)', marginTop: 6, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>{label}</div>
     </div>
   );
 }
