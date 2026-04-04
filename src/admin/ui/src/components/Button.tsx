@@ -8,43 +8,48 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
+/* ── 设计指南：实心按钮（有背景色）vs Ghost 按钮（默认无背景，hover才显示） ── */
 const VARIANTS = {
   primary: {
-    bg:       'linear-gradient(135deg, #ff6b35 0%, #e55a28 100%)',
+    bg:       'var(--primary-500)',
     color:    '#ffffff',
-    shadow:   '0 4px 14px rgba(255,107,53,0.30)',
-    hoverBg:  'linear-gradient(135deg, #e55a28 0%, #cc4d22 100%)',
-    hoverSh:  '0 6px 20px rgba(255,107,53,0.40)',
+    shadow:   '0 1px 3px rgba(255,107,53,0.25)',
+    hoverBg:  'var(--primary-600)',
+    hoverSh:  '0 4px 12px rgba(255,107,53,0.30)',
   },
   danger: {
-    bg:       '#ef4444', color: '#ffffff',
-    shadow:   '0 3px 10px rgba(239,68,68,0.25)',
-    hoverBg:  '#dc2626', hoverSh: '0 4px 14px rgba(239,68,68,0.35)',
+    bg:       'var(--danger-500)', color: '#ffffff',
+    shadow:   '0 1px 3px rgba(239,68,68,0.20)',
+    hoverBg:  'var(--danger-600)', hoverSh: '0 4px 12px rgba(239,68,68,0.25)',
   },
   success: {
-    bg:       '#10b981', color: '#ffffff',
-    shadow:   '0 3px 10px rgba(16,185,129,0.25)',
-    hoverBg:  '#059669', hoverSh: '0 4px 14px rgba(16,185,129,0.35)',
+    bg:       'var(--success-500)', color: '#ffffff',
+    shadow:   '0 1px 3px rgba(16,185,129,0.20)',
+    hoverBg:  'var(--success-600)', hoverSh: '0 4px 12px rgba(16,185,129,0.25)',
   },
   warning: {
-    bg:       '#f59e0b', color: '#ffffff',
-    shadow:   '0 3px 10px rgba(245,158,11,0.25)',
-    hoverBg:  '#d97706', hoverSh: '0 4px 14px rgba(245,158,11,0.35)',
+    bg:       'var(--warning-500)', color: '#ffffff',
+    shadow:   '0 1px 3px rgba(245,158,11,0.20)',
+    hoverBg:  'var(--warning-600)', hoverSh: '0 4px 12px rgba(245,158,11,0.25)',
   },
+  /* Ghost: 可供性指示 — 默认无背景，hover 显示浅灰背景 */
   ghost: {
-    bg:       '#ffffff', color: 'var(--if-text-secondary)',
-    border:   '1.5px solid var(--if-border)',
+    bg:       'transparent',
+    color:    'var(--text-secondary)',
+    border:   '1.5px solid var(--border-default)',
     shadow:   'none',
-    hoverBg:  'var(--if-bg-secondary)', hoverSh: 'none',
-    hoverBorder: 'var(--if-text-muted)',
-    hoverColor:  'var(--if-text)',
+    hoverBg:  'var(--bg-subtle)',
+    hoverSh:  'none',
+    hoverBorder: 'var(--text-muted)',
+    hoverColor:  'var(--text-primary)',
   },
 };
 
+/* ── 设计指南：按钮宽度应为高度的两倍 ── */
 const SIZES = {
-  sm: { height: '32px', padding: '0 12px', fontSize: '12px', radius: '8px' },
-  md: { height: '40px', padding: '0 20px', fontSize: '14px', radius: '10px' },
-  lg: { height: '48px', padding: '0 24px', fontSize: '15px', radius: '12px' },
+  sm: { height: '32px', padding: '0 14px', fontSize: '12px', radius: 'var(--radius-sm)' },
+  md: { height: '40px', padding: '0 24px', fontSize: '14px', radius: 'var(--radius-md)' },
+  lg: { height: '48px', padding: '0 32px', fontSize: '15px', radius: 'var(--radius-md)' },
 };
 
 export function Button({
@@ -59,8 +64,12 @@ export function Button({
   const isDisabled = disabled || loading;
 
   const baseStyle: React.CSSProperties = {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '7px',
-    height: sz.height, padding: sz.padding,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    height: sz.height,
+    padding: sz.padding,
     border: variant === 'ghost' ? (v as typeof VARIANTS.ghost).border : 'none',
     borderRadius: sz.radius,
     fontSize: sz.fontSize,
@@ -69,12 +78,11 @@ export function Button({
     background: v.bg,
     boxShadow: v.shadow,
     cursor: isDisabled ? 'not-allowed' : 'pointer',
-    opacity: isDisabled ? 0.55 : 1,
-    transform: isDisabled ? undefined : undefined,
-    transition: 'var(--if-transition)',
+    opacity: isDisabled ? 0.45 : 1,
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
     whiteSpace: 'nowrap' as const,
     fontFamily: 'inherit',
-    letterSpacing: '0.02em',
+    letterSpacing: '0.01em',
     ...style,
   };
 
@@ -92,8 +100,9 @@ export function Button({
           } else {
             e.currentTarget.style.background = v.hoverBg;
             e.currentTarget.style.boxShadow = v.hoverSh;
-            e.currentTarget.style.transform = 'translateY(-1px)';
           }
+          /* 微交互：hover 上浮 2px */
+          e.currentTarget.style.transform = 'translateY(-2px)';
         }
         onMouseEnter?.(e);
       }}
@@ -109,8 +118,17 @@ export function Button({
         }
         onMouseLeave?.(e);
       }}
-      onMouseDown={(e) => { if (!isDisabled) e.currentTarget.style.transform = 'scale(0.97)'; }}
-      onMouseUp={(e) => { if (!isDisabled) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+      onMouseDown={(e) => {
+        if (!isDisabled) {
+          /* 微交互：active 按压反馈 */
+          e.currentTarget.style.transform = 'scale(0.97)';
+        }
+      }}
+      onMouseUp={(e) => {
+        if (!isDisabled) {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+        }
+      }}
       {...props}
     >
       {loading && <Spinner size={size === 'sm' ? 14 : 16} />}

@@ -5,45 +5,66 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
+/* ── 设计指南：输入框状态 — 默认/聚焦/错误/禁用 ── */
 const s = {
-  wrap:    { display: 'flex', flexDirection: 'column' as const, gap: '6px' },
-  label:   { fontSize: '13px', fontWeight: 600, color: 'var(--if-text-secondary)', letterSpacing: '0.01em' },
+  wrap: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '6px',
+  },
+  label: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: 'var(--text-secondary)',
+    letterSpacing: '0.01em',
+  },
   input: {
-    width: '100%', height: '42px',
+    width: '100%',
+    height: '40px',
     padding: '0 14px',
-    border: '1.5px solid var(--if-border)',
-    borderRadius: 'var(--if-radius-md)',
+    border: '1.5px solid var(--border-default)',
+    borderRadius: 'var(--radius-md)',
     fontSize: '14px',
-    color: 'var(--if-text)',
-    background: 'var(--if-bg-card)',
+    color: 'var(--text-primary)',
+    background: 'var(--bg-card)',
     outline: 'none',
-    transition: 'var(--if-transition)',
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
     boxSizing: 'border-box' as const,
   },
-  error:   { fontSize: '12px', color: 'var(--if-danger)', marginTop: '2px' },
+  error: {
+    fontSize: '12px',
+    color: 'var(--danger-600)',
+    marginTop: '2px',
+  },
 };
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, className, id, style, ...props }, ref) => {
+  ({ label, error, className, id, style, disabled, ...props }, ref) => {
     return (
       <div style={s.wrap} className={className}>
         {label && <label htmlFor={id} style={s.label}>{label}</label>}
         <input
           ref={ref}
           id={id}
+          disabled={disabled}
           {...props}
           style={{
             ...s.input,
             ...style,
-            ...(error ? { borderColor: 'var(--if-danger)' } : {}),
+            /* 错误状态：红色边框 */
+            ...(error ? { borderColor: 'var(--danger-500)' } : {}),
+            /* 禁用状态：灰色文字暗示不可用 */
+            ...(disabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--if-border-focus)';
-            e.currentTarget.style.boxShadow = '0 0 0 4px var(--if-primary-glow)';
+            if (disabled) return;
+            /* 聚焦状态：主色边框 + 光晕 */
+            e.currentTarget.style.borderColor = 'var(--border-focus)';
+            e.currentTarget.style.boxShadow = '0 0 0 3px var(--primary-100)';
             props.onFocus?.(e);
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = error ? 'var(--if-danger)' : 'var(--if-border)';
+            e.currentTarget.style.borderColor = error ? 'var(--danger-500)' : 'var(--border-default)';
             e.currentTarget.style.boxShadow = 'none';
             props.onBlur?.(e);
           }}

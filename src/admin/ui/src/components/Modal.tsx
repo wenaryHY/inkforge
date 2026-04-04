@@ -26,19 +26,21 @@ export function Modal({ open, onClose, title, children, actions, width = '560px'
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: 'fixed', inset: 0,
-        background: 'rgba(0,0,0,0.40)',
+        /* 遮罩/覆盖层：渐变 + 模糊 */
+        background: 'rgba(0,0,0,0.35)',
         backdropFilter: 'blur(4px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         zIndex: 1000,
-        padding: '20px',
+        padding: '24px',
       }}
     >
       <div
         className="if-scale-in"
         style={{
-          background: 'var(--if-bg-card)',
-          borderRadius: '18px',
-          boxShadow: 'var(--if-shadow-lg), 0 0 0 1px rgba(0,0,0,0.03)',
+          background: 'var(--bg-elevated)',
+          borderRadius: 'var(--radius-xl)',
+          /* 弹出框/模态框：较强阴影（区别于卡片的弱阴影） */
+          boxShadow: 'var(--elevation-3), 0 0 0 1px rgba(0,0,0,0.03)',
           width: width === '90%' ? '92%' : width,
           maxWidth: width === '90%' ? '900px' : undefined,
           maxHeight: '85vh',
@@ -50,10 +52,10 @@ export function Modal({ open, onClose, title, children, actions, width = '560px'
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '20px 24px',
-          borderBottom: '1px solid var(--if-border-light)',
+          borderBottom: '1px solid var(--border-light)',
           flexShrink: 0,
         }}>
-          <h3 style={{ fontSize: '17px', fontWeight: 700, color: 'var(--if-text)' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
             {title}
           </h3>
           <button
@@ -61,12 +63,18 @@ export function Modal({ open, onClose, title, children, actions, width = '560px'
             style={{
               width: '32px', height: '32px',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              borderRadius: '8px', border: 'none', background: 'transparent',
-              color: 'var(--if-text-muted)', cursor: 'pointer',
-              transition: 'var(--if-transition)',
+              borderRadius: 'var(--radius-sm)', border: 'none', background: 'transparent',
+              color: 'var(--text-muted)', cursor: 'pointer',
+              transition: 'all 0.15s ease',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--if-bg-secondary)'; e.currentTarget.style.color = 'var(--if-text)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--if-text-muted)'; }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'var(--bg-subtle)';
+              e.currentTarget.style.color = 'var(--text-primary)';
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = 'var(--text-muted)';
+            }}
           >
             <IconX />
           </button>
@@ -78,12 +86,12 @@ export function Modal({ open, onClose, title, children, actions, width = '560px'
         {/* Footer */}
         {actions && (
           <div style={{
-            display: 'flex', justifyContent: 'flex-end', gap: '10px',
+            display: 'flex', justifyContent: 'flex-end', gap: '8px',
             padding: '16px 24px',
-            borderTop: '1px solid var(--if-border-light)',
-            background: 'var(--if-bg-secondary)',
+            borderTop: '1px solid var(--border-light)',
+            background: 'var(--bg-subtle)',
             flexShrink: 0,
-            borderRadius: '0 0 18px 18px',
+            borderRadius: '0 0 var(--radius-xl) var(--radius-xl)',
           }}>
             {actions}
           </div>

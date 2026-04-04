@@ -7,14 +7,14 @@ interface PaginationProps {
 }
 
 const makeBtnStyle = (): React.CSSProperties => ({
-  width: 36, height: 36,
+  width: '36px', height: '36px',
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-  border: '1.5px solid var(--if-border)',
-  borderRadius: 10,
-  background: 'var(--if-bg-card)',
-  color: 'var(--if-text-muted)',
+  border: '1.5px solid var(--border-default)',
+  borderRadius: 'var(--radius-md)',
+  background: 'var(--bg-card)',
+  color: 'var(--text-muted)',
   cursor: 'pointer',
-  transition: 'all 0.2s ease',
+  transition: 'all 0.15s ease',
   outline: 'none',
 });
 
@@ -24,27 +24,47 @@ export function Pagination({ page, pages, onPageChange }: PaginationProps) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      gap: 8, paddingTop: 16, paddingBottom: 8,
+      gap: '8px', paddingTop: '16px', paddingBottom: '8px',
     }}>
       <button disabled={page <= 1} onClick={() => onPageChange(page - 1)}
         style={Object.assign(makeBtnStyle(), { opacity: page <= 1 ? 0.35 : 1 })}
-        onMouseEnter={(e) => { if (page > 1) { Object.assign(e.currentTarget.style, { borderColor: 'var(--if-primary)' as string, color: 'var(--if-primary)' as string, background: 'var(--if-primary-50)' as string }); }}
-        }
-        onMouseLeave={(e) => { if (page > 1) Object.assign(e.currentTarget.style, makeBtnStyle()); if (page <= 1) Object.assign(e.currentTarget.style, { opacity: 0.35 }); }}
+        onMouseEnter={(e) => {
+          if (page > 1) {
+            Object.assign(e.currentTarget.style, {
+              borderColor: 'var(--primary-500)' as string,
+              color: 'var(--primary-600)' as string,
+              background: 'var(--primary-50)' as string,
+            });
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (page > 1) Object.assign(e.currentTarget.style, makeBtnStyle());
+          if (page <= 1) Object.assign(e.currentTarget.style, { opacity: 0.35 });
+        }}
       >
         <IconChevronLeft />
       </button>
 
-      <span style={{ fontSize: 14, color: 'var(--if-text-muted)', padding: '0 6px', fontVariantNumeric: 'tabular-nums' as const }}>
-        <span style={{ fontWeight: 700, color: 'var(--if-text)', fontSize: 15 }}>{page}</span>
+      <span style={{ fontSize: '14px', color: 'var(--text-muted)', padding: '0 8px', fontVariantNumeric: 'tabular-nums' as const }}>
+        <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '15px' }}>{page}</span>
         <span style={{ margin: '0 6px', opacity: 0.4 }}>/</span>{pages}
       </span>
 
       <button disabled={page >= pages} onClick={() => onPageChange(page + 1)}
         style={Object.assign(makeBtnStyle(), { opacity: page >= pages ? 0.35 : 1 })}
-        onMouseEnter={(e) => { if (page < pages) { Object.assign(e.currentTarget.style, { borderColor: 'var(--if-primary)' as string, color: 'var(--if-primary)' as string, background: 'var(--if-primary-50)' as string }); }}
-        }
-        onMouseLeave={(e) => { if (page < pages) Object.assign(e.currentTarget.style, makeBtnStyle()); if (page >= pages) Object.assign(e.currentTarget.style, { opacity: 0.35 }); }}
+        onMouseEnter={(e) => {
+          if (page < pages) {
+            Object.assign(e.currentTarget.style, {
+              borderColor: 'var(--primary-500)' as string,
+              color: 'var(--primary-600)' as string,
+              background: 'var(--primary-50)' as string,
+            });
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (page < pages) Object.assign(e.currentTarget.style, makeBtnStyle());
+          if (page >= pages) Object.assign(e.currentTarget.style, { opacity: 0.35 });
+        }}
       >
         <IconChevronRight />
       </button>

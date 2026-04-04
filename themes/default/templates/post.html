@@ -4,72 +4,238 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{ post.title }} - {{ site_title }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  color-scheme: light dark;
-  --bg: #f5f5f5;
-  --card: #ffffff;
-  --text: #111111;
-  --muted: #666666;
-  --accent: #d4632a;
-  --border: #e5e5e5;
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --accent:#ff6b35;--accent-dark:#e55a28;--accent-light:#fff0eb;
+  --text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;
+  --bg:#f9fafb;--card:#ffffff;
+  color-scheme:light}
+body{margin:0;font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
+a{color:var(--accent);text-decoration:none}
+.wrap{max-width:760px;margin:0 auto;padding:0 32px}
+
+/* Nav */
+.site-nav{padding:28px 0;display:flex;align-items:center;justify-content:space-between}
+.nav-back{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:14px;font-weight:500;color:var(--muted);
+  padding:8px 14px;border-radius:10px;
+  background:var(--card);border:1px solid var(--border);
+  transition:all 0.2s ease
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111111;
-    --card: #1b1b1b;
-    --text: #f2f2f2;
-    --muted: #b4b4b4;
-    --accent: #ff8a4c;
-    --border: #303030;
-  }
+.nav-back:hover{color:var(--text);border-color:var(--text);background:var(--card)}
+.nav-admin{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:13px;font-weight:500;color:#fff;
+  padding:8px 14px;border-radius:10px;
+  background:var(--text);transition:all 0.2s ease
 }
-* { box-sizing: border-box; }
-body { margin: 0; font-family: "Noto Sans SC", sans-serif; background: var(--bg); color: var(--text); }
-a { color: var(--accent); text-decoration: none; }
-.wrap { max-width: 840px; margin: 0 auto; padding: 24px; }
-article, section { background: var(--card); border: 1px solid var(--border); border-radius: 18px; }
-article { padding: 28px; }
-header { margin-bottom: 24px; }
-h1 { margin: 0 0 12px; font-size: 36px; }
-.meta { color: var(--muted); font-size: 14px; }
-.content { line-height: 1.9; }
-.content img { max-width: 100%; border-radius: 12px; }
-.comments { margin-top: 18px; padding: 24px; }
-.comment { padding: 14px 0; border-top: 1px solid var(--border); }
-.comment:first-child { border-top: 0; }
-.comment-meta { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
-.empty { color: var(--muted); }
-.note { margin-top: 18px; color: var(--muted); font-size: 14px; }
+.nav-admin:hover{background:var(--accent)}
+
+/* Article Card */
+.article-card{
+  background:var(--card);border-radius:24px;
+  border:1px solid var(--border);
+  padding:48px 56px;margin-bottom:32px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.04)
+}
+.article-header{margin-bottom:36px;padding-bottom:28px;border-bottom:1px solid var(--border)}
+.article-category{
+  display:inline-flex;align-items:center;gap:5px;
+  padding:4px 12px;border-radius:999px;
+  background:var(--accent-light);color:var(--accent);
+  font-size:12px;font-weight:600;margin-bottom:18px
+}
+.article-title{
+  font-family:'Noto Serif SC',serif;
+  font-size:38px;font-weight:700;line-height:1.2;
+  letter-spacing:-0.02em;margin:0 0 16px;
+  color:var(--text)
+}
+.article-meta{
+  display:flex;align-items:center;gap:12px;
+  font-size:14px;color:var(--muted)
+}
+.article-meta-sep{width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:0.5}
+.article-excerpt{
+  margin-top:18px;padding:16px 20px;
+  background:var(--bg);border-radius:12px;
+  font-size:15px;color:var(--muted);line-height:1.7;
+  border-left:3px solid var(--accent)
+}
+
+/* Content */
+.article-content{font-size:16px;line-height:1.85;color:var(--text)}
+.article-content h1,.article-content h2,.article-content h3,.article-content h4{
+  font-family:'Noto Serif SC',serif;font-weight:700;margin:1.5em 0 0.75em;line-height:1.3;color:var(--text)
+}
+.article-content h1{font-size:28px}.article-content h2{font-size:24px}.article-content h3{font-size:20px}
+.article-content p{margin:0 0 1.2em}
+.article-content a{color:var(--accent);border-bottom:1px solid var(--accent-light);transition:border-color 0.2s}
+.article-content a:hover{border-color:var(--accent)}
+.article-content img{max-width:100%;border-radius:14px;margin:1.5em 0;box-shadow:0 4px 20px rgba(0,0,0,0.08)}
+.article-content blockquote{
+  margin:1.5em 0;padding:16px 24px;
+  border-left:4px solid var(--accent);background:var(--accent-light);
+  border-radius:0 12px 12px 0;font-style:italic;color:var(--muted)
+}
+.article-content code{
+  font-family:'JetBrains Mono','Fira Code',Consolas,monospace;
+  font-size:14px;background:var(--bg);padding:2px 7px;border-radius:6px;
+  border:1px solid var(--border)
+}
+.article-content pre{
+  background:#1e1e2e;color:#cdd6f4;padding:20px 24px;border-radius:14px;
+  overflow-x:auto;margin:1.5em 0;font-size:14px;line-height:1.7
+}
+.article-content pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
+.article-content ul,.article-content ol{margin:1em 0;padding-left:1.5em}
+.article-content li{margin:0.3em 0}
+.article-content table{width:100%;border-collapse:collapse;margin:1.5em 0;font-size:14px}
+.article-content th,.article-content td{padding:10px 16px;border:1px solid var(--border);text-align:left}
+.article-content th{background:var(--bg);font-weight:600}
+
+/* Comments */
+.comments-section{
+  background:var(--card);border-radius:24px;
+  border:1px solid var(--border);padding:40px 48px;margin-bottom:64px;
+  box-shadow:0 4px 20px rgba(0,0,0,0.04)
+}
+.comments-title{
+  font-family:'Noto Serif SC',serif;
+  font-size:22px;font-weight:700;margin:0 0 28px;
+  display:flex;align-items:center;gap:10px
+}
+.comments-title .count{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:28px;height:28px;border-radius:50%;
+  background:var(--accent);color:#fff;font-size:13px;font-weight:700
+}
+.comment{
+  padding:20px 0;border-bottom:1px solid var(--border)
+}
+.comment:last-child{border-bottom:none}
+.comment-header{
+  display:flex;align-items:center;gap:10px;margin-bottom:10px
+}
+.comment-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--accent),#ff8a5c);
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:700;font-size:14px;flex-shrink:0
+}
+.comment-author{font-weight:600;font-size:14px}
+.comment-time{font-size:12px;color:var(--muted)}
+.comment-body{font-size:14.5px;color:var(--text);line-height:1.7;margin:0;padding-left:46px}
+.comment-empty{
+  padding:40px;text-align:center;color:var(--muted);
+  font-size:14px;background:var(--bg);border-radius:14px
+}
+.comment-note{
+  margin-top:20px;padding:14px 18px;
+  background:var(--bg);border-radius:12px;
+  font-size:13px;color:var(--muted);line-height:1.6
+}
+
+/* Footer */
+.site-footer{
+  padding:32px 0;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between
+}
+.footer-copy{font-size:13px;color:var(--muted)}
+.footer-powered{font-size:13px;color:var(--muted)}
+.footer-powered a{color:var(--accent);font-weight:500}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.article-card{animation:fadeIn 0.5s ease}
+.comments-section{animation:fadeIn 0.5s ease 0.15s backwards}
+
+/* Responsive */
+@media(max-width:640px){
+  .wrap{padding:0 20px}
+  .article-card{padding:28px 24px;border-radius:18px}
+  .article-title{font-size:26px}
+  .comments-section{padding:28px 24px;border-radius:18px}
+  .comment-body{padding-left:0}
+  .site-footer{flex-direction:column;gap:10px;align-items:flex-start}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <p><a href="/">← 返回首页</a> · <a href="/admin">管理后台</a></p>
-  <article>
-    <header>
-      <div class="meta">{{ post.author_display_name }}{% if post.category_name %} · {{ post.category_name }}{% endif %} · {{ post.published_at or post.created_at }}</div>
-      <h1>{{ post.title }}</h1>
-      {% if post.excerpt %}<div class="meta">{{ post.excerpt }}</div>{% endif %}
+  <!-- Nav -->
+  <nav class="site-nav">
+    <a href="/" class="nav-back">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
+      返回首页
+    </a>
+    <a href="/admin" class="nav-admin">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      管理后台
+    </a>
+  </nav>
+
+  <!-- Article -->
+  <article class="article-card">
+    <header class="article-header">
+      {% if post.category_name %}
+      <div class="article-category">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        {{ post.category_name }}
+      </div>
+      {% endif %}
+      <h1 class="article-title">{{ post.title }}</h1>
+      <div class="article-meta">
+        <span>{{ post.author_display_name }}</span>
+        <span class="article-meta-sep"></span>
+        <span>{{ post.published_at or post.created_at }}</span>
+      </div>
+      {% if post.excerpt %}
+      <div class="article-excerpt">{{ post.excerpt }}</div>
+      {% endif %}
     </header>
-    <div class="content">{{ post.content_html | safe }}</div>
+    <div class="article-content">
+      {{ post.content_html | safe }}
+    </div>
   </article>
 
-  <section class="comments">
-    <h2>评论</h2>
+  <!-- Comments -->
+  <section class="comments-section">
+    <h2 class="comments-title">
+      评论
+      {% if comments | length > 0 %}
+      <span class="count">{{ comments | length }}</span>
+      {% endif %}
+    </h2>
     {% if comments | length > 0 %}
       {% for comment in comments %}
       <div class="comment">
-        <div class="comment-meta">{{ comment.display_name }} · {{ comment.created_at }}</div>
-        <div>{{ comment.content }}</div>
+        <div class="comment-header">
+          <div class="comment-avatar">{{ comment.display_name[:1] }}</div>
+          <span class="comment-author">{{ comment.display_name }}</span>
+          <span class="comment-time">{{ comment.created_at }}</span>
+        </div>
+        <p class="comment-body">{{ comment.content }}</p>
       </div>
       {% endfor %}
     {% else %}
-      <div class="empty">还没有评论。</div>
+      <div class="comment-empty">还没有评论，来做第一个评论者吧</div>
     {% endif %}
-    <div class="note">评论需登录后通过 API 提交。前台表单将在后续后台适配完成后一并接入。</div>
+    <div class="comment-note">
+      💬 评论功能正在开发中，敬请期待！
+    </div>
   </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <span class="footer-copy">© {{ site_title }}</span>
+    <span class="footer-powered">Powered by <a href="/admin">InkForge</a></span>
+  </footer>
 </div>
 </body>
 </html>
-

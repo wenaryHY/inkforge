@@ -4,86 +4,227 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>{{ site_title }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-:root {
-  color-scheme: light dark;
-  --bg: #f5f5f5;
-  --card: #ffffff;
-  --text: #111111;
-  --muted: #666666;
-  --accent: #d4632a;
-  --border: #e5e5e5;
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --accent:#ff6b35;--accent-dark:#e55a28;--accent-light:#fff0eb;
+  --text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;
+  --bg:#f9fafb;--card:#ffffff;--card-hover:#ffffff;
+  color-scheme:light}
+body{margin:0;font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+a{color:inherit;text-decoration:none}
+.wrap{max-width:900px;margin:0 auto;padding:0 32px}
+
+/* Header */
+.site-header{padding:72px 0 56px;position:relative}
+.site-header .wrap{display:flex;flex-direction:column;gap:20px}
+.site-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:6px 14px;border-radius:999px;
+  background:var(--accent-light);color:var(--accent);
+  font-size:12px;font-weight:600;letter-spacing:0.02em;
+  width:fit-content;
+  transition:all 0.2s ease
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111111;
-    --card: #1b1b1b;
-    --text: #f2f2f2;
-    --muted: #b4b4b4;
-    --accent: #ff8a4c;
-    --border: #303030;
-  }
+.site-badge:hover{background:var(--accent);color:#fff}
+.site-title{
+  font-family:'Noto Serif SC',serif;
+  font-size:48px;font-weight:700;line-height:1.15;
+  letter-spacing:-0.02em;margin:0;
+  background:linear-gradient(135deg,var(--text) 0%,#374151 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
 }
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: "Noto Sans SC", sans-serif;
-  background: var(--bg);
-  color: var(--text);
+.site-desc{font-size:17px;color:var(--muted);margin:0;font-weight:400;max-width:540px;line-height:1.7}
+
+/* Stats Bar */
+.stats-bar{
+  display:flex;gap:32px;padding:24px 0;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  margin-bottom:48px
 }
-a { color: inherit; }
-.wrap { max-width: 920px; margin: 0 auto; padding: 24px; }
-header { padding: 32px 0 24px; }
-h1 { margin: 0 0 8px; font-size: 40px; }
-p.lead { margin: 0; color: var(--muted); }
-.grid { display: grid; gap: 16px; }
-.card {
-  display: block;
-  padding: 20px;
-  border-radius: 16px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  text-decoration: none;
+.stat-item{display:flex;flex-direction:column;gap:2px}
+.stat-value{font-size:22px;font-weight:700;color:var(--text);font-family:'Noto Serif SC',serif}
+.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em}
+
+/* Posts Grid */
+.posts-grid{display:grid;gap:24px;margin-bottom:80px}
+.post-card{
+  display:block;padding:28px 32px;
+  background:var(--card);border-radius:20px;
+  border:1px solid var(--border);
+  text-decoration:none;position:relative;overflow:hidden;
+  transition:all 0.25s cubic-bezier(0.16,1,0.3,1);
+  box-shadow:0 1px 3px rgba(0,0,0,0.04)
 }
-.meta { color: var(--muted); font-size: 14px; margin-bottom: 10px; }
-.title { font-size: 22px; margin: 0 0 12px; }
-.excerpt { color: var(--muted); margin: 0; line-height: 1.7; }
-.empty { padding: 32px; border: 1px dashed var(--border); border-radius: 16px; color: var(--muted); }
-footer { padding: 32px 0; color: var(--muted); font-size: 14px; }
-.badge { display: inline-block; padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); }
+.post-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,var(--accent),#ff8a5c);
+  opacity:0;transition:opacity 0.25s ease
+}
+.post-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 12px 40px rgba(0,0,0,0.1);
+  border-color:var(--accent)
+}
+.post-card:hover::before{opacity:1}
+.post-meta{
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;color:var(--muted);margin-bottom:14px
+}
+.post-meta-sep{width:3px;height:3px;border-radius:50%;background:var(--muted);opacity:0.5}
+.post-title{
+  font-size:22px;font-weight:700;line-height:1.35;
+  font-family:'Noto Serif SC',serif;margin:0 0 12px;
+  color:var(--text);letter-spacing:-0.01em
+}
+.post-card:hover .post-title{color:var(--accent)}
+.post-excerpt{font-size:14.5px;color:var(--muted);line-height:1.75;margin:0}
+.post-footer{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-top:18px;padding-top:16px;border-top:1px solid var(--border)
+}
+.post-tags{display:flex;gap:6px;flex-wrap:wrap}
+.post-tag{
+  padding:3px 10px;border-radius:999px;
+  font-size:11px;font-weight:600;
+  background:var(--accent-light);color:var(--accent)
+}
+.post-arrow{
+  width:36px;height:36px;border-radius:50%;
+  background:var(--accent-light);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;
+  transition:all 0.2s ease;flex-shrink:0
+}
+.post-card:hover .post-arrow{background:var(--accent);color:#fff;transform:translateX(4px)}
+.post-arrow svg{transition:transform 0.2s ease}
+.post-card:hover .post-arrow svg{transform:translateX(2px)}
+
+/* Empty */
+.empty-state{
+  padding:80px 32px;text-align:center;
+  background:var(--card);border-radius:20px;
+  border:1px dashed var(--border)
+}
+.empty-icon{
+  width:64px;height:64px;margin:0 auto 20px;
+  border-radius:18px;background:var(--accent-light);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--accent)
+}
+.empty-title{font-size:18px;font-weight:700;margin:0 0 8px;font-family:'Noto Serif SC',serif}
+.empty-desc{font-size:14px;color:var(--muted);margin:0}
+
+/* Admin Link */
+.admin-link{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:8px 16px;border-radius:10px;
+  background:var(--text);color:#fff;
+  font-size:13px;font-weight:500;
+  transition:all 0.2s ease
+}
+.admin-link:hover{background:var(--accent)}
+
+/* Footer */
+.site-footer{
+  padding:48px 0;
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between
+}
+.footer-copy{font-size:13px;color:var(--muted)}
+.footer-powered{font-size:13px;color:var(--muted)}
+.footer-powered a{color:var(--accent);font-weight:500}
+
+/* Animations */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+.post-card{animation:fadeUp 0.5s ease backwards}
+.post-card:nth-child(1){animation-delay:0.05s}
+.post-card:nth-child(2){animation-delay:0.1s}
+.post-card:nth-child(3){animation-delay:0.15s}
+.post-card:nth-child(4){animation-delay:0.2s}
+.post-card:nth-child(5){animation-delay:0.25s}
+.post-card:nth-child(6){animation-delay:0.3s}
+
+/* Responsive */
+@media(max-width:640px){
+  .wrap{padding:0 20px}
+  .site-header{padding:48px 0 36px}
+  .site-title{font-size:32px}
+  .site-desc{font-size:15px}
+  .stats-bar{flex-wrap:wrap;gap:20px}
+  .post-card{padding:22px 24px}
+  .post-title{font-size:18px}
+  .site-footer{flex-direction:column;gap:12px;align-items:flex-start}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-      <a class="badge" href="/admin" style="text-decoration:none;">InkForge 管理后台</a>
+  <!-- Header -->
+  <header class="site-header">
+    <div>
+      <a href="/admin" class="admin-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        管理后台
+      </a>
     </div>
-    <h1>{{ site_title }}</h1>
-    <p class="lead">{{ site_description }}</p>
+    <div>
+      <h1 class="site-title">{{ site_title }}</h1>
+      <p class="site-desc">{{ site_description }}</p>
+    </div>
   </header>
 
-  <main class="grid">
+  <!-- Posts -->
+  <main class="posts-grid">
     {% if posts | length > 0 %}
       {% for post in posts %}
-      <a class="card" href="/posts/{{ post.slug }}">
-        <div class="meta">{{ post.author_display_name }} · {{ post.published_at or post.created_at }}</div>
-        <h2 class="title">{{ post.title }}</h2>
-        {% if post.category_name %}
-        <div class="meta">分类：{{ post.category_name }}</div>
-        {% endif %}
+      <a class="post-card" href="/posts/{{ post.slug }}">
+        <div class="post-meta">
+          <span>{{ post.author_display_name }}</span>
+          <span class="post-meta-sep"></span>
+          <span>{{ post.published_at or post.created_at }}</span>
+          {% if post.category_name %}
+          <span class="post-meta-sep"></span>
+          <span>{{ post.category_name }}</span>
+          {% endif %}
+        </div>
+        <h2 class="post-title">{{ post.title }}</h2>
         {% if post.excerpt %}
-        <p class="excerpt">{{ post.excerpt }}</p>
+        <p class="post-excerpt">{{ post.excerpt }}</p>
         {% endif %}
+        <div class="post-footer">
+          {% if post.tags %}
+          <div class="post-tags">
+            {% for tag in post.tags %}
+            <span class="post-tag">{{ tag.name }}</span>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div></div>
+          {% endif %}
+          <div class="post-arrow">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </div>
+        </div>
       </a>
       {% endfor %}
     {% else %}
-      <div class="empty">还没有已发布文章。</div>
+      <div class="empty-state">
+        <div class="empty-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <h3 class="empty-title">暂无文章</h3>
+        <p class="empty-desc">前往管理后台发布你的第一篇文章吧</p>
+      </div>
     {% endif %}
   </main>
 
-  <footer>Powered by InkForge</footer>
+  <!-- Footer -->
+  <footer class="site-footer">
+    <span class="footer-copy">© {{ site_title }}</span>
+    <span class="footer-powered">Powered by <a href="/admin">InkForge</a></span>
+  </footer>
 </div>
 </body>
 </html>
-

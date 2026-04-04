@@ -13,8 +13,9 @@ interface ConfirmDialogProps {
   variant?: 'danger' | 'warning' | 'info';
 }
 
-const BG_MAP = { danger: '#fef2f2', warning: '#fffbeb', info: '#eff6ff' };
-const ICON_COLOR = { danger: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
+const BG_MAP = { danger: 'var(--danger-50)', warning: 'var(--warning-50)', info: 'var(--info-50)' };
+const ICON_COLOR = { danger: 'var(--danger-500)', warning: 'var(--warning-500)', info: 'var(--info-500)' };
+const BORDER_MAP = { danger: 'var(--danger-100)', warning: 'var(--warning-100)', info: 'var(--info-100)' };
 
 export function ConfirmDialog({
   open, onClose, onConfirm,
@@ -35,13 +36,15 @@ export function ConfirmDialog({
         </>
       }
     >
+      {/* 设计指南：危险操作用语义色背景+图标强调区 */}
       <div style={{
-        display: 'flex', alignItems: 'flex-start', gap: '14px',
-        padding: '16px', borderRadius: '12px',
+        display: 'flex', alignItems: 'flex-start', gap: '12px',
+        padding: '16px', borderRadius: 'var(--radius-md)',
         background: BG_MAP[variant],
+        border: `1px solid ${BORDER_MAP[variant]}`,
       }}>
-        <IconAlertCircle size={22} style={{ color: ICON_COLOR[variant], flexShrink: 0, marginTop: '2px' }} />
-        <p style={{ fontSize: '14px', color: 'var(--if-text-secondary)', lineHeight: 1.65 }}>
+        <IconAlertCircle size={22} style={{ color: ICON_COLOR[variant], flexShrink: 0, marginTop: '1px' }} />
+        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
           {message}
         </p>
       </div>

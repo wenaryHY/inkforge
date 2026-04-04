@@ -56,91 +56,110 @@ export default function Login() {
     }
   }
 
-  // ── 内联输入框样式（登录页专用，更粗更大）───
+  /* ── 设计指南：输入框高度 48px，聚焦橙色边框+柔和光晕 ── */
   const inputStyle: React.CSSProperties = {
     width: '100%',
     height: '48px',
-    padding: '0 18px',
-    border: '1.5px solid #e5e7eb',
-    borderRadius: '12px',
-    fontSize: '15px',
-    color: '#1f2937',
-    background: '#ffffff',
+    padding: '0 16px',
+    border: '1.5px solid var(--border-default)',
+    borderRadius: 'var(--radius-md)',
+    fontSize: '14px',
+    color: 'var(--text-primary)',
+    background: 'var(--bg-card)',
     outline: 'none',
     transition: 'all 0.2s ease',
     boxSizing: 'border-box' as const,
   };
 
-  // 按钮样式
-  const btnStyle: React.CSSProperties = {
+  const inputSmallStyle: React.CSSProperties = {
+    ...inputStyle,
+    height: '44px',
+    fontSize: '13px',
+  };
+
+  const focusIn = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.borderColor = 'var(--primary-500)';
+    e.currentTarget.style.boxShadow = '0 0 0 3px var(--primary-100)';
+  };
+  const focusOut = (e: React.FocusEvent<HTMLInputElement>) => {
+    e.currentTarget.style.borderColor = 'var(--border-default)';
+    e.currentTarget.style.boxShadow = 'none';
+  };
+
+  /* ── 设计指南：按钮 hover 上浮 + active 按压微交互 ── */
+  const primaryBtnStyle = (loading: boolean, small = false): React.CSSProperties => ({
     width: '100%',
-    height: '50px',
-    background: 'linear-gradient(135deg, #ff6b35 0%, #e55a28 100%)',
+    height: small ? '44px' : '48px',
+    background: loading ? 'var(--primary-300)' : 'var(--primary-500)',
     color: '#ffffff',
     border: 'none',
-    borderRadius: '12px',
-    fontSize: '16px',
+    borderRadius: 'var(--radius-md)',
+    fontSize: small ? '14px' : '15px',
     fontWeight: 700,
-    letterSpacing: '0.3px',
-    cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(255,107,53,0.35)',
-    transition: 'all 0.2s ease',
+    cursor: loading ? 'not-allowed' : 'pointer',
+    opacity: loading ? 0.7 : 1,
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    letterSpacing: '0.02em',
+  });
+
+  const btnHover = (e: React.MouseEvent<HTMLButtonElement>, loading: boolean) => {
+    if (loading) return;
+    e.currentTarget.style.background = 'var(--primary-600)';
+    e.currentTarget.style.transform = 'translateY(-2px)';
+    e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,107,53,0.25)';
+  };
+  const btnLeave = (e: React.MouseEvent<HTMLButtonElement>, loading: boolean) => {
+    if (loading) return;
+    e.currentTarget.style.background = 'var(--primary-500)';
+    e.currentTarget.style.transform = 'translateY(0)';
+    e.currentTarget.style.boxShadow = 'none';
+  };
+  const btnDown = (e: React.MouseEvent<HTMLButtonElement>, loading: boolean) => {
+    if (loading) return;
+    e.currentTarget.style.transform = 'scale(0.98)';
+  };
+  const btnUp = (e: React.MouseEvent<HTMLButtonElement>, loading: boolean) => {
+    if (loading) return;
+    e.currentTarget.style.transform = 'translateY(-2px)';
   };
 
   return (
     <div
       style={{
         minHeight: '100vh',
-        background: '#f8f9fb',
+        background: 'var(--bg-base)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif",
-        padding: '20px',
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif",
+        padding: '24px',
       }}
     >
-      {/* 背景装饰 */}
+      {/* 设计指南：背景装饰 — 极淡的渐变圆，营造氛围但不喧宾夺主 */}
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
         pointerEvents: 'none', overflow: 'hidden',
       }}>
-        {/* 主装饰圆 */}
         <div style={{
-          position: 'absolute', top: '-140px', right: '-100px',
-          width: '520px', height: '520px',
+          position: 'absolute', top: '-120px', right: '-80px',
+          width: '480px', height: '480px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,107,53,0.10) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(255,107,53,0.06) 0%, transparent 70%)',
         }} />
         <div style={{
-          position: 'absolute', bottom: '-120px', left: '-80px',
-          width: '400px', height: '400px',
+          position: 'absolute', bottom: '-100px', left: '-60px',
+          width: '360px', height: '360px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(78,205,196,0.07) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(78,205,196,0.04) 0%, transparent 70%)',
         }} />
-        {/* 小点缀 */}
-        {[{ t: '18%', l: '10%', s: 8, c: '#ff6b35', o: 0.3 },
-          { t: '65%', r: '15%', s: 6, c: '#4ecdc4', o: 0.45 },
-          { t: '40%', r: '8%', s: 5, c: '#ff6b35', o: 0.2 },
-        ].map((d, i) => (
-          <div key={i} style={{
-            position: 'absolute',
-            top: d.t,
-            ...(d.l ? { left: d.l } : { right: d.r }),
-            width: `${d.s}px`,
-            height: `${d.s}px`,
-            borderRadius: '50%',
-            background: d.c,
-            opacity: d.o,
-          }} />
-        ))}
       </div>
 
-      {/* 登录卡片 */}
+      {/* 登录卡片 — elevation-2（独立卡片，略强于列表卡片） */}
       <div
         style={{
-          background: '#ffffff',
-          borderRadius: '24px',
-          boxShadow: '0 8px 40px rgba(0,0,0,0.08), 0 2px 12px rgba(0,0,0,0.04)',
+          background: 'var(--bg-card)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: 'var(--elevation-2)',
           width: '420px',
           maxWidth: '100%',
           position: 'relative',
@@ -148,47 +167,49 @@ export default function Login() {
           overflow: 'hidden',
         }}
       >
-        {/* 顶部品牌区 */}
+        {/* 设计指南：遮罩/覆盖层 — 线性渐变品牌区 */}
         <div style={{
-          background: 'linear-gradient(135deg, #ff6b35 0%, #ff8c5a 50%, #ffa06a 100%)',
-          padding: '42px 36px 36px',
+          background: 'linear-gradient(135deg, var(--primary-500) 0%, var(--primary-400) 60%, var(--primary-300) 100%)',
+          padding: '40px 32px 36px',
           textAlign: 'center',
           position: 'relative',
           overflow: 'hidden',
         }}>
-          {/* 装饰圆 */}
-          <div style={{ position: 'absolute', top: '-40px', right: '-30px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(255,255,255,0.10)' }} />
-          <div style={{ position: 'absolute', bottom: '-25px', left: '20px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
+          {/* 装饰 — 营造深度但克制 */}
+          <div style={{ position: 'absolute', top: '-40px', right: '-30px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+          <div style={{ position: 'absolute', bottom: '-25px', left: '20px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
 
-          {/* Logo */}
+          {/* Logo — 磨砂玻璃效果 */}
           <div style={{
-            width: '56px', height: '56px', borderRadius: '16px',
-            background: 'rgba(255,255,255,0.22)',
-            backdropFilter: 'blur(6px)',
+            width: '56px', height: '56px', borderRadius: 'var(--radius-lg)',
+            background: 'rgba(255,255,255,0.15)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 14px',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+            margin: '0 auto 12px',
           }}>
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
               <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" opacity="0.95"/>
-              <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.65"/>
+              <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6"/>
             </svg>
           </div>
-          <h1 style={{ color: '#ffffff', fontSize: '26px', fontWeight: 800, margin: 0, letterSpacing: '-0.5px' }}>InkForge</h1>
-          <p style={{ color: 'rgba(255,255,255,0.78)', fontSize: '14px', marginTop: '6px', letterSpacing: '0.2px' }}>博客管理后台</p>
+          {/* 设计指南：标题字母间距收紧 2%~3%，行高 110%~120% */}
+          <h1 style={{ color: '#ffffff', fontSize: '22px', fontWeight: 800, margin: 0, letterSpacing: '-0.5px', lineHeight: 1.15 }}>InkForge</h1>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '6px', fontWeight: 500 }}>博客管理后台</p>
         </div>
 
-        {/* Tab 切换 */}
+        {/* 设计指南：Tab 切换 — 容器框暗示关联性，被框住的 tab 暗示选中 */}
         <div style={{
-          display: 'flex', margin: '28px 32px 0',
-          background: '#f3f4f6', borderRadius: '12px', padding: '4px', position: 'relative',
+          display: 'flex', margin: '24px 28px 0',
+          background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', padding: '4px', position: 'relative',
         }}>
+          {/* 滑块指示器 — 暗示当前选中的 tab */}
           <div style={{
             position: 'absolute', top: '4px', left: '4px',
             width: 'calc(50% - 4px)', height: 'calc(100% - 8px)',
-            borderRadius: '9px',
-            background: '#ffffff',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)',
+            borderRadius: 'var(--radius-sm)',
+            background: 'var(--bg-card)',
+            boxShadow: 'var(--elevation-1)',
             transform: tab === 'login' ? 'translateX(0)' : 'translateX(100%)',
             transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           }} />
@@ -197,10 +218,10 @@ export default function Login() {
               key={t}
               onClick={() => setTab(t)}
               style={{
-                flex: 1, padding: '11px', textAlign: 'center',
-                fontSize: '14.5px', fontWeight: 700,
+                flex: 1, padding: '10px', textAlign: 'center',
+                fontSize: '14px', fontWeight: 600,
                 border: 'none', background: 'transparent', cursor: 'pointer',
-                color: tab === t ? '#ff6b35' : '#9ca3af',
+                color: tab === t ? 'var(--primary-500)' : 'var(--text-muted)',
                 transition: 'color 0.2s', position: 'relative', zIndex: 1,
               }}
             >
@@ -209,41 +230,23 @@ export default function Login() {
           ))}
         </div>
 
-        {/* 表单区域 */}
-        <div style={{ padding: '26px 32px 0' }}>
+        {/* 表单区域 — 间距 8px 网格 */}
+        <div style={{ padding: '24px 28px 0' }}>
           {tab === 'login' && (
-            <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              <input
-                type="text"
-                value={loginValue}
-                onChange={e => setLoginValue(e.target.value)}
-                placeholder="用户名或邮箱"
-                required
-                style={inputStyle}
-                onFocus={(e) => { e.target.style.borderColor = '#ff6b35'; e.target.style.boxShadow = '0 0 0 4px rgba(255,107,53,0.12)'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
-              />
-              <input
-                type="password"
-                value={loginPassword}
-                onChange={e => setLoginPassword(e.target.value)}
-                placeholder="密码"
-                required
-                style={inputStyle}
-                onFocus={(e) => { e.target.style.borderColor = '#ff6b35'; e.target.style.boxShadow = '0 0 0 4px rgba(255,107,53,0.12)'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
-              />
+            <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <input type="text" value={loginValue} onChange={e => setLoginValue(e.target.value)}
+                placeholder="用户名或邮箱" required style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
+              <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
+                placeholder="密码" required style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
+              {/* 设计指南：实心按钮 + hover 上浮 + active 按压反馈 */}
               <button
                 type="submit"
                 disabled={loginLoading}
-                style={{
-                  ...btnStyle,
-                  opacity: loginLoading ? 0.75 : 1,
-                  cursor: loginLoading ? 'not-allowed' : 'pointer',
-                  transform: !loginLoading ? undefined : 'scale(0.99)',
-                }}
-                onMouseEnter={(e) => { if (!loginLoading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,107,53,0.4)'; } }}
-                onMouseLeave={(e) => { if (!loginLoading) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(255,107,53,0.35)'; } }}
+                style={primaryBtnStyle(loginLoading)}
+                onMouseEnter={e => btnHover(e, loginLoading)}
+                onMouseLeave={e => btnLeave(e, loginLoading)}
+                onMouseDown={e => btnDown(e, loginLoading)}
+                onMouseUp={e => btnUp(e, loginLoading)}
               >
                 {loginLoading ? '正在登录...' : '登 录'}
               </button>
@@ -251,58 +254,23 @@ export default function Login() {
           )}
 
           {tab === 'register' && (
-            <form onSubmit={handleRegister} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <input
-                type="text"
-                value={regUsername}
-                onChange={e => setRegUsername(e.target.value)}
-                placeholder="用户名"
-                required
-                style={{ ...inputStyle, height: '44px', fontSize: '14px' }}
-                onFocus={(e) => { e.target.style.borderColor = '#ff6b35'; e.target.style.boxShadow = '0 0 0 4px rgba(255,107,53,0.12)'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
-              />
-              <input
-                type="email"
-                value={regEmail}
-                onChange={e => setRegEmail(e.target.value)}
-                placeholder="邮箱地址"
-                required
-                style={{ ...inputStyle, height: '44px', fontSize: '14px' }}
-                onFocus={(e) => { e.target.style.borderColor = '#ff6b35'; e.target.style.boxShadow = '0 0 0 4px rgba(255,107,53,0.12)'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
-              />
-              <input
-                type="password"
-                value={regPassword}
-                onChange={e => setRegPassword(e.target.value)}
-                placeholder="密码"
-                required
-                style={{ ...inputStyle, height: '44px', fontSize: '14px' }}
-                onFocus={(e) => { e.target.style.borderColor = '#ff6b35'; e.target.style.boxShadow = '0 0 0 4px rgba(255,107,53,0.12)'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
-              />
-              <input
-                type="text"
-                value={regDisplayName}
-                onChange={e => setRegDisplayName(e.target.value)}
-                placeholder="显示名称（选填）"
-                style={{ ...inputStyle, height: '44px', fontSize: '14px' }}
-                onFocus={(e) => { e.target.style.borderColor = '#ff6b35'; e.target.style.boxShadow = '0 0 0 4px rgba(255,107,53,0.12)'; }}
-                onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; e.target.style.boxShadow = 'none'; }}
-              />
+            <form onSubmit={handleRegister} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input type="text" value={regUsername} onChange={e => setRegUsername(e.target.value)}
+                placeholder="用户名" required style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
+              <input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)}
+                placeholder="邮箱地址" required style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
+              <input type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)}
+                placeholder="密码" required style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
+              <input type="text" value={regDisplayName} onChange={e => setRegDisplayName(e.target.value)}
+                placeholder="显示名称（选填）" style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
               <button
                 type="submit"
                 disabled={loginLoading}
-                style={{
-                  ...btnStyle,
-                  height: '48px', fontSize: '15px',
-                  opacity: loginLoading ? 0.75 : 1,
-                  cursor: loginLoading ? 'not-allowed' : 'pointer',
-                  marginTop: '4px',
-                }}
-                onMouseEnter={(e) => { if (!loginLoading) { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(255,107,53,0.4)'; } }}
-                onMouseLeave={(e) => { if (!loginLoading) { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(255,107,53,0.35)'; } }}
+                style={{ ...primaryBtnStyle(loginLoading, true), marginTop: '4px' }}
+                onMouseEnter={e => btnHover(e, loginLoading)}
+                onMouseLeave={e => btnLeave(e, loginLoading)}
+                onMouseDown={e => btnDown(e, loginLoading)}
+                onMouseUp={e => btnUp(e, loginLoading)}
               >
                 {loginLoading ? '创建中...' : '创建账户'}
               </button>
@@ -310,10 +278,21 @@ export default function Login() {
           )}
         </div>
 
-        {/* 底部 */}
-        <div style={{ textAlign: 'center', paddingTop: '22px', paddingBottom: '32px' }}>
-          <a href="/" style={{ fontSize: '13.5px', color: '#9ca3af', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px', transition: 'color 0.2s' }}
-             onMouseEnter={e => e.currentTarget.style.color = '#ff6b35'} onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}>
+        {/* 设计指南：语义色 — 蓝色=可点击链接 */}
+        <div style={{ textAlign: 'center', paddingTop: '20px', paddingBottom: '28px' }}>
+          <a href="/"
+            style={{
+              fontSize: '13px',
+              color: 'var(--text-muted)',
+              textDecoration: 'none',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              transition: 'color 0.15s ease',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--primary-500)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+          >
             ← 返回首页
           </a>
         </div>

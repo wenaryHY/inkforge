@@ -6,7 +6,7 @@ import {
   FileText, FolderOpen, Tag, MessageSquare,
   Upload, Settings, User, LogOut,
   Plus, Pencil, Trash2, Eye,
-  CheckCircle, XCircle, AlertCircle,
+  CheckCircle, XCircle, AlertCircle, Ban,
   Search, Filter, ChevronLeft, ChevronRight,
   ExternalLink, Loader2, X, Home,
   LayoutDashboard, BarChart3, Users, Shield,
@@ -69,8 +69,14 @@ export const IconZap = icon(Zap);
 export const IconStar = icon(Star);
 export const IconEdit = icon(Edit, { size: 14 });
 export const IconClock = icon(Clock, { size: 14 });
+export const IconBan = icon(Ban, { size: 16 });
 
 // === Spinner 动画图标 ===
 export function Spinner({ className = '', size = 20 }: { className?: string; size?: number }) {
   return <Loader2 className={`animate-spin ${className}`} size={size} />;
 }
+
+// === 批量操作图标 ===
+export const IconCheckbox = icon(File, { size: 16 });
+export const IconSquare = icon(File, { size: 16 });
+export const IconCheck = icon(CheckCircle, { size: 16 });

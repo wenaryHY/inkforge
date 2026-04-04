@@ -11,13 +11,13 @@ import { useToast } from '../contexts/ToastContext';
 import { IconUpload, IconCheckCircle, IconAlertCircle, IconTrash2 } from '../components/Icons';
 
 const dropZoneBase: React.CSSProperties = {
-  border: '2px dashed var(--if-border)', borderRadius: '14px',
+  border: '2px dashed var(--border-default)', borderRadius: '14px',
   padding: '52px 24px', textAlign: 'center', cursor: 'pointer',
   transition: 'all 0.2s ease',
 };
 const dropZoneActive: React.CSSProperties = {
   ...dropZoneBase,
-  borderColor: 'var(--if-primary)',
+  borderColor: 'var(--primary-500)',
   background: 'rgba(255,107,53,0.04)',
 };
 
@@ -108,13 +108,13 @@ export default function Upload() {
           <div style={dragOver ? dropZoneActive : dropZoneBase}
             onMouseEnter={e => {
               if (!dragOver) {
-                e.currentTarget.style.borderColor = 'var(--if-primary)';
+                e.currentTarget.style.borderColor = 'var(--primary-500)';
                 e.currentTarget.style.background = 'rgba(255,107,53,0.02)';
               }
             }}
             onMouseLeave={e => {
               if (!dragOver) {
-                e.currentTarget.style.borderColor = 'var(--if-border)';
+                e.currentTarget.style.borderColor = 'var(--border-default)';
                 e.currentTarget.style.background = 'transparent';
               }
             }}
@@ -127,15 +127,15 @@ export default function Upload() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              background: dragOver ? 'rgba(255,107,53,0.10)' : 'var(--if-bg-secondary)',
+              background: dragOver ? 'rgba(255,107,53,0.10)' : 'var(--bg-subtle)',
               transition: 'all 0.2s',
             }}>
-              <IconUpload size={28} style={{ color: dragOver ? 'var(--if-primary)' : 'var(--if-text-muted)' }} />
+              <IconUpload size={28} style={{ color: dragOver ? 'var(--primary-500)' : 'var(--text-muted)' }} />
             </div>
             <p style={{ fontSize: '15px', fontWeight: 600, color: 'var(--if-text)', marginBottom: '4px' }}>
               点击选择文件，或拖拽文件到此处
             </p>
-            <p style={{ fontSize: '12.5px', color: 'var(--if-text-muted)' }}>
+            <p style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
               支持 JPG / PNG / WebP / GIF / MP3 / OGG / WAV / M4A，单文件最大 10MB
             </p>
           </div>
@@ -206,14 +206,14 @@ export default function Upload() {
         </div>
         <div style={{ padding: '0 22px 22px' }}>
           {loading ? (
-            <div style={{ fontSize: '13.5px', color: 'var(--if-text-muted)' }}>加载中...</div>
+            <div style={{ fontSize: '13.5px', color: 'var(--text-muted)' }}>加载中...</div>
           ) : items.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
               {items.map((item) => (
                 <div key={item.id} style={{
                   borderRadius: '14px',
-                  border: '1px solid var(--if-border-light)',
-                  background: 'var(--if-bg-card)',
+                  border: '1px solid var(--border-light)',
+                  background: 'var(--bg-card)',
                   padding: '18px',
                   display: 'flex',
                   flexDirection: 'column',
@@ -222,8 +222,8 @@ export default function Upload() {
                   <div style={{ fontWeight: 600, fontSize: '13.5px', color: 'var(--if-text)', wordBreak: 'break-all' }}>
                     {esc(item.original_name)}
                   </div>
-                  <div style={{ fontSize: '12.5px', color: 'var(--if-text-muted)' }}>{item.kind} · {item.mime_type}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--if-text-muted)' }}>{Math.ceil(item.size_bytes / 1024)} KB</div>
+                  <div style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{item.kind} · {item.mime_type}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{Math.ceil(item.size_bytes / 1024)} KB</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     {item.kind === 'image' ? (
                       <img src={item.public_url} alt={item.original_name}
@@ -232,7 +232,7 @@ export default function Upload() {
                           width: '64px',
                           objectFit: 'cover',
                           borderRadius: '10px',
-                          border: '1px solid var(--if-border-light)'
+                          border: '1px solid var(--border-light)'
                         }}
                       />
                     ) : (
@@ -246,7 +246,7 @@ export default function Upload() {
               ))}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '40px 0', fontSize: '13.5px', color: 'var(--if-text-muted)' }}>
+            <div style={{ textAlign: 'center', padding: '40px 0', fontSize: '13.5px', color: 'var(--text-muted)' }}>
               暂无媒体文件
             </div>
           )}

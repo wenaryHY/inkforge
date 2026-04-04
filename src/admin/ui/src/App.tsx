@@ -16,7 +16,7 @@ export default function App() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-bg p-8">
+      <div className="min-h-screen p-8" style={{ background: 'var(--bg-base)' }}>
         <PostsSkeleton />
       </div>
     );
@@ -29,7 +29,8 @@ export default function App() {
   return (
     <div className="flex h-screen overflow-hidden">
       <Sidebar activePage={activePage} onNavigate={setActivePage} />
-      <main className="flex-1 overflow-y-auto p-8 bg-bg">
+      {/* 主内容区 — 8px 网格间距 padding: 24px */}
+      <main className="flex-1 overflow-y-auto" style={{ padding: '24px 32px', background: 'var(--bg-base)' }}>
         {activePage === 'posts' && <Posts />}
         {activePage === 'categories' && <Categories />}
         {activePage === 'tags' && <Tags />}

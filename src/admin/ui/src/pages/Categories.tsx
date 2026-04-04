@@ -11,19 +11,24 @@ import { Input } from '../components/Input';
 import { Textarea } from '../components/Textarea';
 import { EmptyState } from '../components/EmptyState';
 import { CardTableSkeleton } from '../components/Skeleton';
-import { IconFolderOpen, IconPlus, IconPencil, IconTrash2 } from '../components/Icons';
+import { IconFolderOpen, IconPlus, IconPencil, IconTrash2, IconCheck } from '../components/Icons';
 import { useToast } from '../contexts/ToastContext';
 
 /* 样式 */
 const TH = {
-  padding: '14px 20px', textAlign: 'left' as const, fontSize: '11.5px',
-  fontWeight: 700, color: 'var(--if-text-muted)', textTransform: 'uppercase' as const,
-  letterSpacing: '0.06em', background: 'var(--if-bg-secondary)',
-  borderBottom: '2px solid var(--if-border-light)',
+  padding: '14px 16px', textAlign: 'left' as const, fontSize: '11.5px',
+  fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' as const,
+  letterSpacing: '0.06em', background: 'var(--bg-subtle)',
+  borderBottom: '2px solid var(--border-light)',
 };
 const TD = {
-  padding: '15px 20px', fontSize: '13.5px', color: 'var(--if-text)',
-  borderBottom: '1px solid var(--if-border-light)', verticalAlign: 'middle',
+  padding: '15px 16px', fontSize: '13.5px', color: 'var(--if-text)',
+  borderBottom: '1px solid var(--border-light)', verticalAlign: 'middle',
+};
+const iconBtn: React.CSSProperties = {
+  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+  width: '32px', height: '32px', borderRadius: '8px',
+  border: 'none', cursor: 'pointer', transition: 'all 0.15s ease',
 };
 
 export default function Categories() {
@@ -35,7 +40,12 @@ export default function Categories() {
   const [slug, setSlug] = useState('');
   const [desc, setDesc] = useState('');
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  // 批量选择
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchDeleteOpen, setBatchDeleteOpen] = useState(false);
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);
@@ -45,73 +55,186 @@ export default function Categories() {
   }, [toast]);
 
   useEffect(() => { void fetchCategories(); }, [fetchCategories]);
+  useEffect(() => { setSelectedIds(new Set()); }, []);
 
   function openEditor(item?: Category) {
     setEditing(item || null); setName(item?.name || ''); setSlug(item?.slug || '');
     setDesc(item?.description || ''); setEditorOpen(true);
   }
 
+  function closeEditor() {
+    setEditorOpen(false); setEditing(null); setName(''); setSlug(''); setDesc(''); setSaving(false);
+  }
+
   async function handleSave() {
     if (!name.trim()) { toast('分类名称不能为空', 'error'); return; }
+    setSaving(true);
     try {
       const body = { name: name.trim(), slug: slug || undefined, description: desc || null };
       if (editing?.id) await apiData(`/api/admin/categories/${editing.id}`, { method: 'PATCH', body: JSON.stringify(body) });
       else await apiData('/api/admin/categories', { method: 'POST', body: JSON.stringify(body) });
-      toast('保存成功', 'success'); setEditorOpen(false); await fetchCategories();
+      toast('保存成功', 'success'); closeEditor(); await fetchCategories();
     } catch (error) { toast(error instanceof Error ? error.message : '保存失败', 'error'); }
+    finally { setSaving(false); }
   }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
     try {
       await apiData(`/api/admin/categories/${deleteTarget.id}`, { method: 'DELETE' });
-      toast('删除成功', 'success'); await fetchCategories();
+      toast('删除成功', 'success');
+      setSelectedIds(prev => { const next = new Set(prev); next.delete(deleteTarget.id); return next; });
+      await fetchCategories();
     } catch (error) { toast(error instanceof Error ? error.message : '删除失败', 'error'); }
     finally { setDeleteTarget(null); }
   }
 
-  if (loading) return <CardTableSkeleton cols={3} rows={4} />;
+  async function handleBatchDelete() {
+    setBatchDeleteOpen(true);
+  }
+
+  async function confirmBatchDelete() {
+    try {
+      await Promise.all([...selectedIds].map(id =>
+        apiData(`/api/admin/categories/${id}`, { method: 'DELETE' })
+      ));
+      toast(`成功删除 ${selectedIds.size} 个分类`, 'success');
+      setSelectedIds(new Set());
+      await fetchCategories();
+    } catch (error) { toast(error instanceof Error ? error.message : '批量删除失败', 'error'); }
+    finally { setBatchDeleteOpen(false); }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === items.length) setSelectedIds(new Set());
+    else setSelectedIds(new Set(items.map(c => c.id)));
+  }
+
+  if (loading) return <CardTableSkeleton cols={4} rows={4} />;
 
   return (
     <>
-      <PageHeader title="分类管理" subtitle={`共 ${items.length} 个分类`}
-        actions={<Button onClick={() => openEditor()}><IconPlus /> 新建分类</Button>} />
+      <PageHeader
+        title="分类管理"
+        subtitle={`共 ${items.length} 个分类`}
+        actions={
+          <div style={{ display: 'flex', gap: '8px' }}>
+            {selectedIds.size > 0 && (
+              <Button variant="danger" onClick={handleBatchDelete}>
+                <IconTrash2 size={14} /> 批量删除 ({selectedIds.size})
+              </Button>
+            )}
+            <Button onClick={() => openEditor()}><IconPlus size={14} /> 新建分类</Button>
+          </div>
+        }
+      />
 
       <Card>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead><tr>
-            <th style={TH}>名称</th><th style={TH}>Slug</th><th style={TH}>描述</th><th style={TH}>操作</th>
-          </tr></thead>
-          <tbody>
-            {items.length > 0 ? items.map((cat) => (
-              <tr key={cat.id}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--if-primary-50)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                style={{ transition: 'background 0.12s ease' }}
-              >
-                <td style={{ ...TD, fontWeight: 600 }}>{esc(cat.name)}</td>
-                <td style={TD}><span style={{
-                  background: 'var(--if-bg-secondary)', padding: '3px 8px', borderRadius: '6px',
-                  fontSize: '12px', fontFamily: 'monospace', color: 'var(--if-text-muted)',
-                }}>{esc(cat.slug)}</span></td>
-                <td style={{ ...TD, color: 'var(--if-text-secondary)' }}>{esc(cat.description || '—')}</td>
-                <td style={TD}>
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <Button size="sm" variant="ghost" onClick={() => openEditor(cat)}><IconPencil /></Button>
-                    <Button size="sm" variant="danger" onClick={() => setDeleteTarget({ id: cat.id, name: cat.name })}><IconTrash2 /></Button>
-                  </div>
-                </td>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={{ ...TH, width: '44px', textAlign: 'center' as const }}>
+                  <button
+                    onClick={toggleSelectAll}
+                    style={{
+                      width: '18px', height: '18px', borderRadius: '4px',
+                      border: `1.5px solid ${selectedIds.size === items.length && items.length > 0 ? 'var(--primary-500)' : 'var(--border-default)'}`,
+                      background: selectedIds.size === items.length && items.length > 0 ? 'var(--primary-500)' : 'transparent',
+                      cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {selectedIds.size === items.length && items.length > 0 && <IconCheck size={12} color="#fff" />}
+                  </button>
+                </th>
+                <th style={TH}>名称</th>
+                <th style={TH}>Slug</th>
+                <th style={TH}>描述</th>
+                <th style={{ ...TH, width: '100px', textAlign: 'right' as const }}>操作</th>
               </tr>
-            )) : (<tr><td colSpan={4}><EmptyState icon={<IconFolderOpen size={28} />} message="暂无分类" /></td></tr>)}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.length > 0 ? items.map((cat) => {
+                const isSelected = selectedIds.has(cat.id);
+                return (
+                  <tr key={cat.id}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--primary-50)'; }}
+                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                    style={{ transition: 'background 0.12s ease', background: isSelected ? 'var(--primary-50)' : 'transparent' }}
+                  >
+                    <td style={{ ...TD, textAlign: 'center' }}>
+                      <button
+                        onClick={() => toggleSelect(cat.id)}
+                        style={{
+                          width: '18px', height: '18px', borderRadius: '4px',
+                          border: `1.5px solid ${isSelected ? 'var(--primary-500)' : 'var(--border-default)'}`,
+                          background: isSelected ? 'var(--primary-500)' : 'transparent',
+                          cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {isSelected && <IconCheck size={12} color="#fff" />}
+                      </button>
+                    </td>
+                    <td style={{ ...TD, fontWeight: 600 }}>{esc(cat.name)}</td>
+                    <td style={TD}>
+                      <span style={{
+                        background: 'var(--bg-subtle)', padding: '3px 8px', borderRadius: '6px',
+                        fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-muted)',
+                      }}>{esc(cat.slug)}</span>
+                    </td>
+                    <td style={{ ...TD, color: 'var(--text-secondary)' }}>{esc(cat.description || '—')}</td>
+                    <td style={TD}>
+                      <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <button
+                          onClick={() => openEditor(cat)}
+                          title="编辑分类"
+                          style={{ ...iconBtn, background: 'transparent', color: '#10b981' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#ecfdf5'; e.currentTarget.style.color = '#059669'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10b981'; }}
+                        ><IconPencil size={16} /></button>
+                        <button
+                          onClick={() => setDeleteTarget({ id: cat.id, name: cat.name })}
+                          title="删除分类"
+                          style={{ ...iconBtn, background: 'transparent', color: '#ef4444' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ef4444'; }}
+                        ><IconTrash2 size={16} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }) : (
+                <tr>
+                  <td colSpan={5}>
+                    <EmptyState icon={<IconFolderOpen size={28} />} message="暂无分类" />
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
 
       <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={confirmDelete}
-        title="删除分类" message={`确定要删除分类「${deleteTarget?.name || ''}」吗？`} variant="danger" />
+        title="删除分类" message={`确定要删除分类「${deleteTarget?.name || ''}」吗？`} variant="danger" confirmText="删除" />
 
-      <Modal open={editorOpen} onClose={() => setEditorOpen(false)} title={editing ? '编辑分类' : '新建分类'}
-        actions={<><Button variant="ghost" onClick={() => setEditorOpen(false)}>取消</Button><Button onClick={handleSave}>保存</Button></>}>
+      <ConfirmDialog open={batchDeleteOpen} onClose={() => setBatchDeleteOpen(false)} onConfirm={confirmBatchDelete}
+        title="批量删除分类" message={`确定要删除选中的 ${selectedIds.size} 个分类吗？此操作不可恢复。`}
+        variant="danger" confirmText={`删除 ${selectedIds.size} 个`} />
+
+      <Modal open={editorOpen} onClose={closeEditor} title={editing ? '编辑分类' : '新建分类'}
+        actions={<><Button variant="ghost" onClick={closeEditor}>取消</Button><Button onClick={handleSave} disabled={saving} loading={saving}>保存</Button></>}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <Input label="名称" value={name} onChange={(e) => setName(e.target.value)} placeholder="分类名称" />
           <Input label="Slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="可选，URL别名" />

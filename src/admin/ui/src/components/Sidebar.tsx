@@ -46,7 +46,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
     <aside
       style={{
         width: '224px',
-        background: '#1c1c1e',
+        background: 'var(--sidebar-bg)',
         color: '#ffffff',
         display: 'flex',
         flexDirection: 'column',
@@ -58,31 +58,28 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
         zIndex: 10,
       }}
     >
-      {/* 顶部品牌 */}
+      {/* ── 顶部品牌 ── */}
       <div
         onClick={() => window.open('/', '_blank')}
         style={{
-          padding: '18px 20px',
+          padding: '20px 20px',
           borderBottom: '1px solid rgba(255,255,255,0.06)',
           display: 'flex',
           alignItems: 'center',
           gap: '10px',
           cursor: 'pointer',
-          transition: 'background 0.2s',
+          transition: 'background 0.15s ease',
         }}
-        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+        onMouseEnter={e => (e.currentTarget.style.background = 'var(--sidebar-hover)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
-        {/* Logo 圆 */}
-        <div
-          style={{
-            width: '36px', height: '36px', borderRadius: '10px',
-            background: 'linear-gradient(135deg, #ff6b35 0%, #ff8a4c 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: '0 4px 12px rgba(255,107,53,0.35)',
-          }}
-        >
+        {/* Logo */}
+        <div style={{
+          width: '36px', height: '36px', borderRadius: 'var(--radius-md)',
+          background: 'var(--primary-500)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0,
+        }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
             <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" opacity="0.9"/>
             <path d="M2 17l10 5 10-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.7"/>
@@ -90,7 +87,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
           </svg>
         </div>
         <div>
-          <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', lineHeight: 1.2, letterSpacing: '-0.2px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
             InkForge
           </div>
           <div style={{ fontSize: '11px', color: '#666', marginTop: '1px' }}>
@@ -99,13 +96,13 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
         </div>
       </div>
 
-      {/* 导航 */}
-      <nav style={{ flex: 1, padding: '12px 10px', overflowY: 'auto' }}>
+      {/* ── 导航（设计指南：Ghost 按钮 + 左侧指示条） ── */}
+      <nav style={{ flex: 1, padding: '8px 10px', overflowY: 'auto' }}>
         {navGroups.map(group => (
           <div key={group.section} style={{ marginBottom: '4px' }}>
             {/* 分组标题 */}
             <div style={{
-              padding: '14px 10px 6px',
+              padding: '16px 10px 8px',
               fontSize: '11px',
               fontWeight: 700,
               color: 'rgba(255,255,255,0.25)',
@@ -126,32 +123,48 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
                     display: 'flex',
                     alignItems: 'center',
                     gap: '10px',
-                    padding: '10px 10px',
-                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    borderRadius: 'var(--radius-md)',
                     border: 'none',
-                    background: isActive ? 'linear-gradient(135deg, rgba(255,107,53,0.9), rgba(255,138,76,0.85))' : 'transparent',
-                    color: isActive ? '#ffffff' : '#888',
+                    /* 激活态：浅色背景 + 左侧指示条（而非整行橙色） */
+                    background: isActive ? 'rgba(255,107,53,0.12)' : 'transparent',
+                    color: isActive ? 'var(--primary-400)' : 'var(--sidebar-text)',
                     fontSize: '14px',
                     fontWeight: isActive ? 600 : 400,
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     textAlign: 'left',
                     marginBottom: '2px',
-                    boxShadow: isActive ? '0 4px 12px rgba(255,107,53,0.3)' : 'none',
+                    position: 'relative',
+                    /* 左侧指示条 — 暗示当前位置 */
+                    boxShadow: isActive ? 'none' : 'none',
                   }}
                   onMouseEnter={e => {
                     if (!isActive) {
-                      e.currentTarget.style.background = 'rgba(255,255,255,0.06)';
-                      e.currentTarget.style.color = '#ddd';
+                      /* Ghost 效果：hover 才显示背景 */
+                      e.currentTarget.style.background = 'var(--sidebar-hover)';
+                      e.currentTarget.style.color = 'var(--sidebar-text-hover)';
                     }
                   }}
                   onMouseLeave={e => {
                     if (!isActive) {
                       e.currentTarget.style.background = 'transparent';
-                      e.currentTarget.style.color = '#888';
+                      e.currentTarget.style.color = 'var(--sidebar-text)';
                     }
                   }}
                 >
+                  {/* 左侧指示条 — 仅激活态显示 */}
+                  {isActive && (
+                    <div style={{
+                      position: 'absolute',
+                      left: '-10px',
+                      top: '8px',
+                      bottom: '8px',
+                      width: '3px',
+                      borderRadius: '0 3px 3px 0',
+                      background: 'var(--sidebar-indicator)',
+                    }} />
+                  )}
                   <span style={{ width: '20px', textAlign: 'center', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {item.icon}
                   </span>
@@ -163,17 +176,16 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
         ))}
       </nav>
 
-      {/* 底部用户区 */}
+      {/* ── 底部用户区 ── */}
       <div style={{ padding: '12px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 10px', marginBottom: '4px' }}>
-          <div
-            style={{
-              width: '32px', height: '32px', borderRadius: '8px',
-              background: 'linear-gradient(135deg, rgba(255,107,53,0.6), rgba(255,138,76,0.5))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', marginBottom: '4px' }}>
+          <div style={{
+            width: '32px', height: '32px', borderRadius: 'var(--radius-sm)',
+            background: 'rgba(255,107,53,0.15)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            color: 'var(--primary-400)',
+          }}>
             <IconUser size={14} />
           </div>
           <div style={{ minWidth: 0 }}>
@@ -183,6 +195,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
             <div style={{ fontSize: '11px', color: '#555' }}>{user?.role || 'member'}</div>
           </div>
         </div>
+        {/* 退出按钮 — 语义色：红色=危险操作 */}
         <button
           onClick={() => void logout()}
           style={{
@@ -190,18 +203,18 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            padding: '8px 10px',
-            borderRadius: '8px',
+            padding: '8px 12px',
+            borderRadius: 'var(--radius-md)',
             border: 'none',
             background: 'transparent',
-            color: '#e05252',
+            color: 'var(--danger-500)',
             fontSize: '13px',
             fontWeight: 500,
             cursor: 'pointer',
-            transition: 'background 0.15s',
+            transition: 'background 0.15s ease',
             textAlign: 'left',
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,50,50,0.12)')}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--danger-50)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
           <IconLogOut />

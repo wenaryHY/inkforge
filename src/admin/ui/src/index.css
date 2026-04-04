@@ -1,112 +1,169 @@
 @import "tailwindcss";
 
-/* ═══════════════════════════════════════════
-   InkForge 管理后台 — 设计令牌（CSS 变量）
-   ═══════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════
+   InkForge 管理后台 — 设计令牌体系 v2
+   基于 UI/UX 设计核心概念完全指南
+   ═══════════════════════════════════════════════════════════════ */
+
 :root {
-  /* 品牌色 */
-  --if-primary:        #ff6b35;
-  --if-primary-dark:   #e55a28;
-  --if-primary-light:  #fff0eb;
-  --if-primary-50:     #fff7f5;
-  --if-primary-100:    #ffeae0;
-  --if-primary-glow:   rgba(255,107,53,0.12);
+  /* ── 主色色阶（从 #ff6b35 派生 10 级） ── */
+  --primary-50:  #fff7f5;
+  --primary-100: #ffede6;
+  --primary-200: #ffd5c5;
+  --primary-300: #ffb69a;
+  --primary-400: #ff8f66;
+  --primary-500: #ff6b35;   /* 品牌色 */
+  --primary-600: #e5561f;
+  --primary-700: #c03d18;
+  --primary-800: #9c3218;
+  --primary-900: #802c18;
 
-  /* 背景 */
-  --if-bg:             #f5f6f8;
-  --if-bg-card:        #ffffff;
-  --if-bg-secondary:   #f0f1f3;
-  --if-bg-hover:       #fafafa;
+  /* ── 语义色阶（success / warning / danger / info） ── */
+  --success-50:  #ecfdf5;  --success-100: #d1fae5;
+  --success-500: #10b981;  --success-600: #059669;
+  --success-700: #047857;
 
-  /* 文字 */
-  --if-text:           #1a1a2e;
-  --if-text-secondary: #5a5a6e;
-  --if-text-muted:     #9494a6;
-  --if-text-inverse:   #ffffff;
+  --warning-50:  #fffbeb;  --warning-100: #fef3c7;
+  --warning-500: #f59e0b;  --warning-600: #d97706;
+  --warning-700: #b45309;
 
-  /* 边框 */
-  --if-border:         #e2e3e8;
-  --if-border-light:   #efeff4;
-  --if-border-focus:   #ff6b35;
+  --danger-50:  #fef2f2;   --danger-100: #fee2e2;
+  --danger-500: #ef4444;   --danger-600: #dc2626;
+  --danger-700: #b91c1c;
 
-  /* 圆角 */
-  --if-radius-sm:      8px;
-  --if-radius-md:      10px;
-  --if-radius-lg:      14px;
-  --if-radius-xl:      18px;
+  --info-50:  #eff6ff;     --info-100: #dbeafe;
+  --info-500: #3b82f6;     --info-600: #2563eb;
+  --info-700: #1d4ed8;
 
-  /* 阴影 */
-  --if-shadow-sm:      0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
-  --if-shadow-md:      0 4px 16px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.03);
-  --if-shadow-lg:      0 8px 30px rgba(0,0,0,0.09), 0 2px 8px rgba(0,0,0,0.04);
-  --if-shadow-primary: 0 4px 14px rgba(255,107,53,0.30);
+  /* ── 背景色（层级递进） ── */
+  --bg-base:     #f5f6f8;
+  --bg-card:     #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-subtle:   #f0f1f3;
+  --bg-hover:    #fafafa;
 
-  /* 语义 */
-  --if-success:        #10b981;
-  --if-success-bg:     #ecfdf5;
-  --if-danger:         #ef4444;
-  --if-danger-bg:      #fef2f2;
-  --if-warning:        #f59e0b;
-  --if-warning-bg:     #fffbeb;
-  --if-info:           #3b82f6;
-  --if-info-bg:        #eff6ff;
+  /* ── 文字色（三级层级：primary / secondary / muted） ── */
+  --text-primary:   #1a1a2e;
+  --text-secondary: #5a5a6e;
+  --text-muted:     #9494a6;
+  --text-inverse:   #ffffff;
+  --text-link:      var(--primary-600);
 
-  /* 侧边栏 */
-  --if-sidebar:        #18181b;
-  --if-sidebar-hover:  #27272a;
-  --if-sidebar-active: #ff6b35;
+  /* ── 边框色 ── */
+  --border-default: #e2e3e8;
+  --border-light:   #efeff4;
+  --border-focus:   var(--primary-500);
 
-  /* 过渡 */
-  --if-transition:     all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  /* ── 间距系统（8px 基准网格） ── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── 圆角 ── */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  18px;
+  --radius-full: 999px;
+
+  /* ── Elevation（阴影应隐形，不喧宾夺主） ── */
+  --elevation-1: 0 1px 2px rgba(0,0,0,0.04);
+  --elevation-2: 0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+  --elevation-3: 0 12px 32px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+
+  /* ── 侧边栏 ── */
+  --sidebar-bg:       #18181b;
+  --sidebar-hover:    rgba(255,255,255,0.06);
+  --sidebar-text:     #888;
+  --sidebar-text-hover: #ddd;
+  --sidebar-indicator: var(--primary-500);
+
+  /* ── 过渡 ── */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 0.15s var(--ease-default);
+  --transition-normal: 0.2s var(--ease-default);
+  --transition-smooth: 0.25s var(--ease-out);
 }
 
-/* === Base Reset === */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* ═══════════════════════════════════════
+   Base Reset
+   ═══════════════════════════════════════ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
-  font-family: 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC',
-               -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: var(--if-bg);
-  color: var(--if-text);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC',
+               'Microsoft YaHei', 'PingFang SC', sans-serif;
+  background: var(--bg-base);
+  color: var(--text-primary);
   line-height: 1.6;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-a { color: var(--if-primary); text-decoration: none; cursor: pointer; }
-a:hover { color: var(--if-primary-dark); }
+/* ── 链接（语义色：蓝色=可点击/信任） ── */
+a {
+  color: var(--text-link);
+  text-decoration: none;
+  cursor: pointer;
+}
+a:hover {
+  color: var(--primary-700);
+}
 
-/* === Scrollbar === */
+/* ═══════════════════════════════════════
+   Scrollbar（轻量化）
+   ═══════════════════════════════════════ */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--if-text-muted); border-radius: 3px; opacity: 0.5; }
-::-webkit-scrollbar-thumb:hover { background: var(--if-text-secondary); }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; opacity: 0.4; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
 
-/* === Focus Ring (global) === */
+/* ═══════════════════════════════════════
+   Focus Ring
+   ═══════════════════════════════════════ */
 *:focus-visible {
-  outline: 2px solid var(--if-border-focus);
+  outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
 
-/* === Animations === */
-@keyframes fadeIn   { from { opacity: 0; } to { opacity: 1; } }
-@keyframes fadeOut  { from { opacity: 1; } to { opacity: 0; } }
-@keyframes scaleIn  { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-@keyframes slideUp  { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-@keyframes toastIn  { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-@keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(110%); opacity: 0; } }
-@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+/* ═══════════════════════════════════════
+   Animations
+   ═══════════════════════════════════════ */
+@keyframes fadeIn    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut   { from { opacity: 1; } to { opacity: 0; } }
+@keyframes scaleIn   { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes slideUp   { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes slideDown { from { transform: translateY(-8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes toastIn   { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes toastOut  { from { transform: translateX(0); opacity: 1; } to { transform: translateX(110%); opacity: 0; } }
+@keyframes shimmer   { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes pulse     { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 .if-fade-in    { animation: fadeIn 0.2s ease-out both; }
-.if-scale-in   { animation: scaleIn 0.25s cubic-bezier(0.16,1,0.3,1) both; }
+.if-scale-in   { animation: scaleIn 0.25s var(--ease-out) both; }
 .if-slide-up   { animation: slideUp 0.25s ease-out both; }
-.if-toast-in   { animation: toastIn 0.35s cubic-bezier(0.16,1,0.3,1) forwards; }
+.if-slide-down { animation: slideDown 0.25s ease-out both; }
+.if-toast-in   { animation: toastIn 0.35s var(--ease-out) forwards; }
 .if-toast-out  { animation: toastOut 0.25s ease-in forwards; }
 .if-shimmer    { animation: shimmer 1.8s ease-in-out infinite; background-size: 200% 200%; background-image: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); }
+.if-pulse      { animation: pulse 2s ease-in-out infinite; }
 
-/* === Tailwind 兼容别名（保留旧类名不报错） === */
-.bg-border          { background-color: var(--if-border); }
-.bg-primary-dark    { background-color: var(--if-primary-dark); }
-.hover\:bg-primary-dark:hover { background-color: var(--if-primary-dark); }
-.hover\:bg-sidebar-hover:hover { background-color: var(--if-sidebar-hover); }
+/* ═══════════════════════════════════════
+   Tailwind 兼容别名（保留旧类名不报错）
+   ═══════════════════════════════════════ */
+.bg-border          { background-color: var(--border-default); }
+.bg-primary-dark    { background-color: var(--primary-700); }
+.hover\:bg-primary-dark:hover { background-color: var(--primary-700); }
+.hover\:bg-sidebar-hover:hover { background-color: var(--sidebar-hover); }

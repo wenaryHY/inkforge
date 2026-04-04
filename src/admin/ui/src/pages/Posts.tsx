@@ -16,7 +16,7 @@ import { Select } from '../components/Select';
 import { PostsSkeleton } from '../components/Skeleton';
 import {
   IconFileText, IconCheckCircle, IconEdit, IconMessageSquare,
-  IconPlus, IconPencil, IconEye, IconTrash2,
+  IconPlus, IconPencil, IconEye, IconTrash2, IconCheck
 } from '../components/Icons';
 import { useToast } from '../contexts/ToastContext';
 
@@ -25,42 +25,47 @@ interface DeleteTarget { id: string; title: string; }
 /* ═════════════ 样式常量 ═════════════ */
 const T = {
   th: {
-    padding: '14px 20px',
+    padding: '12px 16px',
     textAlign: 'left' as const,
-    fontSize: '11.5px', fontWeight: 700,
-    color: 'var(--if-text-muted)',
+    fontSize: '11px', fontWeight: 700,
+    color: 'var(--text-muted)',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.06em',
-    background: 'var(--if-bg-secondary)',
-    borderBottom: '2px solid var(--if-border-light)',
+    background: 'var(--bg-subtle)',
+    borderBottom: '1px solid var(--border-light)',
   },
   td: {
-    padding: '15px 20px',
-    fontSize: '13.5px',
-    color: 'var(--if-text)',
-    borderBottom: '1px solid var(--if-border-light)',
+    padding: '14px 16px',
+    fontSize: '13px',
+    color: 'var(--text-primary)',
+    borderBottom: '1px solid var(--border-light)',
     verticalAlign: 'middle',
   },
-  rowHover: (e: React.MouseEvent<HTMLTableRowElement>) => { e.currentTarget.style.background = 'var(--if-primary-50)'; },
-  rowLeave: (e: React.MouseEvent<HTMLTableRowElement>) => { e.currentTarget.style.background = 'transparent'; },
   catBadge: {
     display: 'inline-flex', alignItems: 'center',
-    padding: '4px 10px', borderRadius: '8px',
+    padding: '4px 10px', borderRadius: 'var(--radius-sm)',
     fontSize: '12px', fontWeight: 600,
-    background: 'var(--if-bg-secondary)',
-    color: 'var(--if-text-secondary)',
-    border: '1px solid var(--if-border-light)',
+    background: 'var(--bg-subtle)',
+    color: 'var(--text-secondary)',
+    border: '1px solid var(--border-light)',
+    whiteSpace: 'nowrap',
   },
-  actionBtn: (color: string): React.CSSProperties => ({
-    display: 'inline-flex', alignItems: 'center', gap: '4px',
-    padding: '5px 10px',
+  // 图标按钮样式
+  iconBtn: (color: string): React.CSSProperties => ({
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    width: '32px', height: '32px',
     borderRadius: '8px',
-    fontSize: '12px', fontWeight: 500,
     color: color,
     cursor: 'pointer', border: 'none', background: 'transparent',
     transition: 'all 0.15s ease',
+    flexShrink: 0,
   }),
 };
+
+/* ═════════════ 工具函数 ═════════════ */
+function formatDate(dateStr: string | null | undefined): string {
+  return dateStr?.slice(0, 10) || '—';
+}
 
 function PostEmptyState() {
   return (
@@ -75,13 +80,14 @@ function PostEmptyState() {
         <IconFileText size={30} style={{ color: '#ffb08a' }} />
       </div>
       <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--if-text)', marginBottom: '6px' }}>暂无文章</h3>
-      <p style={{ fontSize: '13.5px', color: 'var(--if-text-muted)', maxWidth: '240px', margin: '0 auto', lineHeight: 1.65 }}>
+      <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', maxWidth: '240px', margin: '0 auto', lineHeight: 1.65 }}>
         点击右上角「新建文章」开始你的第一篇内容吧
       </p>
     </div>
   );
 }
 
+/* ═════════════ 主组件 ═════════════ */
 export default function Posts() {
   const toast = useToast();
   const [posts, setPosts] = useState<AdminPost[]>([]);
@@ -104,6 +110,10 @@ export default function Posts() {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+
+  // 批量操作状态
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [batchDeleteTarget, setBatchDeleteTarget] = useState(false);
 
   const publishedCount = useMemo(() => posts.filter((p) => p.status === 'published').length, [posts]);
   const draftCount = useMemo(() => posts.filter((p) => p.status === 'draft').length, [posts]);
@@ -139,6 +149,9 @@ export default function Posts() {
 
   useEffect(() => { void fetchPosts(page); }, [page, fetchPosts]);
   useEffect(() => { void fetchMeta(); }, [fetchMeta]);
+
+  // 选中状态变化时清空批量选择
+  useEffect(() => { setSelectedIds(new Set()); }, [page]);
 
   function openEditor(post?: AdminPost) {
     setEditingPost(post || null);
@@ -190,8 +203,49 @@ export default function Posts() {
     }
   }
 
+  // 批量删除
+  async function handleBatchDelete() {
+    if (selectedIds.size === 0) return;
+    setBatchDeleteTarget(true);
+  }
+
+  async function confirmBatchDelete() {
+    try {
+      await Promise.all(
+        [...selectedIds].map(id =>
+          apiData(`/api/admin/posts/${id}`, { method: 'DELETE' })
+        )
+      );
+      toast(`成功删除 ${selectedIds.size} 篇文章`, 'success');
+      setSelectedIds(new Set());
+      await fetchPosts(page);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '批量删除失败', 'error');
+    } finally {
+      setBatchDeleteTarget(false);
+    }
+  }
+
   function toggleTag(id: string) {
     setSelectedTagIds((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]);
+  }
+
+  // 全选/取消全选
+  function toggleSelectAll() {
+    if (selectedIds.size === posts.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(posts.map(p => p.id)));
+    }
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   }
 
   if (loading && posts.length === 0) return <PostsSkeleton />;
@@ -213,66 +267,133 @@ export default function Posts() {
       />
 
       <Card style={{ overflow: 'hidden' }}>
+        {/* 批量操作栏 */}
+        {selectedIds.size > 0 && (
+          <div style={{
+            padding: '12px 16px',
+            background: 'var(--primary-50)',
+            borderBottom: '1px solid var(--border-light)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            animation: 'slideDown 0.2s ease',
+          }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary-600)' }}>
+              已选择 {selectedIds.size} 项
+            </span>
+            <Button size="sm" variant="danger" onClick={handleBatchDelete}>
+              <IconTrash2 size={14} /> 批量删除
+            </Button>
+          </div>
+        )}
+
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', minWidth: '650px', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', minWidth: '700px', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
+                <th style={{ ...T.th, width: '44px', textAlign: 'center' as const }}>
+                  <button
+                    onClick={toggleSelectAll}
+                    style={{
+                      width: '18px', height: '18px',
+                      borderRadius: '4px',
+                      border: `1.5px solid ${selectedIds.size === posts.length && posts.length > 0 ? 'var(--primary-500)' : 'var(--border-default)'}`,
+                      background: selectedIds.size === posts.length && posts.length > 0 ? 'var(--primary-500)' : 'transparent',
+                      cursor: 'pointer',
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {selectedIds.size === posts.length && posts.length > 0 && (
+                      <IconCheck size={12} color="#fff" />
+                    )}
+                  </button>
+                </th>
                 <th style={{ ...T.th }}>标题</th>
-                <th style={{ ...T.th, width: '110px' }}>分类</th>
-                <th style={{ ...T.th, width: '90px' }}>状态</th>
-                <th style={{ ...T.th, width: '120px' }}>发布时间</th>
-                <th style={{ ...T.th, width: '150px', textAlign: 'right' as const }}>操作</th>
+                <th style={{ ...T.th, width: '100px' }}>分类</th>
+                <th style={{ ...T.th, width: '88px' }}>状态</th>
+                <th style={{ ...T.th, width: '110px' }}>发布时间</th>
+                <th style={{ ...T.th, width: '120px', textAlign: 'right' as const }}>操作</th>
               </tr>
             </thead>
             <tbody>
               {posts.length > 0 ? posts.map((post) => {
                 const category = categories.find((item) => item.id === post.category_id);
+                const isSelected = selectedIds.has(post.id);
                 return (
                   <tr key={post.id}
-                    onMouseEnter={T.rowHover}
-                    onMouseLeave={T.rowLeave}
-                    style={{ transition: 'background 0.12s ease' }}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--primary-50)'; }}
+                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+                    style={{
+                      transition: 'background 0.12s ease',
+                      background: isSelected ? 'var(--primary-50)' : 'transparent',
+                    }}
                   >
+                    {/* Checkbox 列 */}
+                    <td style={{ ...T.td, textAlign: 'center' }}>
+                      <button
+                        onClick={() => toggleSelect(post.id)}
+                        style={{
+                          width: '18px', height: '18px',
+                          borderRadius: '4px',
+                          border: `1.5px solid ${isSelected ? 'var(--primary-500)' : 'var(--border-default)'}`,
+                          background: isSelected ? 'var(--primary-500)' : 'transparent',
+                          cursor: 'pointer',
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.15s ease',
+                        }}
+                      >
+                        {isSelected && <IconCheck size={12} color="#fff" />}
+                      </button>
+                    </td>
+                    {/* 标题 */}
                     <td style={{ ...T.td }}>
                       <a href={`/posts/${post.slug}`} target="_blank" rel="noreferrer"
                         title={post.title}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: '7px',
                           fontSize: '14px', fontWeight: 600, color: 'var(--if-text)',
-                          maxWidth: '260px', textDecoration: 'none',
+                          maxWidth: '280px', textDecoration: 'none',
                           overflow: 'hidden',
                         }}
                       >
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{esc(post.title)}</span>
                       </a>
                     </td>
+                    {/* 分类 */}
                     <td style={{ ...T.td }}>
                       <span style={T.catBadge}>{category?.name || '未分类'}</span>
                     </td>
+                    {/* 状态 */}
                     <td style={{ ...T.td }}><StatusBadge status={post.status} /></td>
-                    <td style={{ ...T.td, fontFamily: 'monospace', fontSize: '12.5px', color: 'var(--if-text-muted)' }}>
-                      {post.published_at?.slice(0, 10) || '未发布'}
+                    {/* 时间 */}
+                    <td style={{ ...T.td, fontFamily: 'monospace', fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                      {formatDate(post.published_at)}
                     </td>
+                    {/* 操作列 - 图标按钮始终可见 */}
                     <td style={{ ...T.td }}>
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '3px', opacity: 0, transition: 'opacity 0.15s ease' }}
-                         onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-                         onMouseLeave={e => (e.currentTarget.style.opacity = '0')}
-                      >
-                        <a href={`/posts/${post.slug}`} target="_blank" rel="noreferrer" title="查看"
-                           style={{ ...T.actionBtn('#3b82f6'), textDecoration: 'none' }}
-                           onMouseEnter={e => e.currentTarget.style.background = '#eff6ff'}
-                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        ><IconEye size={14} /> 查看</a>
-                        <button type="button" onClick={() => openEditor(post)} title="编辑"
-                          style={{ ...T.actionBtn('#10b981') }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#ecfdf5'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        ><IconPencil size={14} /> 编辑</button>
-                        <button type="button" onClick={() => setDeleteTarget({ id: post.id, title: post.title })} title="删除"
-                          style={{ ...T.actionBtn('#ef4444') }}
-                          onMouseEnter={e => e.currentTarget.style.background = '#fef2f2'}
-                          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        ><IconTrash2 size={14} /> 删除</button>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px', alignItems: 'center' }}>
+                        {/* 查看 */}
+                        <a href={`/posts/${post.slug}`} target="_blank" rel="noreferrer"
+                          title="查看文章"
+                          style={T.iconBtn('#3b82f6')}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.color = '#2563eb'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#3b82f6'; }}
+                        ><IconEye size={16} /></a>
+                        {/* 编辑 */}
+                        <button type="button"
+                          title="编辑文章"
+                          style={T.iconBtn('#10b981')}
+                          onClick={() => openEditor(post)}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#ecfdf5'; e.currentTarget.style.color = '#059669'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10b981'; }}
+                        ><IconPencil size={16} /></button>
+                        {/* 删除 */}
+                        <button type="button"
+                          title="删除文章"
+                          style={T.iconBtn('#ef4444')}
+                          onClick={() => setDeleteTarget({ id: post.id, title: post.title })}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ef4444'; }}
+                        ><IconTrash2 size={16} /></button>
                       </div>
                     </td>
                   </tr>
@@ -286,11 +407,11 @@ export default function Posts() {
           <PostEmptyState />
         ) : (
           <div style={{
-            padding: '14px 20px',
-            borderTop: '1px solid var(--if-border-light)',
+            padding: '14px 16px',
+            borderTop: '1px solid var(--border-light)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
-            <span style={{ fontSize: '12.5px', color: 'var(--if-text-muted)' }}>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
               第 {(page - 1) * 10 + 1}-{Math.min(page * 10, total)} 条，共 {total} 条
             </span>
             <Pagination page={page} pages={pages} onPageChange={setPage} />
@@ -298,6 +419,7 @@ export default function Posts() {
         )}
       </Card>
 
+      {/* 单个删除确认 */}
       <ConfirmDialog
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
@@ -305,6 +427,16 @@ export default function Posts() {
         title="删除文章"
         message={`确定要删除文章「${deleteTarget?.title || ''}」吗？此操作不可恢复。`}
         confirmText="确认删除" variant="danger"
+      />
+
+      {/* 批量删除确认 */}
+      <ConfirmDialog
+        open={batchDeleteTarget}
+        onClose={() => setBatchDeleteTarget(false)}
+        onConfirm={confirmBatchDelete}
+        title="批量删除文章"
+        message={`确定要删除选中的 ${selectedIds.size} 篇文章吗？此操作不可恢复。`}
+        confirmText={`删除 ${selectedIds.size} 篇`} variant="danger"
       />
 
       <Modal
@@ -329,13 +461,13 @@ export default function Posts() {
             <div style={{
               background: 'linear-gradient(180deg, rgba(240,241,243,0.9), #f0f1f3)',
               borderRadius: '14px', padding: '20px',
-              border: '1px solid var(--if-border-light)',
+              border: '1px solid var(--border-light)',
             }}>
               <div style={{
-                fontSize: '11.5px', fontWeight: 800, color: 'var(--if-text-muted)',
+                fontSize: '11.5px', fontWeight: 800, color: 'var(--text-muted)',
                 textTransform: 'uppercase', letterSpacing: '0.07em',
                 marginBottom: '16px',
-                paddingBottom: '12px', borderBottom: '1px solid var(--if-border-light)',
+                paddingBottom: '12px', borderBottom: '1px solid var(--border-light)',
               }}>发布设置</div>
               <Select label="状态" value={status} onChange={(e) => setStatus(e.target.value as 'published' | 'draft')}>
                 <option value="draft">草稿</option>
@@ -345,13 +477,13 @@ export default function Posts() {
             <div style={{
               background: 'linear-gradient(180deg, rgba(240,241,243,0.9), #f0f1f3)',
               borderRadius: '14px', padding: '20px',
-              border: '1px solid var(--if-border-light)',
+              border: '1px solid var(--border-light)',
             }}>
               <div style={{
-                fontSize: '11.5px', fontWeight: 800, color: 'var(--if-text-muted)',
+                fontSize: '11.5px', fontWeight: 800, color: 'var(--text-muted)',
                 textTransform: 'uppercase', letterSpacing: '0.07em',
                 marginBottom: '16px',
-                paddingBottom: '12px', borderBottom: '1px solid var(--if-border-light)',
+                paddingBottom: '12px', borderBottom: '1px solid var(--border-light)',
               }}>分类与标签</div>
               <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
                 <option value="">无分类</option>
@@ -361,21 +493,28 @@ export default function Posts() {
                 {tags.length > 0 ? tags.map((tag) => (
                   <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)} style={{
                     border: selectedTagIds.includes(tag.id)
-                      ? `1.5px solid var(--if-primary)`
-                      : '1.5px solid var(--if-border)',
+                      ? `1.5px solid var(--primary-500)`
+                      : '1.5px solid var(--border-default)',
                     padding: '6px 14px', borderRadius: '999px',
                     fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                    background: selectedTagIds.includes(tag.id) ? 'var(--if-primary)' : 'var(--if-bg-card)',
-                    color: selectedTagIds.includes(tag.id) ? '#fff' : 'var(--if-text-secondary)',
+                    background: selectedTagIds.includes(tag.id) ? 'var(--primary-500)' : 'var(--bg-card)',
+                    color: selectedTagIds.includes(tag.id) ? '#fff' : 'var(--text-secondary)',
                     boxShadow: selectedTagIds.includes(tag.id) ? '0 2px 10px rgba(255,107,53,0.25)' : undefined,
                     transition: 'all 0.18s ease',
                   }}>{esc(tag.name)}</button>
-                )) : <span style={{ fontSize: '12px', color: 'var(--if-text-muted)' }}>暂无标签</span>}
+                )) : <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>暂无标签</span>}
               </div>
             </div>
           </div>
         </div>
       </Modal>
+
+      <style>{`
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </>
   );
 }

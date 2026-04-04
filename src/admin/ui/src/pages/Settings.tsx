@@ -9,24 +9,24 @@ import { useToast } from '../contexts/ToastContext';
 
 /* 样式常量 */
 const sectionStyle: React.CSSProperties = {
-  background: 'var(--if-bg-card)',
-  border: '1px solid var(--if-border-light)',
+  background: 'var(--bg-card)',
+  border: '1px solid var(--border-light)',
   borderRadius: '14px',
   boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
   marginBottom: '20px',
   overflow: 'hidden',
 };
 const secHeadStyle: React.CSSProperties = {
-  padding: '18px 24px', borderBottom: '1px solid var(--if-border-light)',
+  padding: '18px 24px', borderBottom: '1px solid var(--border-light)',
 };
 const secTitleStyle: React.CSSProperties = {
   fontSize: '15px', fontWeight: 700, color: 'var(--if-text)', letterSpacing: '-0.2px',
 };
-const secDescStyle: React.CSSProperties = { fontSize: '12.5px', color: 'var(--if-text-muted)', marginTop: '3px' };
+const secDescStyle: React.CSSProperties = { fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px' };
 const secBodyStyle: React.CSSProperties = { padding: '24px', display: 'flex', flexDirection: 'column' as const, gap: '18px' };
 const formRowStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: '160px 1fr', gap: '12px', alignItems: 'start' };
-const labelStyle: React.CSSProperties = { fontSize: '13.5px', fontWeight: 600, color: 'var(--if-text-secondary)', paddingTop: '10px' };
-const hintStyle: React.CSSProperties = { fontSize: '12px', color: 'var(--if-text-muted)', opacity: 0.8 };
+const labelStyle: React.CSSProperties = { fontSize: '13.5px', fontWeight: 600, color: 'var(--text-secondary)', paddingTop: '10px' };
+const hintStyle: React.CSSProperties = { fontSize: '12px', color: 'var(--text-muted)', opacity: 0.8 };
 
 function SettingSection({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -168,8 +168,8 @@ export default function Settings() {
         </div>
 
         {/* 已安装主题 */}
-        <div style={{ marginTop: '22px', paddingTop: '18px', borderTop: '1px solid var(--if-border-light)' }}>
-          <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--if-text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '16px' }}>
+        <div style={{ marginTop: '22px', paddingTop: '18px', borderTop: '1px solid var(--border-light)' }}>
+          <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '16px' }}>
             已安装的主题
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
@@ -177,10 +177,10 @@ export default function Settings() {
               <div
                 key={theme.manifest.slug}
                 style={{
-                  border: `1.5px solid ${theme.active ? 'rgba(255,107,53,0.4)' : 'var(--if-border)'}`,
+                  border: `1.5px solid ${theme.active ? 'rgba(255,107,53,0.4)' : 'var(--border-default)'}`,
                   borderRadius: '10px',
                   padding: '18px', transition: 'all 0.2s ease',
-                  background: theme.active ? 'rgba(255,107,53,0.03)' : 'var(--if-bg-card)',
+                  background: theme.active ? 'rgba(255,107,53,0.03)' : 'var(--bg-card)',
                   position: 'relative',
                   boxShadow: theme.active ? '0 2px 12px rgba(255,107,53,0.08)' : undefined,
                 }}
@@ -188,7 +188,7 @@ export default function Settings() {
                   if (!theme.active) { e.currentTarget.style.borderColor = '#ff6b35'; e.currentTarget.style.boxShadow = '0 1px 6px rgba(0,0,0,0.06)'; }
                 }}
                 onMouseLeave={(e) => {
-                  if (!theme.active) { e.currentTarget.style.borderColor = 'var(--if-border)'; e.currentTarget.style.boxShadow = 'none'; }
+                  if (!theme.active) { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.boxShadow = 'none'; }
                 }}
               >
                 {theme.active && (
@@ -203,17 +203,17 @@ export default function Settings() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                   <div style={{
                     width: '40px', height: '40px', borderRadius: '11px',
-                    background: theme.active ? 'rgba(255,107,53,0.10)' : 'var(--if-bg-secondary)',
+                    background: theme.active ? 'rgba(255,107,53,0.10)' : 'var(--bg-subtle)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px',
                   }}>📄</div>
                   <div>
                     <div style={{ fontSize: '15px', fontWeight: 700, color: theme.active ? '#ff6b35' : 'var(--if-text)' }}>{theme.manifest.name}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--if-text-muted)', fontFamily: 'monospace', marginTop: '1px' }}>v{theme.manifest.version} · {theme.manifest.slug}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: '1px' }}>v{theme.manifest.version} · {theme.manifest.slug}</div>
                   </div>
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--if-text-secondary)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{theme.manifest.description}</p>
-                <div style={{ marginTop: '14px', paddingTop: '13px', borderTop: '1px solid var(--if-border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11.5px', color: 'var(--if-text-muted)' }}>作者：{theme.manifest.author}</span>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{theme.manifest.description}</p>
+                <div style={{ marginTop: '14px', paddingTop: '13px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>作者：{theme.manifest.author}</span>
                 </div>
               </div>
             ))}

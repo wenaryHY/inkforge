@@ -13,16 +13,23 @@ const ToastContext = createContext<{
 
 let nextId = 0;
 
-const toastIcons = {
-  success: <IconCheckCircle size={16} />,
-  error: <IconXCircle size={16} />,
-  info: <IconAlertCircle size={16} />,
-};
-
-const toastColors = {
-  success: { bg: 'border-l-success', color: 'text-success', iconBg: 'bg-success-bg/20' },
-  error:   { bg: 'border-l-danger',  color: 'text-danger',  iconBg: 'bg-danger-bg/20' },
-  info:     { bg: 'border-l-info',    color: 'text-info',    iconBg: 'bg-info-bg/20' },
+/* 设计指南：语义色彩 — 绿=成功，红=错误，蓝=信息 */
+const toastStyles: Record<Toast['type'], { borderColor: string; textColor: string; iconBg: string }> = {
+  success: {
+    borderColor: 'var(--success-500)',
+    textColor: 'var(--success-600)',
+    iconBg: 'var(--success-50)',
+  },
+  error: {
+    borderColor: 'var(--danger-500)',
+    textColor: 'var(--danger-600)',
+    iconBg: 'var(--danger-50)',
+  },
+  info: {
+    borderColor: 'var(--info-500)',
+    textColor: 'var(--info-600)',
+    iconBg: 'var(--info-50)',
+  },
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {
@@ -39,21 +46,57 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ toast: addToast }}>
       {children}
-      {/* Toast 容器 */}
-      <div className="fixed bottom-[24px] right-[24px] z-[9999] flex flex-col gap-[8px] pointer-events-none">
+      {/* 设计指南：Toast — 微交互反馈，从右侧滑入 */}
+      <div style={{
+        position: 'fixed',
+        bottom: '24px',
+        right: '24px',
+        zIndex: 9999,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px',
+        pointerEvents: 'none',
+      }}>
         {toasts.map((t) => {
-          const colors = toastColors[t.type];
+          const s = toastStyles[t.type];
           return (
             <div
               key={t.id}
-              className={`toast-enter bg-white text-sm font-medium px-[16px] py-[12px] rounded-xl shadow-xl shadow-black/8
-                min-w-[240px] max-w-[420px] flex items-center gap-[10px] pointer-events-auto
-                border-l-[3px] ${colors.bg} animate-[toastIn_0.3s_ease]`}
+              style={{
+                background: 'var(--bg-card)',
+                color: 'var(--text-primary)',
+                fontSize: '13px',
+                fontWeight: 500,
+                padding: '12px 16px',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--elevation-2)',
+                minWidth: '240px',
+                maxWidth: '420px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                pointerEvents: 'auto',
+                borderLeft: '3px solid ' + s.borderColor,
+                animation: 'toastIn 0.3s ease',
+              }}
             >
-              <span className={`${colors.color} ${colors.iconBg} w-[24px] h-[24px] rounded-lg flex items-center justify-center flex-shrink-0`}>
-                {toastIcons[t.type]}
+              {/* 语义色图标背景 */}
+              <span style={{
+                color: s.textColor,
+                background: s.iconBg,
+                width: '24px',
+                height: '24px',
+                borderRadius: 'var(--radius-sm)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                {t.type === 'success' && <IconCheckCircle size={16} />}
+                {t.type === 'error' && <IconXCircle size={16} />}
+                {t.type === 'info' && <IconAlertCircle size={16} />}
               </span>
-              <span className="text-text-main flex-1 leading-relaxed">{t.message}</span>
+              <span style={{ flex: 1, lineHeight: 1.5 }}>{t.message}</span>
             </div>
           );
         })}
