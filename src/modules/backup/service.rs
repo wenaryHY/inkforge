@@ -95,7 +95,7 @@ fn extract_archive(bytes: &[u8]) -> AppResult<(Vec<u8>, String)> {
 async fn restore_database_file(state: &AppState, db_bytes: &[u8]) -> AppResult<PathBuf> {
     let bak_path = state.db_path.with_extension("db.bak");
     let restore_path = state.db_path.with_extension("db.restore");
-    
+
     let _ = fs::remove_file(&bak_path).await;
     let _ = fs::remove_file(&restore_path).await;
 
@@ -114,22 +114,86 @@ async fn restore_database_file(state: &AppState, db_bytes: &[u8]) -> AppResult<P
         }
     }
 
-    // Try to replace database file - if it fails due to lock, keep restore file for manual recovery
-    match fs::rename(&restore_path, &state.db_path).await {
-        Ok(_) => Ok(bak_path),
-        Err(rename_err) => {
-            tracing::warn!(error = ?rename_err, "failed to replace db file during restore, keeping restore file");
-            // Keep the restore file for manual recovery after restart
-            Ok(restore_path)
+    // Try to replace database file with retries
+    let mut last_err = None;
+    for attempt in 0..5 {
+        match fs::rename(&restore_path, &state.db_path).await {
+            Ok(_) => {
+                tracing::info!("database file replaced successfully on attempt {}", attempt + 1);
+                return Ok(bak_path);
+            },
+            Err(e) => {
+                last_err = Some(e);
+                if attempt < 4 {
+                    tracing::warn!("attempt {} to replace db file failed, retrying...", attempt + 1);
+                    tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
+                }
+            }
         }
     }
+
+    tracing::warn!(error = ?last_err, "failed to replace db file after retries, keeping restore file");
+    // Keep the restore file for manual recovery after restart
+    Ok(restore_path)
 }
 
 pub async fn create_backup(state: Arc<AppState>, provider: BackupProvider) -> AppResult<serde_json::Value> {
     let db_bytes = fs::read(&state.db_path).await
         .with_context(|| format!("无法读取数据库文件 {}", state.db_path.display()))?;
     let manifest_hash = hash_bytes(&db_bytes);
-    let archive = build_archive(&db_bytes, &manifest_hash, provider.as_str())?;
+
+    let cursor = Cursor::new(Vec::new());
+    let mut writer = ZipWriter::new(cursor);
+    let options = SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+
+    // Add database
+    writer
+        .start_file(BACKUP_DB_ENTRY, options)
+        .map_err(|e| AppError::Anyhow(anyhow::anyhow!("写入备份数据库条目失败: {e}")))?;
+    writer.write_all(&db_bytes)?;
+
+    // Add media files
+    let media_dir = state.upload_dir.join("media");
+    if fs::try_exists(&media_dir).await? {
+        let mut entries = fs::read_dir(&media_dir).await?;
+        while let Some(entry) = entries.next_entry().await? {
+            let path = entry.path();
+            if path.is_file() {
+                let file_name = path.file_name().ok_or_else(|| AppError::Anyhow(anyhow::anyhow!("无法获取文件名")))?;
+                let file_name_str = file_name.to_string_lossy();
+                let file_bytes = fs::read(&path).await?;
+
+                writer
+                    .start_file(format!("media/{}", file_name_str), options)
+                    .map_err(|e| AppError::Anyhow(anyhow::anyhow!("写入媒体文件失败: {e}")))?;
+                writer.write_all(&file_bytes)?;
+            }
+        }
+    }
+
+    let manifest = serde_json::json!({
+        "version": 1,
+        "provider": provider.as_str(),
+        "created_at": Utc::now().to_rfc3339(),
+        "manifest_hash": manifest_hash,
+        "entries": [
+            {
+                "path": BACKUP_DB_ENTRY,
+                "size": db_bytes.len()
+            }
+        ]
+    });
+
+    writer
+        .start_file("manifest.json", options)
+        .map_err(|e| AppError::Anyhow(anyhow::anyhow!("写入备份 manifest 失败: {e}")))?;
+    writer.write_all(manifest.to_string().as_bytes())?;
+
+    let archive = writer
+        .finish()
+        .map_err(|e| AppError::Anyhow(anyhow::anyhow!("完成备份压缩包失败: {e}")))?
+        .into_inner();
+
     let size = archive.len() as i64;
 
     let backup_id = repository::create_backup(&state.pool, provider.as_str(), size, &manifest_hash).await?;
@@ -246,6 +310,32 @@ pub async fn restore_backup_from_bytes(state: Arc<AppState>, bytes: Vec<u8>) -> 
         status: "completed".into(),
         message: "已解压备份包并验证 manifest".into(),
     });
+
+    // Extract media files
+    let reader = Cursor::new(&bytes);
+    let mut archive = ZipArchive::new(reader)
+        .map_err(|e| AppError::BadRequest(format!("无法读取备份压缩包: {e}")))?;
+
+    let media_dir = state.upload_dir.join("media");
+    fs::create_dir_all(&media_dir).await?;
+
+    let mut media_files = Vec::new();
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)
+            .map_err(|e| AppError::BadRequest(format!("无法读取备份文件: {e}")))?;
+
+        if file.name().starts_with("media/") && !file.is_dir() {
+            let file_name = file.name().strip_prefix("media/").unwrap_or(file.name()).to_string();
+            let mut file_bytes = Vec::new();
+            file.read_to_end(&mut file_bytes)?;
+            media_files.push((file_name, file_bytes));
+        }
+    }
+
+    for (file_name, file_bytes) in media_files {
+        let file_path = media_dir.join(&file_name);
+        fs::write(&file_path, file_bytes).await?;
+    }
 
     let bak_path = restore_database_file(&state, &db_bytes).await?;
     progress.push(RestoreProgressResponse {

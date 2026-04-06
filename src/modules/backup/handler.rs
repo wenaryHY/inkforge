@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{Multipart, Path, State},
+    body::Body,
+    extract::{DefaultBodyLimit, Path, State},
     http::header,
     response::IntoResponse,
     Json,
@@ -14,7 +15,7 @@ use crate::{
 
 use super::{
     domain::BackupProvider,
-    dto::{BackupScheduleRequest, CreateBackupRequest, RestoreBackupRequest},
+    dto::{BackupScheduleRequest, CreateBackupRequest},
     service,
 };
 
@@ -39,23 +40,16 @@ pub async fn list_backups(
 
 pub async fn restore_backup(
     State(state): State<Arc<AppState>>,
-    _admin: AdminUser,
-    mut multipart: axum::extract::Multipart,
+    admin: AdminUser,
+    req: axum::http::Request<Body>,
 ) -> Result<Json<ApiResponse<Vec<super::dto::RestoreProgressResponse>>>, AppError> {
-    let mut file_bytes = Vec::new();
+    let _ = admin;
+    let (_, body) = req.into_parts();
+    let bytes = axum::body::to_bytes(body, 64 * 1024 * 1024)
+        .await
+        .map_err(|e| AppError::BadRequest(format!("failed to read request body: {e}")))?;
 
-    while let Some(field) = multipart.next_field().await? {
-        if field.name() == Some("file") {
-            file_bytes = field.bytes().await?.to_vec();
-            break;
-        }
-    }
-
-    if file_bytes.is_empty() {
-        return Err(AppError::BadRequest("未提供备份文件".into()));
-    }
-
-    let data = service::restore_backup_from_bytes(state, file_bytes).await?;
+    let data = service::restore_backup_from_bytes(state, bytes.to_vec()).await?;
     Ok(Json(ApiResponse::success(data)))
 }
 

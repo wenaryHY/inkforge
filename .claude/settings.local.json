@@ -24,7 +24,10 @@
       "Bash(/tmp/full_api_test.sh)",
       "Bash(cargo build:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m 'fix: 修复后台管理登录、媒体上传、备份下载和恢复功能:*)"
+      "Bash(git commit -m 'fix: 修复后台管理登录、媒体上传、备份下载和恢复功能:*)",
+      "Bash(git push:*)",
+      "Bash(unzip:*)",
+      "Bash(git commit -m 'fix: 修复备份恢复时的数据库文件锁定问题:*)"
     ]
   }
 }
