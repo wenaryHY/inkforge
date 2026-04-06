@@ -1,4 +1,3 @@
-"use strict";
 /**
  * InkForge 前台评论系统
  * 独立的 TypeScript 模块，通过 window.__POST_DATA__ 获取服务端注入的数据

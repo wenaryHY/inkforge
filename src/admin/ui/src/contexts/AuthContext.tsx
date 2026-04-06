@@ -64,14 +64,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ login: loginValue, password }),
       });
       applyToken(payload.token);
-      await refreshUser();
+      // 不在这里调用 refreshUser，让 useEffect 处理
       return { success: true };
     } catch (error) {
       const message = error instanceof Error ? error.message : '登录失败';
       clearAuth();
       return { success: false, message };
     }
-  }, [applyToken, clearAuth, refreshUser]);
+  }, [applyToken, clearAuth]);
 
   const register = useCallback(async (data: RegisterData) => {
     try {
@@ -80,13 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(data),
       });
       applyToken(payload.token);
-      await refreshUser();
+      // 不在这里调用 refreshUser，让 useEffect 处理
       return { success: true };
     } catch (error) {
       const message = error instanceof Error ? error.message : '注册失败';
       return { success: false, message };
     }
-  }, [applyToken, refreshUser]);
+  }, [applyToken]);
 
   const logout = useCallback(async () => {
     try {

@@ -1,6 +1,8 @@
 import type { ApiResponse, PaginatedResponse } from '../types';
 
-const API = '';
+const API = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  ? 'http://localhost:3000'
+  : `${window.location.protocol}//${window.location.host}`;
 
 export class ApiClientError extends Error {
   code: number;
@@ -58,4 +60,92 @@ export async function apiData<T = unknown>(path: string, opts: RequestInit = {})
 
 export function paginationPages<T>(payload: PaginatedResponse<T>): number {
   return Math.max(1, Math.ceil(payload.pagination.total / payload.pagination.page_size));
+}
+
+// MediaCategory API
+export async function listMediaCategories() {
+  return apiData<import('../types').MediaCategory[]>('/api/admin/media/categories');
+}
+
+export async function createMediaCategory(data: import('../types').CreateMediaCategoryRequest) {
+  return apiData<import('../types').MediaCategory>('/api/admin/media/categories', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateMediaCategory(id: string, data: import('../types').UpdateMediaCategoryRequest) {
+  return apiData<import('../types').MediaCategory>(`/api/admin/media/categories/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteMediaCategory(id: string) {
+  return apiData(`/api/admin/media/categories/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+// Theme API
+export async function getThemeDetail(slug: string) {
+  return apiData<import('../types').ThemeDetailResponse>(`/api/admin/themes/${slug}/detail`);
+}
+
+export async function saveThemeConfig(slug: string, config: Record<string, unknown>) {
+  return apiData(`/api/admin/themes/${slug}/config`, {
+    method: 'PATCH',
+    body: JSON.stringify({ config }),
+  });
+}
+
+export async function activateTheme(slug: string) {
+  return apiData(`/api/admin/themes/${slug}/activate`, {
+    method: 'POST',
+  });
+}
+
+export async function uploadTheme(file: File) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiData<import('../types').ThemeUploadResponse>('/api/admin/themes/upload', {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+// Backup API
+export async function createBackup(provider: string = 'local') {
+  return apiData('/api/admin/backup', {
+    method: 'POST',
+    body: JSON.stringify({ provider }),
+  });
+}
+
+export async function listBackups() {
+  return apiData<import('../types').BackupListResponse[]>('/api/admin/backup/list');
+}
+
+export async function restoreBackup(backupId: string) {
+  return apiData('/api/admin/backup/restore', {
+    method: 'POST',
+    body: JSON.stringify({ backup_id: backupId }),
+  });
+}
+
+export async function getBackupSchedule() {
+  return apiData<import('../types').BackupScheduleResponse>('/api/admin/backup/schedule');
+}
+
+export async function updateBackupSchedule(data: import('../types').BackupScheduleRequest) {
+  return apiData('/api/admin/backup/schedule', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteBackup(id: string) {
+  return apiData(`/api/admin/backup/${id}`, {
+    method: 'DELETE',
+  });
 }

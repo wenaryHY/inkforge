@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
+use crate::shared::auth::decode_token;
 use crate::state::AppState;
-use crate::middleware::auth::Claims;
 
 // ─── Server Event ───────────────────────────────────────────────────────────
 
@@ -51,13 +51,21 @@ pub async fn ws_admin_handler(
     State(state): State<Arc<AppState>>,
     Query(params): Query<WsAdminParams>,
 ) -> Response {
-    // 验证 JWT token
-    let claims = match verify_token(&params.token) {
-        Some(c) => c,
-        None => return Response::builder().status(401).body("Unauthorized".into()).unwrap(),
+    // 使用与 HTTP 路由完全相同的密钥来验证 JWT
+    let claims = match decode_token(&params.token, &state.config.auth.secret) {
+        Ok(c) => c,
+        Err(_) => {
+            return Response::builder()
+                .status(401)
+                .body("Unauthorized".into())
+                .unwrap()
+        }
     };
     if claims.role != "admin" {
-        return Response::builder().status(403).body("Forbidden".into()).unwrap();
+        return Response::builder()
+            .status(403)
+            .body("Forbidden".into())
+            .unwrap();
     }
 
     ws.on_upgrade(move |socket| handle_ws(socket, state.event_tx.subscribe(), None))
@@ -87,7 +95,7 @@ pub async fn ws_public_handler(
 async fn handle_ws(socket: WebSocket, mut rx: broadcast::Receiver<ServerEvent>, post_id: Option<String>) {
     let (mut sender, mut receiver) = socket.split();
 
-    // 独立 task：接收客户端消息
+    // 独立 task：接收客户端消息（目前仅处理 Close 帧）
     let _recv_task = tokio::spawn(async move {
         while let Some(msg) = receiver.next().await {
             match msg {
@@ -118,19 +126,4 @@ async fn handle_ws(socket: WebSocket, mut rx: broadcast::Receiver<ServerEvent>, 
             break; // 客户端断开
         }
     }
-}
-
-// ─── JWT Verify Helper ──────────────────────────────────────────────────────
-
-fn verify_token(token: &str) -> Option<Claims> {
-    let secret = std::env::var("JWT_SECRET")
-        .unwrap_or_else(|_| "inkforge-change-me-in-production".to_string());
-
-    jsonwebtoken::decode::<Claims>(
-        token,
-        &jsonwebtoken::DecodingKey::from_secret(secret.as_bytes()),
-        &jsonwebtoken::Validation::default(),
-    )
-    .ok()
-    .map(|data| data.claims)
 }

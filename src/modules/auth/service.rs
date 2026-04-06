@@ -59,7 +59,13 @@ pub async fn register(state: Arc<AppState>, body: RegisterRequest) -> AppResult<
     )
     .await?;
 
-    let token = issue_token(state.as_ref(), user_id, body.username.trim().to_string(), role.to_string())?;
+    let token = issue_token(
+        &state.config.auth.secret,
+        state.config.auth.expires_in_seconds,
+        user_id,
+        body.username.trim().to_string(),
+        role.to_string(),
+    )?;
     Ok(TokenPayload { token })
 }
 
@@ -77,6 +83,12 @@ pub async fn login(state: Arc<AppState>, body: LoginRequest) -> AppResult<TokenP
     }
 
     repository::touch_last_login(&state.pool, &user.id).await?;
-    let token = issue_token(state.as_ref(), user.id, user.username, user.role)?;
+    let token = issue_token(
+        &state.config.auth.secret,
+        state.config.auth.expires_in_seconds,
+        user.id,
+        user.username,
+        user.role,
+    )?;
     Ok(TokenPayload { token })
 }

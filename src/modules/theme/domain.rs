@@ -1,5 +1,46 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
+/// 主题配置字段定义
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum ThemeConfigField {
+    #[serde(rename = "text")]
+    Text {
+        label: String,
+        default: Option<String>,
+    },
+    #[serde(rename = "color")]
+    Color {
+        label: String,
+        default: Option<String>,
+    },
+    #[serde(rename = "select")]
+    Select {
+        label: String,
+        default: Option<String>,
+        options: Vec<SelectOption>,
+    },
+    #[serde(rename = "number")]
+    Number {
+        label: String,
+        default: Option<i32>,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SelectOption {
+    pub label: String,
+    pub value: String,
+}
+
+/// 主题配置 Schema
+pub type ThemeConfigSchema = HashMap<String, ThemeConfigField>;
+
+/// 主题配置值
+pub type ThemeConfig = HashMap<String, serde_json::Value>;
+
+/// 主题清单（从 theme.toml 读取）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThemeManifest {
     pub name: String,
@@ -7,11 +48,36 @@ pub struct ThemeManifest {
     pub version: String,
     pub author: String,
     pub description: String,
-    pub min_inkforge_version: Option<String>,
+    pub min_inkforge_version: String,
+    #[serde(default)]
+    pub preview_image: Option<String>,
+    #[serde(default)]
+    pub config: ThemeConfigSchema,
 }
 
-#[derive(Debug, Clone, Serialize)]
+/// 主题摘要（后台展示）
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ThemeSummary {
-    pub manifest: ThemeManifest,
     pub active: bool,
+    pub manifest: ThemeManifest,
+}
+
+/// 兼容旧命名
+pub type Theme = ThemeManifest;
+pub type ThemeMetadata = ThemeManifest;
+
+/// 主题配置记录（数据库）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ThemeConfigRecord {
+    pub id: String,
+    pub theme_slug: String,
+    pub config_json: String,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+/// 活跃主题设置
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActiveThemeSetting {
+    pub theme_slug: String,
 }

@@ -1,0 +1,10 @@
+use serde::Serialize;
+use sqlx::FromRow;
+
+#[derive(Debug, Clone, Serialize, FromRow)]
+pub struct Tag {
+    pub id: String,
+    pub name: String,
+    pub slug: String,
+    pub created_at: String,
+}

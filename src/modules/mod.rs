@@ -1,7 +1,11 @@
 pub mod auth;
+pub mod backup;
+pub mod category;
 pub mod comment;
 pub mod media;
 pub mod post;
+pub mod seo;
 pub mod setting;
+pub mod tag;
 pub mod theme;
 pub mod user;

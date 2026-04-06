@@ -1,9 +1,7 @@
-use std::{path::PathBuf, sync::Arc};
+use std::sync::Arc;
 
 use axum::{
     extract::{Multipart, Path, State},
-    http::header,
-    response::{Html, IntoResponse},
     Json,
 };
 
@@ -16,12 +14,13 @@ use crate::{
     state::AppState,
 };
 
-use super::{domain::ThemeSummary, service};
+use super::{domain::ThemeSummary, service::ThemeService};
 
 pub async fn active_theme(
     State(state): State<Arc<AppState>>,
 ) -> AppResult<Json<ApiResponse<serde_json::Value>>> {
-    let slug = service::active_theme_slug(state.as_ref()).await?;
+    let service = ThemeService::new(state.theme_dir.clone());
+    let slug = service.list_themes(&state.pool).await?.1;
     Ok(Json(ApiResponse::success(serde_json::json!({ "slug": slug }))))
 }
 
@@ -29,7 +28,16 @@ pub async fn list_themes(
     State(state): State<Arc<AppState>>,
     _admin: AdminUser,
 ) -> AppResult<Json<ApiResponse<Vec<ThemeSummary>>>> {
-    Ok(Json(ApiResponse::success(service::list_themes(state).await?)))
+    let service = ThemeService::new(state.theme_dir.clone());
+    let (manifests, active_slug) = service.list_themes(&state.pool).await?;
+    let summaries = manifests
+        .into_iter()
+        .map(|manifest| ThemeSummary {
+            active: manifest.slug == active_slug,
+            manifest,
+        })
+        .collect();
+    Ok(Json(ApiResponse::success(summaries)))
 }
 
 pub async fn activate_theme(
@@ -37,64 +45,113 @@ pub async fn activate_theme(
     _admin: AdminUser,
     Path(slug): Path<String>,
 ) -> AppResult<Json<ApiResponse<serde_json::Value>>> {
-    service::activate_theme(state, &slug).await?;
+    let service = ThemeService::new(state.theme_dir.clone());
+    service.activate_theme(&state.pool, &slug).await?;
     Ok(Json(ApiResponse::success(serde_json::json!({ "activated": slug }))))
+}
+
+pub async fn get_theme_detail(
+    State(state): State<Arc<AppState>>,
+    _admin: AdminUser,
+    Path(slug): Path<String>,
+) -> AppResult<Json<ApiResponse<super::dto::ThemeDetailResponse>>> {
+    let service = ThemeService::new(state.theme_dir.clone());
+    let (manifest, config) = service.get_theme_detail(&state.pool, &slug).await?;
+    let schema = manifest.config.clone();
+    Ok(Json(ApiResponse::success(super::dto::ThemeDetailResponse {
+        manifest,
+        config,
+        schema,
+    })))
+}
+
+pub async fn save_theme_config(
+    State(state): State<Arc<AppState>>,
+    _admin: AdminUser,
+    Path(slug): Path<String>,
+    Json(req): Json<super::dto::SaveThemeConfigRequest>,
+) -> AppResult<Json<ApiResponse<serde_json::Value>>> {
+    let service = ThemeService::new(state.theme_dir.clone());
+    service.save_theme_config(&state.pool, &slug, &req.config).await?;
+    Ok(Json(ApiResponse::success(serde_json::json!({ "saved": slug }))))
 }
 
 pub async fn upload_theme_archive(
     State(state): State<Arc<AppState>>,
     _admin: AdminUser,
-    multipart: Multipart,
-) -> AppResult<Json<ApiResponse<ThemeSummary>>> {
-    Ok(Json(ApiResponse::success(
-        service::upload_theme_archive(state, multipart).await?,
-    )))
-}
-
-pub async fn render_home(
-    State(state): State<Arc<AppState>>,
-) -> AppResult<Html<String>> {
-    let payload = service::home_payload(state.clone()).await?;
-    Ok(Html(service::render_template(state, "index.html", payload).await?))
-}
-
-pub async fn render_post(
-    State(state): State<Arc<AppState>>,
-    Path(slug): Path<String>,
-) -> AppResult<Html<String>> {
-    let payload = service::post_payload(state.clone(), &slug).await?;
-    Ok(Html(service::render_template(state, "post.html", payload).await?))
-}
-
-pub async fn serve_active_static(
-    State(state): State<Arc<AppState>>,
-    Path(path): Path<String>,
-) -> impl IntoResponse {
-    if path.contains("..") || path.contains('\\') || path.starts_with('/') {
-        return ([(header::CONTENT_TYPE, "text/plain")], b"403 Forbidden".to_vec()).into_response();
+    mut multipart: Multipart,
+) -> AppResult<Json<ApiResponse<super::dto::ThemeUploadResponse>>> {
+    let mut theme_data: Option<Vec<u8>> = None;
+    
+    // 提取上传的文件
+    while let Some(field) = multipart.next_field().await? {
+        if field.name() == Some("file") {
+            theme_data = Some(field.bytes().await?.to_vec());
+            break;
+        }
     }
-
-    let slug = match service::active_theme_slug(state.as_ref()).await {
-        Ok(value) => value,
-        Err(_) => return ([(header::CONTENT_TYPE, "text/plain")], b"500 Internal Server Error".to_vec()).into_response(),
-    };
-    let file_path: PathBuf = state.theme_dir.join(slug).join("static").join(&path);
-    let mime = match file_path.extension().and_then(|ext| ext.to_str()).unwrap_or("") {
-        "css" => "text/css",
-        "js" => "application/javascript",
-        "png" => "image/png",
-        "jpg" | "jpeg" => "image/jpeg",
-        "gif" => "image/gif",
-        "webp" => "image/webp",
-        "svg" => "image/svg+xml",
-        "mp3" => "audio/mpeg",
-        "ogg" => "audio/ogg",
-        "wav" => "audio/wav",
-        _ => "application/octet-stream",
-    };
-
-    match tokio::fs::read(&file_path).await {
-        Ok(data) => ([(header::CONTENT_TYPE, mime)], data).into_response(),
-        Err(_) => ([(header::CONTENT_TYPE, "text/plain")], b"404 Not Found".to_vec()).into_response(),
+    
+    let theme_data = theme_data
+        .ok_or(crate::shared::error::AppError::BadRequest("No file uploaded".to_string()))?;
+    
+    // 解析 zip 包
+    let cursor = std::io::Cursor::new(theme_data);
+    let mut archive = zip::ZipArchive::new(cursor)
+        .map_err(|_| crate::shared::error::AppError::BadRequest("Invalid zip file".to_string()))?;
+    
+    // 查找 theme.toml
+    let mut manifest_content = String::new();
+    {
+        let mut theme_toml = archive
+            .by_name("theme.toml")
+            .map_err(|_| crate::shared::error::AppError::BadRequest(
+                "theme.toml not found in archive".to_string(),
+            ))?;
+        std::io::Read::read_to_string(&mut theme_toml, &mut manifest_content)
+            .map_err(|e| crate::shared::error::AppError::Io(e))?;
     }
+    
+    // 解析 manifest
+    let manifest: super::ThemeManifest = toml::from_str(&manifest_content)
+        .map_err(|e| crate::shared::error::AppError::BadRequest(
+            format!("Failed to parse theme.toml: {}", e),
+        ))?;
+    
+    // 提取主题到 themes 目录
+    let theme_dir = state.theme_dir.join(&manifest.slug);
+    if theme_dir.exists() {
+        std::fs::remove_dir_all(&theme_dir)
+            .map_err(|e| crate::shared::error::AppError::Io(e))?;
+    }
+    std::fs::create_dir_all(&theme_dir)
+        .map_err(|e| crate::shared::error::AppError::Io(e))?;
+    
+    // 解压所有文件
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)
+            .map_err(|e| crate::shared::error::AppError::Anyhow(anyhow::anyhow!("Failed to read archive: {}", e)))?;
+        
+        let outpath = theme_dir.join(file.name());
+        
+        if file.is_dir() {
+            std::fs::create_dir_all(&outpath)
+                .map_err(|e| crate::shared::error::AppError::Io(e))?;
+        } else {
+            if let Some(p) = outpath.parent() {
+                std::fs::create_dir_all(p)
+                    .map_err(|e| crate::shared::error::AppError::Io(e))?;
+            }
+            let mut outfile = std::fs::File::create(&outpath)
+                .map_err(|e| crate::shared::error::AppError::Io(e))?;
+            std::io::copy(&mut file, &mut outfile)
+                .map_err(|e| crate::shared::error::AppError::Io(e))?;
+        }
+    }
+    
+    Ok(Json(ApiResponse::success(super::dto::ThemeUploadResponse {
+        slug: manifest.slug.clone(),
+        name: manifest.name.clone(),
+        version: manifest.version.clone(),
+        message: "主题已上传".to_string(),
+    })))
 }

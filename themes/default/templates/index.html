@@ -3,7 +3,25 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ site_title }}</title>
+<title>{{ seo_meta.title }}</title>
+<meta name="description" content="{{ seo_meta.description }}">
+{% if seo_meta.keywords %}<meta name="keywords" content="{{ seo_meta.keywords }}">{% endif %}
+<link rel="sitemap" type="application/xml" href="/sitemap.xml">
+<link rel="canonical" href="{{ seo_meta.canonical_url }}">
+<!-- Open Graph -->
+<meta property="og:title" content="{{ seo_meta.og_title }}">
+<meta property="og:description" content="{{ seo_meta.og_description }}">
+<meta property="og:url" content="{{ seo_meta.og_url }}">
+<meta property="og:type" content="{{ seo_meta.og_type }}">
+<meta property="og:site_name" content="{{ site_title }}">
+{% if seo_meta.og_image %}<meta property="og:image" content="{{ seo_meta.og_image }}">{% endif %}
+<!-- Twitter Card -->
+<meta name="twitter:card" content="{{ seo_meta.twitter_card }}">
+<meta name="twitter:title" content="{{ seo_meta.twitter_title }}">
+<meta name="twitter:description" content="{{ seo_meta.twitter_description }}">
+{% if seo_meta.twitter_image %}<meta name="twitter:image" content="{{ seo_meta.twitter_image }}">{% endif %}
+<!-- noinspection JsonStandardCompliance -->
+<script type="application/ld+json">{{ json_ld | safe }}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -37,6 +55,42 @@ a{color:inherit;text-decoration:none}
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text
 }
 .site-desc{font-size:17px;color:var(--muted);margin:0;font-weight:400;max-width:540px;line-height:1.7}
+
+/* Search Bar */
+.search-bar{
+  display:flex;gap:10px;margin-bottom:48px;flex-wrap:wrap;
+}
+.search-input-wrap{position:relative;flex:1;min-width:200px}
+.search-input{
+  width:100%;padding:12px 16px 12px 44px;
+  border-radius:999px;border:1.5px solid var(--border);
+  font-size:14.5px;font-family:inherit;color:var(--text);
+  background:var(--card);outline:none;transition:all 0.2s;
+  box-sizing:border-box;
+}
+.search-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,107,53,0.1)}
+.search-icon{
+  position:absolute;left:16px;top:50%;transform:translateY(-50%);
+  color:var(--muted);pointer-events:none;
+}
+.search-btn{
+  padding:12px 22px;border-radius:999px;
+  background:var(--accent);color:#fff;border:none;
+  font-size:14px;font-weight:600;font-family:inherit;
+  cursor:pointer;transition:all 0.2s;white-space:nowrap;
+}
+.search-btn:hover{background:var(--accent-dark)}
+
+/* Filter Chips */
+.filter-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:32px}
+.filter-chip{
+  padding:6px 14px;border-radius:999px;
+  font-size:12.5px;font-weight:500;cursor:pointer;
+  border:1.5px solid var(--border);background:var(--card);
+  color:var(--muted);transition:all 0.2s;
+}
+.filter-chip:hover{border-color:var(--accent);color:var(--accent)}
+.filter-chip.active{background:var(--accent);color:#fff;border-color:var(--accent)}
 
 /* Stats Bar */
 .stats-bar{
@@ -175,49 +229,31 @@ a{color:inherit;text-decoration:none}
     </div>
   </header>
 
+  <!-- Search & Filter -->
+  <div class="search-bar">
+    <div class="search-input-wrap">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" class="search-input" id="searchInput" placeholder="搜索文章标题和内容...">
+    </div>
+    <button class="search-btn" onclick="doSearch()">搜索</button>
+  </div>
+
+  <!-- Filter Chips -->
+  <div class="filter-chips" id="filterChips">
+    <span class="filter-chip active" data-category="" onclick="filterByCategory('')">全部</span>
+  </div>
+
+  <!-- Search Result Info -->
+  <div id="searchInfo" style="display:none;margin-bottom:24px;font-size:14px;color:var(--muted)"></div>
+
   <!-- Posts -->
-  <main class="posts-grid">
-    {% if posts | length > 0 %}
-      {% for post in posts %}
-      <a class="post-card" href="/posts/{{ post.slug }}">
-        <div class="post-meta">
-          <span>{{ post.author_display_name }}</span>
-          <span class="post-meta-sep"></span>
-          <span>{{ post.published_at or post.created_at }}</span>
-          {% if post.category_name %}
-          <span class="post-meta-sep"></span>
-          <span>{{ post.category_name }}</span>
-          {% endif %}
-        </div>
-        <h2 class="post-title">{{ post.title }}</h2>
-        {% if post.excerpt %}
-        <p class="post-excerpt">{{ post.excerpt }}</p>
-        {% endif %}
-        <div class="post-footer">
-          {% if post.tags %}
-          <div class="post-tags">
-            {% for tag in post.tags %}
-            <span class="post-tag">{{ tag.name }}</span>
-            {% endfor %}
-          </div>
-          {% else %}
-          <div></div>
-          {% endif %}
-          <div class="post-arrow">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </div>
-        </div>
-      </a>
-      {% endfor %}
-    {% else %}
-      <div class="empty-state">
-        <div class="empty-icon">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-        </div>
-        <h3 class="empty-title">暂无文章</h3>
-        <p class="empty-desc">前往管理后台发布你的第一篇文章吧</p>
+  <main class="posts-grid" id="postsGrid">
+    <div class="empty-state" id="postsLoading">
+      <div class="empty-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
       </div>
-    {% endif %}
+      <h3 class="empty-title">加载中...</h3>
+    </div>
   </main>
 
   <!-- Footer -->
@@ -226,5 +262,67 @@ a{color:inherit;text-decoration:none}
     <span class="footer-powered">Powered by <a href="/admin">InkForge</a></span>
   </footer>
 </div>
+
+<script>
+function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+const _posts = {{ posts_json | safe }};
+let _currentKeyword = '';
+let _currentCategory = '';
+let _allPosts = _posts;
+
+function renderPosts(posts) {
+  const grid = document.getElementById('postsGrid');
+  if (!posts || posts.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3 class="empty-title">暂无文章</h3><p class="empty-desc">前往管理后台发布你的第一篇文章吧</p></div>`;
+    return;
+  }
+  grid.innerHTML = posts.map(p => `<a class="post-card" href="/posts/${esc(p.slug)}"><div class="post-meta"><span>${esc(p.author_display_name)}</span><span class="post-meta-sep"></span><span>${p.published_at ? p.published_at.slice(0,10) : p.created_at.slice(0,10)}</span>${p.category_name ? `<span class="post-meta-sep"></span><span>${esc(p.category_name)}</span>` : ''}</div><h2 class="post-title">${esc(p.title)}</h2>${p.excerpt ? `<p class="post-excerpt">${esc(p.excerpt)}</p>` : ''}<div class="post-footer"><div></div><div class="post-arrow"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></div></div></a>`).join('');
+}
+
+async function doSearch() {
+  const keyword = document.getElementById('searchInput').value.trim();
+  _currentKeyword = keyword;
+  const grid = document.getElementById('postsGrid');
+  grid.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></div><h3 class="empty-title">搜索中...</h3></div>`;
+  document.getElementById('searchInfo').style.display = 'none';
+  if (!keyword) { _allPosts = _posts; renderPosts(_allPosts); return; }
+  try {
+    const params = new URLSearchParams({ keyword });
+    if (_currentCategory) params.set('category_id', _currentCategory);
+    const res = await fetch('/api/search?' + params.toString());
+    const json = await res.json();
+    const items = json.data?.items || [];
+    document.getElementById('searchInfo').style.display = 'block';
+    document.getElementById('searchInfo').textContent = `找到 ${items.length} 篇相关文章`;
+    renderPosts(items);
+  } catch { renderPosts([]); }
+}
+
+function filterByCategory(catId) {
+  _currentCategory = catId;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.category === catId));
+  doSearch();
+}
+
+(async function loadCategories() {
+  try {
+    const res = await fetch('/api/categories');
+    const json = await res.json();
+    const cats = json.data || [];
+    const container = document.getElementById('filterChips');
+    cats.forEach(cat => {
+      const btn = document.createElement('span');
+      btn.className = 'filter-chip';
+      btn.dataset.category = cat.id;
+      btn.textContent = cat.name;
+      btn.onclick = () => filterByCategory(cat.id);
+      container.appendChild(btn);
+    });
+  } catch {}
+})();
+
+document.getElementById('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+renderPosts(_allPosts);
+</script>
 </body>
 </html>

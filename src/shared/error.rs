@@ -19,6 +19,8 @@ pub enum AppError {
     BadRequest(String),
     #[error("conflict: {0}")]
     Conflict(String),
+    #[error("multipart error: {0}")]
+    Multipart(String),
     #[error(transparent)]
     Config(#[from] config::ConfigError),
     #[error(transparent)]
@@ -27,6 +29,8 @@ pub enum AppError {
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Anyhow(#[from] anyhow::Error),
+    #[error(transparent)]
+    SerdeJson(#[from] serde_json::Error),
 }
 
 pub type AppResult<T> = Result<T, AppError>;
@@ -39,6 +43,7 @@ impl IntoResponse for AppError {
             Self::Forbidden => (StatusCode::FORBIDDEN, 40300, "forbidden".to_string()),
             Self::BadRequest(msg) => (StatusCode::BAD_REQUEST, 40000, msg),
             Self::Conflict(msg) => (StatusCode::CONFLICT, 40900, msg),
+            Self::Multipart(msg) => (StatusCode::BAD_REQUEST, 40000, msg),
             Self::Sqlx(err) => {
                 tracing::error!(error = ?err, "database error");
                 (
@@ -71,8 +76,22 @@ impl IntoResponse for AppError {
                     "internal server error".to_string(),
                 )
             }
+            Self::SerdeJson(err) => {
+                tracing::error!(error = ?err, "json serialization error");
+                (
+                    StatusCode::INTERNAL_SERVER_ERROR,
+                    50000,
+                    "internal server error".to_string(),
+                )
+            }
         };
 
         (status, Json(ApiResponse::<()>::error(code, message))).into_response()
+    }
+}
+
+impl From<axum::extract::multipart::MultipartError> for AppError {
+    fn from(err: axum::extract::multipart::MultipartError) -> Self {
+        AppError::Multipart(err.to_string())
     }
 }

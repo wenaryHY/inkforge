@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { apiData } from '../lib/api';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { apiData, getToken } from '../lib/api';
 import type { Setting, ThemeSummary } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
@@ -54,6 +54,7 @@ function FormRow({ label, children, hint }: { label: string; children: React.Rea
 
 export default function Settings() {
   const toast = useToast();
+  const restoreInputRef = useRef<HTMLInputElement>(null);
   const [themes, setThemes] = useState<ThemeSummary[]>([]);
   const [kv, setKv] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
@@ -217,6 +218,107 @@ export default function Settings() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </SettingSection>
+
+      {/* 数据备份 */}
+      <SettingSection
+        title="数据备份"
+        description="导出或导入完整的 SQLite 数据库文件，包含文章、评论、用户等全部数据"
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <Button
+              onClick={() => {
+                const token = getToken();
+                fetch('http://localhost:3000/api/admin/backup/list', {
+                  headers: { Authorization: `Bearer ${token}` },
+                })
+                  .then((r) => r.json())
+                  .then((json) => {
+                    if (json.code !== 0 || !json.data || json.data.length === 0) {
+                      throw new Error('没有可用的备份');
+                    }
+                    const backup = json.data[0];
+                    return fetch(`http://localhost:3000/api/admin/backup/${backup.id}`, {
+                      headers: { Authorization: `Bearer ${token}` },
+                    });
+                  })
+                  .then((r) => {
+                    if (!r.ok) throw new Error('下载失败');
+                    return r.blob();
+                  })
+                  .then((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `inkforge_backup_${new Date().toISOString().slice(0, 10)}.zip`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    toast('备份文件已开始下载', 'success');
+                  })
+                  .catch((e) => toast(e instanceof Error ? e.message : '备份失败', 'error'));
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              下载数据库备份
+            </Button>
+            <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+              备份包含文章、评论、用户、媒体等全部数据
+            </span>
+          </div>
+
+          <div style={{ paddingTop: '4px', borderTop: '1px solid var(--border-light)' }}>
+            <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '10px' }}>
+              导入备份
+            </div>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                ref={restoreInputRef}
+                type="file"
+                accept=".zip"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  if (!window.confirm(`即将用 "${file.name}" 替换当前数据库，原数据库会备份为 .bak 文件。是否继续？`)) {
+                    return;
+                  }
+                  const formData = new FormData();
+                  formData.append('file', file);
+                  const token = getToken();
+                  fetch('http://localhost:3000/api/admin/backup/restore', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                    body: formData,
+                  })
+                    .then((r) => r.json())
+                    .then((json) => {
+                      if (json.code === 0) {
+                        toast('备份导入成功，页面将刷新...', 'success');
+                        setTimeout(() => location.reload(), 1500);
+                      } else {
+                        toast(json.message || '导入失败', 'error');
+                      }
+                    })
+                    .catch((e) => toast(e instanceof Error ? e.message : '导入失败', 'error'))
+                    .finally(() => {
+                      if (restoreInputRef.current) restoreInputRef.current.value = '';
+                    });
+                }}
+              />
+              <Button
+                variant="ghost"
+                onClick={() => restoreInputRef.current?.click()}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                选择备份文件导入
+              </Button>
+              <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
+                仅支持 SQLite 数据库文件（.db / .sqlite / .sqlite3），导入前会自动备份原数据库
+              </span>
+            </div>
           </div>
         </div>
       </SettingSection>

@@ -85,6 +85,35 @@ export interface Setting {
   value: string;
 }
 
+export interface MediaCategory {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface CreateMediaCategoryRequest {
+  name: string;
+  slug?: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  sort_order?: number;
+}
+
+export interface UpdateMediaCategoryRequest {
+  name?: string;
+  slug?: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  sort_order?: number;
+}
+
 export interface MediaItem {
   id: string;
   uploader_id: string;
@@ -99,8 +128,20 @@ export interface MediaItem {
   height: number | null;
   duration_seconds: number | null;
   alt_text: string | null;
+  category: string | null;
   created_at: string;
 }
+
+export interface SelectOption {
+  label: string;
+  value: string;
+}
+
+export type ThemeConfigField =
+  | { type: 'text'; label: string; default?: string | null }
+  | { type: 'color'; label: string; default?: string | null }
+  | { type: 'number'; label: string; default?: number | null }
+  | { type: 'select'; label: string; default?: string | null; options: SelectOption[] };
 
 export interface ThemeManifest {
   name: string;
@@ -109,11 +150,30 @@ export interface ThemeManifest {
   author: string;
   description: string;
   min_inkforge_version?: string;
+  preview_image?: string | null;
+  config?: Record<string, ThemeConfigField>;
 }
 
 export interface ThemeSummary {
   manifest: ThemeManifest;
   active: boolean;
+}
+
+export interface ThemeDetailResponse {
+  manifest: ThemeManifest;
+  config: Record<string, unknown>;
+  schema: Record<string, ThemeConfigField>;
+}
+
+export interface SaveThemeConfigRequest {
+  config: Record<string, unknown>;
+}
+
+export interface ThemeUploadResponse {
+  slug: string;
+  name: string;
+  version: string;
+  message: string;
 }
 
 export interface CurrentUser {
@@ -128,4 +188,40 @@ export interface CurrentUser {
   theme_preference: 'system' | 'light' | 'dark';
   created_at: string;
   updated_at: string;
+}
+
+export interface BackupListResponse {
+  id: string;
+  created_at: string;
+  size: number;
+  provider: string;
+  status: string;
+  error_message?: string | null;
+}
+
+export interface BackupScheduleResponse {
+  id: string;
+  enabled: boolean;
+  frequency: string;
+  hour: number;
+  minute: number;
+  provider: string;
+  last_run_at?: string | null;
+  next_run_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BackupScheduleRequest {
+  enabled: boolean;
+  frequency: string;
+  hour: number;
+  minute: number;
+  provider: string;
+}
+
+export interface RestoreProgressResponse {
+  step: string;
+  status: string;
+  message: string;
 }

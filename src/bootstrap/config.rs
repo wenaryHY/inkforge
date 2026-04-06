@@ -68,6 +68,13 @@ impl AppConfig {
             .try_deserialize()?)
     }
 
+    pub fn validate(&self) -> Result<()> {
+        if self.auth.secret == "change-me-in-production-please" {
+            tracing::warn!("⚠️  JWT secret is using default value. Please set INKFORGE__AUTH__SECRET in production!");
+        }
+        Ok(())
+    }
+
     pub fn resolve_path(raw: &str) -> Result<PathBuf> {
         let path = Path::new(raw);
         if path.is_absolute() {

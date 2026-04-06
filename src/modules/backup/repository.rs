@@ -1,0 +1,162 @@
+use sqlx::SqlitePool;
+use uuid::Uuid;
+use chrono::Utc;
+
+use super::domain::{Backup, BackupSchedule};
+
+pub async fn create_backup(
+    pool: &SqlitePool,
+    provider: &str,
+    size: i64,
+    manifest_hash: &str,
+) -> Result<String, sqlx::Error> {
+    let id = Uuid::new_v4().to_string();
+    let now = Utc::now().to_rfc3339();
+
+    sqlx::query(
+        "INSERT INTO backups (id, created_at, size, provider, status, manifest_hash)
+         VALUES (?, ?, ?, ?, 'completed', ?)",
+    )
+    .bind(&id)
+    .bind(&now)
+    .bind(size)
+    .bind(provider)
+    .bind(manifest_hash)
+    .execute(pool)
+    .await?;
+
+    Ok(id)
+}
+
+pub async fn list_backups(pool: &SqlitePool) -> Result<Vec<Backup>, sqlx::Error> {
+    sqlx::query_as::<_, Backup>(
+        "SELECT id, created_at, size, provider, status, manifest_hash, error_message
+         FROM backups
+         ORDER BY created_at DESC",
+    )
+    .fetch_all(pool)
+    .await
+}
+
+pub async fn get_backup(pool: &SqlitePool, id: &str) -> Result<Option<Backup>, sqlx::Error> {
+    sqlx::query_as::<_, Backup>(
+        "SELECT id, created_at, size, provider, status, manifest_hash, error_message
+         FROM backups
+         WHERE id = ?",
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await
+}
+
+pub async fn delete_backup(pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error> {
+    sqlx::query("DELETE FROM backups WHERE id = ?")
+        .bind(id)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+pub async fn update_backup_status(
+    pool: &SqlitePool,
+    id: &str,
+    status: &str,
+    error_message: Option<&str>,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "UPDATE backups SET status = ?, error_message = ? WHERE id = ?",
+    )
+    .bind(status)
+    .bind(error_message)
+    .bind(id)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+pub async fn get_or_create_schedule(
+    pool: &SqlitePool,
+) -> Result<BackupSchedule, sqlx::Error> {
+    let existing = sqlx::query_as::<_, BackupSchedule>(
+        "SELECT id, enabled, frequency, hour, minute, provider, last_run_at, next_run_at, created_at, updated_at
+         FROM backup_schedules
+         LIMIT 1",
+    )
+    .fetch_optional(pool)
+    .await?;
+
+    if let Some(schedule) = existing {
+        return Ok(schedule);
+    }
+
+    let id = Uuid::new_v4().to_string();
+    let now = Utc::now().to_rfc3339();
+
+    sqlx::query(
+        "INSERT INTO backup_schedules (id, enabled, frequency, hour, minute, provider, created_at, updated_at)
+         VALUES (?, 0, 'daily', 2, 0, 'local', ?, ?)",
+    )
+    .bind(&id)
+    .bind(&now)
+    .bind(&now)
+    .execute(pool)
+    .await?;
+
+    Ok(BackupSchedule {
+        id,
+        enabled: false,
+        frequency: "daily".to_string(),
+        hour: 2,
+        minute: 0,
+        provider: "local".to_string(),
+        last_run_at: None,
+        next_run_at: None,
+        created_at: now.clone(),
+        updated_at: now,
+    })
+}
+
+pub async fn update_schedule(
+    pool: &SqlitePool,
+    enabled: bool,
+    frequency: &str,
+    hour: i32,
+    minute: i32,
+    provider: &str,
+) -> Result<(), sqlx::Error> {
+    let now = Utc::now().to_rfc3339();
+
+    sqlx::query(
+        "UPDATE backup_schedules
+         SET enabled = ?, frequency = ?, hour = ?, minute = ?, provider = ?, updated_at = ?
+         WHERE id = (SELECT id FROM backup_schedules LIMIT 1)",
+    )
+    .bind(enabled)
+    .bind(frequency)
+    .bind(hour)
+    .bind(minute)
+    .bind(provider)
+    .bind(&now)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn update_schedule_run_time(
+    pool: &SqlitePool,
+    last_run_at: &str,
+    next_run_at: &str,
+) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "UPDATE backup_schedules
+         SET last_run_at = ?, next_run_at = ?
+         WHERE id = (SELECT id FROM backup_schedules LIMIT 1)",
+    )
+    .bind(last_run_at)
+    .bind(next_run_at)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}

@@ -22,6 +22,7 @@ sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "sqlite", "chrono"
 # 序列化
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+toml = "0.8"
 
 # 模板引擎
 minijinja = { version = "2", features = ["loader"] }
@@ -45,3 +46,8 @@ pulldown-cmark = { version = "0.11", features = [] }
 bytes = "1"
 mime_guess = "2"
 zip = "2"
+sha2 = "0.10"
+hex = "0.4"
+tokio-cron-scheduler = "0.9"
+aws-config = "1"
+aws-sdk-s3 = "1"

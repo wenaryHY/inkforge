@@ -1,7 +1,19 @@
 use sqlx::SqlitePool;
+use serde::Serialize;
 use uuid::Uuid;
 
 use super::domain::{AdminCommentItem, CommentItem};
+
+/// 用于 WebSocket 事件广播的最小评论数据
+#[derive(Debug, Clone, Serialize, sqlx::FromRow)]
+pub struct CommentEventData {
+    pub id: String,
+    pub post_id: String,
+    pub author_name: String,
+    pub content: String,
+    pub status: String,
+    pub created_at: String,
+}
 
 pub async fn list_approved_for_post(pool: &SqlitePool, post_id: &str) -> Result<Vec<CommentItem>, sqlx::Error> {
     sqlx::query_as::<_, CommentItem>(
@@ -81,7 +93,7 @@ pub async fn insert_comment(
     content: &str,
     parent_id: Option<&str>,
     status: &str,
-) -> Result<String, sqlx::Error> {
+) -> Result<(String, String), sqlx::Error> {
     let id = Uuid::new_v4().to_string();
     sqlx::query(
         "INSERT INTO comments (id, post_id, user_id, content, status, parent_id)
@@ -95,7 +107,15 @@ pub async fn insert_comment(
     .bind(parent_id)
     .execute(pool)
     .await?;
-    Ok(id)
+
+    // 取回实际插入的 created_at（SQLite datetime('now') 格式）
+    let created_at: String =
+        sqlx::query_scalar("SELECT created_at FROM comments WHERE id = ?")
+            .bind(&id)
+            .fetch_one(pool)
+            .await?;
+
+    Ok((id, created_at))
 }
 
 pub async fn list_admin(
@@ -204,4 +224,23 @@ pub async fn soft_delete_admin(pool: &SqlitePool, id: &str) -> Result<(), sqlx::
     .execute(pool)
     .await?;
     Ok(())
+}
+
+/// 查询单条评论用于 WS 事件广播（包含作者显示名）
+pub async fn find_by_id_for_event(pool: &SqlitePool, id: &str) -> Result<Option<CommentEventData>, sqlx::Error> {
+    sqlx::query_as::<_, CommentEventData>(
+        "SELECT
+            c.id,
+            c.post_id,
+            COALESCE(u.display_name, u.username) AS author_name,
+            c.content,
+            c.status,
+            c.created_at
+         FROM comments c
+         JOIN users u ON u.id = c.user_id
+         WHERE c.id = ?",
+    )
+    .bind(id)
+    .fetch_optional(pool)
+    .await
 }

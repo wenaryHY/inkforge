@@ -1,7 +1,5 @@
 use std::{path::PathBuf, sync::Arc};
 
-use axum::extract::Multipart;
-
 use crate::{
     shared::{
         auth::AuthUser,
@@ -13,6 +11,17 @@ use crate::{
 };
 
 use super::{domain::MediaItem, dto::MediaQuery, repository};
+
+const ALLOWED_MIME_TYPES: &[&str] = &[
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/gif",
+    "audio/mpeg",
+    "audio/ogg",
+    "audio/wav",
+    "audio/mp4",
+];
 
 fn classify_file(ext: &str) -> Option<(&'static str, &'static str)> {
     match ext {
@@ -38,38 +47,43 @@ pub async fn list_media(
     };
     let (page, page_size, offset) = pagination.normalized(20, 100);
     let kind = query.kind.as_deref();
-    let items = repository::list_media(&state.pool, kind, page_size, offset).await?;
-    let total = repository::count_media(&state.pool, kind).await?;
+    let keyword = query.keyword.as_deref().filter(|k| !k.trim().is_empty());
+    let category = query.category.as_deref().filter(|k| !k.trim().is_empty());
+    let items = repository::list_media(&state.pool, kind, keyword, category, page_size, offset).await?;
+    let total = repository::count_media(&state.pool, kind, keyword, category).await?;
     Ok(PaginatedResponse::new(items, page, page_size, total))
 }
 
-pub async fn upload_media(
+/// 直接接收原始文件数据的媒体上传（供手动解析 multipart 的 handler 调用）
+pub async fn upload_media_raw(
     state: Arc<AppState>,
     auth: &AuthUser,
-    mut multipart: Multipart,
+    original_name: String,
+    content_type: Option<String>,
+    data: Vec<u8>,
+    category: Option<String>,
 ) -> AppResult<MediaItem> {
-    let field = multipart
-        .next_field()
-        .await
-        .map_err(|err| AppError::BadRequest(format!("invalid multipart field: {err}")))?
-        .ok_or_else(|| AppError::BadRequest("file field is required".into()))?;
-
-    let original_name = field
-        .file_name()
-        .ok_or_else(|| AppError::BadRequest("file name is required".into()))?
-        .to_string();
     let ext = std::path::Path::new(&original_name)
         .extension()
         .and_then(|ext| ext.to_str())
         .map(|ext| ext.to_lowercase())
         .ok_or_else(|| AppError::BadRequest("file extension is required".into()))?;
-    let (kind, mime_type) = classify_file(&ext)
+    let (kind, expected_mime) = classify_file(&ext)
         .ok_or_else(|| AppError::BadRequest("unsupported media type".into()))?;
+    let mime_type = content_type
+        .filter(|ct| !ct.is_empty())
+        .or_else(|| mime_guess::from_ext(&ext).first().map(|m| m.to_string()))
+        .unwrap_or_else(|| expected_mime.to_string());
 
-    let bytes = field
-        .bytes()
-        .await
-        .map_err(|err| AppError::BadRequest(format!("failed to read upload: {err}")))?;
+    if !ALLOWED_MIME_TYPES.contains(&mime_type.as_str()) {
+        return Err(AppError::BadRequest("mime type is not allowed".into()));
+    }
+
+    if mime_type != expected_mime {
+        return Err(AppError::BadRequest("mime type does not match file extension".into()));
+    }
+
+    let bytes = data;
     let max_bytes = state.config.storage.max_upload_size_mb * 1024 * 1024;
     if bytes.len() as u64 > max_bytes {
         return Err(AppError::BadRequest(format!(
@@ -77,6 +91,13 @@ pub async fn upload_media(
             state.config.storage.max_upload_size_mb
         )));
     }
+
+    let resolved_category = super::category::ensure_category_exists_or_resolve(
+        &state,
+        category.as_deref(),
+        &ext,
+    )
+    .await?;
 
     let stored_name = format!("{}.{}", uuid::Uuid::new_v4(), ext);
     let relative_path = PathBuf::from("media").join(&stored_name);
@@ -92,12 +113,13 @@ pub async fn upload_media(
         &state.pool,
         &auth.id,
         kind,
-        mime_type,
+        &mime_type,
         &original_name,
         &stored_name,
         &storage_path,
         &public_url,
         bytes.len() as i64,
+        &resolved_category,
     )
     .await?;
 
@@ -116,4 +138,27 @@ pub async fn delete_media(state: Arc<AppState>, id: &str) -> AppResult<serde_jso
     }
     repository::delete_media(&state.pool, id).await?;
     Ok(serde_json::json!({ "deleted": true }))
+}
+
+pub async fn rename_media(state: Arc<AppState>, id: &str, new_name: &str) -> AppResult<serde_json::Value> {
+    if new_name.trim().is_empty() {
+        return Err(AppError::BadRequest("文件名不能为空".into()));
+    }
+    repository::get_media(&state.pool, id)
+        .await?
+        .ok_or(AppError::NotFound)?;
+    repository::rename_media(&state.pool, id, new_name.trim()).await?;
+    Ok(serde_json::json!({ "renamed": true }))
+}
+
+pub async fn update_category(
+    state: Arc<AppState>,
+    id: &str,
+    category: Option<&str>,
+) -> AppResult<serde_json::Value> {
+    repository::get_media(&state.pool, id)
+        .await?
+        .ok_or(AppError::NotFound)?;
+    repository::update_media_category(&state.pool, id, category).await?;
+    Ok(serde_json::json!({ "updated": true }))
 }

@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cargo check:*)",
+      "Bash(npm run:*)",
+      "Read(//d/inkforge/**)",
+      "Read(//d/inkforge/src/admin/ui/**)",
+      "Bash(sqlite3 inkforge.db \"SELECT id, username, email, display_name FROM users LIMIT 10;\")",
+      "Bash(curl:*)",
+      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "Bash(netstat -tuln)",
+      "Bash(mv:*)",
+      "Bash(fuser 3000/tcp)",
+      "Bash(cp inkforge.db inkforge.db.backup)",
+      "Bash(rm -f inkforge.db)",
+      "Bash(chmod +x /tmp/test_login.sh)",
+      "Bash(/tmp/test_login.sh)",
+      "Bash(chmod +x /tmp/integration_test.sh)",
+      "Bash(/tmp/integration_test.sh)",
+      "Bash(python3:*)",
+      "Bash(fuser /d/inkforge/inkforge.db)",
+      "Bash(chmod +x /tmp/full_api_test.sh)",
+      "Bash(/tmp/full_api_test.sh)",
+      "Bash(cargo build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m 'fix: 修复后台管理登录、媒体上传、备份下载和恢复功能:*)"
+    ]
+  }
+}

@@ -1,14 +1,17 @@
 mod admin;
 mod bootstrap;
+mod infra;
 mod modules;
 mod shared;
 mod state;
+mod ws;
 
 use std::{net::SocketAddr, sync::Arc};
 
 use bootstrap::{config::AppConfig, router::build_router};
 use sqlx::sqlite::SqlitePoolOptions;
 use state::AppState;
+use tokio::sync::broadcast;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 #[tokio::main]
@@ -22,6 +25,7 @@ async fn main() -> anyhow::Result<()> {
         .init();
 
     let config = AppConfig::load()?;
+    config.validate()?;
     std::fs::create_dir_all(&config.storage.upload_dir)?;
     std::fs::create_dir_all(&config.theme.theme_dir)?;
 
@@ -32,7 +36,11 @@ async fn main() -> anyhow::Result<()> {
     sqlx::query("PRAGMA foreign_keys = ON").execute(&pool).await?;
     sqlx::migrate!("./migrations").run(&pool).await?;
 
-    let state = Arc::new(AppState::new(config.clone(), pool)?);
+    // 创建 WebSocket broadcast channel，容量 256
+    let (event_tx, _rx) = broadcast::channel::<ws::ServerEvent>(256);
+
+    let state = Arc::new(AppState::new(config.clone(), pool, event_tx)?);
+    modules::backup::scheduler::start_backup_scheduler(state.clone()).await?;
     let app = build_router(state);
 
     let addr = SocketAddr::new(config.server.host.parse()?, config.server.port);

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use super::domain::Tag;
+use crate::modules::tag::domain::Tag;
 
 #[derive(Debug, Deserialize)]
 pub struct PostQuery {
@@ -8,6 +8,15 @@ pub struct PostQuery {
     pub page_size: Option<i64>,
     pub keyword: Option<String>,
     pub status: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SearchQuery {
+    pub keyword: String,
+    pub category_id: Option<String>,
+    pub tag_id: Option<String>,
+    pub page: Option<i64>,
+    pub page_size: Option<i64>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -54,26 +63,3 @@ pub struct AdminPostResponse {
     pub tags: Vec<Tag>,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct CreateCategoryRequest {
-    pub name: String,
-    pub slug: Option<String>,
-    pub description: Option<String>,
-    pub parent_id: Option<String>,
-    pub sort_order: Option<i64>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct UpdateCategoryRequest {
-    pub name: Option<String>,
-    pub slug: Option<String>,
-    pub description: Option<String>,
-    pub parent_id: Option<String>,
-    pub sort_order: Option<i64>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct CreateTagRequest {
-    pub name: String,
-    pub slug: Option<String>,
-}

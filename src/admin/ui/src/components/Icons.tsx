@@ -3,7 +3,7 @@
  * 所有图标集中管理，方便统一调整 size / strokeWidth / className
  */
 import {
-  FileText, FolderOpen, Tag, MessageSquare,
+  FileText, FolderOpen, Folder, Tag, MessageSquare,
   Upload, Settings, User, LogOut,
   Plus, Pencil, Trash2, Eye,
   CheckCircle, XCircle, AlertCircle, Ban,
@@ -11,7 +11,7 @@ import {
   ExternalLink, Loader2, X, Home,
   LayoutDashboard, BarChart3, Users, Shield,
   Image, File, Archive, MoreHorizontal,
-  Copy, RefreshCw, Zap, Star, Clock, Edit,
+  Copy, RefreshCw, Zap, Star, Clock, Edit, Edit2, Palette,
   type LucideProps
 } from 'lucide-react';
 
@@ -26,6 +26,8 @@ function icon(Comp: React.FC<LucideProps>, props?: LucideProps) {
 // === 导航图标 ===
 export const IconFileText = icon(FileText);
 export const IconFolderOpen = icon(FolderOpen);
+export const IconFolder = icon(Folder);
+export const IconEdit2 = icon(Edit2);
 export const IconTag = icon(Tag);
 export const IconMessageSquare = icon(MessageSquare);
 export const IconUpload = icon(Upload);
@@ -70,6 +72,7 @@ export const IconStar = icon(Star);
 export const IconEdit = icon(Edit, { size: 14 });
 export const IconClock = icon(Clock, { size: 14 });
 export const IconBan = icon(Ban, { size: 16 });
+export const IconPalette = icon(Palette);
 
 // === Spinner 动画图标 ===
 export function Spinner({ className = '', size = 20 }: { className?: string; size?: number }) {

@@ -16,5 +16,7 @@ pub struct MediaItem {
     pub height: Option<i64>,
     pub duration_seconds: Option<i64>,
     pub alt_text: Option<String>,
+    /// 文件分类，可为 null
+    pub category: Option<String>,
     pub created_at: String,
 }

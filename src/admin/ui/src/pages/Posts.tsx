@@ -11,9 +11,9 @@ import { Pagination } from '../components/Pagination';
 import { Modal } from '../components/Modal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { Input } from '../components/Input';
-import { Textarea } from '../components/Textarea';
 import { Select } from '../components/Select';
 import { PostsSkeleton } from '../components/Skeleton';
+import { MarkdownEditor } from '../components/MarkdownEditor';
 import {
   IconFileText, IconCheckCircle, IconEdit, IconMessageSquare,
   IconPlus, IconPencil, IconEye, IconTrash2, IconCheck
@@ -346,17 +346,19 @@ export default function Posts() {
                     </td>
                     {/* 标题 */}
                     <td style={{ ...T.td }}>
-                      <a href={`/posts/${post.slug}`} target="_blank" rel="noreferrer"
+                      <button
+                        onClick={() => openEditor(post)}
                         title={post.title}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: '7px',
                           fontSize: '14px', fontWeight: 600, color: 'var(--if-text)',
                           maxWidth: '280px', textDecoration: 'none',
-                          overflow: 'hidden',
+                          overflow: 'hidden', background: 'none', border: 'none',
+                          cursor: 'pointer', padding: 0,
                         }}
                       >
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{esc(post.title)}</span>
-                      </a>
+                      </button>
                     </td>
                     {/* 分类 */}
                     <td style={{ ...T.td }}>
@@ -371,20 +373,13 @@ export default function Posts() {
                     {/* 操作列 - 图标按钮始终可见 */}
                     <td style={{ ...T.td }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px', alignItems: 'center' }}>
-                        {/* 查看 */}
-                        <a href={`/posts/${post.slug}`} target="_blank" rel="noreferrer"
-                          title="查看文章"
-                          style={T.iconBtn('#3b82f6')}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.color = '#2563eb'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#3b82f6'; }}
-                        ><IconEye size={16} /></a>
                         {/* 编辑 */}
                         <button type="button"
                           title="编辑文章"
-                          style={T.iconBtn('#10b981')}
+                          style={T.iconBtn('#3b82f6')}
                           onClick={() => openEditor(post)}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#ecfdf5'; e.currentTarget.style.color = '#059669'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10b981'; }}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.color = '#2563eb'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#3b82f6'; }}
                         ><IconPencil size={16} /></button>
                         {/* 删除 */}
                         <button type="button"
@@ -454,8 +449,13 @@ export default function Posts() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '24px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <Input label="标题" placeholder="请输入文章标题..." value={title} onChange={(e) => setTitle(e.target.value)} />
-            <Textarea label="正文" placeholder="支持 Markdown ..." minRows={14} value={content} onChange={(e) => setContent(e.target.value)} style={{ fontFamily: "'JetBrains Mono', 'Fira Code', Consolas, monospace", fontSize: '13.5px', lineHeight: 1.75 }} />
-            <Textarea label="摘要" placeholder="文章摘要，可选填..." value={excerpt} onChange={(e) => setExcerpt(e.target.value)} minRows={2} />
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>正文</div>
+              <div style={{ height: '420px', display: 'flex', flexDirection: 'column' }}>
+                <MarkdownEditor value={content} onChange={setContent} />
+              </div>
+            </div>
+            <Input label="摘要" placeholder="文章摘要，可选填..." value={excerpt} onChange={(e) => setExcerpt(e.target.value)} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div style={{
