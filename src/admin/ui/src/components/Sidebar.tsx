@@ -1,7 +1,7 @@
 import { useAuth } from '../contexts/AuthContext';
 import {
   IconFileText, IconFolderOpen, IconTag, IconMessageSquare,
-  IconUpload, IconSettings, IconUser, IconLogOut, IconPalette,
+  IconUpload, IconSettings, IconUser, IconLogOut, IconPalette, IconTrash2,
 } from './Icons';
 
 interface NavItem {
@@ -31,6 +31,7 @@ const navGroups: NavGroup[] = [
       { key: 'upload', icon: <IconUpload />, label: '上传' },
       { key: 'media-categories', icon: <IconFolderOpen />, label: '媒体分类' },
       { key: 'themes', icon: <IconPalette />, label: '主题管理' },
+      { key: 'trash', icon: <IconTrash2 />, label: '回收站' },
       { key: 'settings', icon: <IconSettings />, label: '设置' },
     ],
   },

@@ -6,12 +6,13 @@ import Login from './pages/Login';
 import Posts from './pages/Posts';
 import Categories from './pages/Categories';
 import Tags from './pages/Tags';
-import Comments from './pages/Comments';
+import Comments from './pages/CommentsV2';
 import Settings from './pages/Settings';
 import Upload from './pages/Upload';
 import MediaCategories from './pages/MediaCategories';
 import Themes from './pages/Themes';
 import ThemeDetail from './pages/ThemeDetail';
+import RecycleBin from './pages/RecycleBin';
 
 const pageToRoute: Record<string, string> = {
   posts: '/admin/posts',
@@ -22,6 +23,7 @@ const pageToRoute: Record<string, string> = {
   upload: '/admin/upload',
   'media-categories': '/admin/media-categories',
   themes: '/admin/themes',
+  trash: '/admin/trash',
 };
 
 function getActivePage(pathname: string): string {
@@ -32,6 +34,7 @@ function getActivePage(pathname: string): string {
   if (pathname.startsWith('/admin/settings')) return 'settings';
   if (pathname.startsWith('/admin/upload')) return 'upload';
   if (pathname.startsWith('/admin/media-categories')) return 'media-categories';
+  if (pathname.startsWith('/admin/trash')) return 'trash';
   return 'posts';
 }
 
@@ -58,6 +61,7 @@ function AppShell() {
           <Route path="/admin/media-categories" element={<MediaCategories />} />
           <Route path="/admin/themes" element={<Themes />} />
           <Route path="/admin/themes/:slug" element={<ThemeDetail />} />
+          <Route path="/admin/trash" element={<RecycleBin />} />
         </Routes>
       </main>
     </div>

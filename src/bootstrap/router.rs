@@ -241,6 +241,23 @@ pub fn build_router(state: Arc<AppState>) -> Router {
             "/api/admin/backups/:id/merge-restore",
             post(modules::backup::handler::merge_restore_backup),
         )
+        // ── 回收站路由 ──
+        .route(
+            "/api/admin/trash",
+            get(modules::trash::handler::list_trash),
+        )
+        .route(
+            "/api/admin/trash/purge-expired",
+            post(modules::trash::handler::purge_expired),
+        )
+        .route(
+            "/api/admin/trash/:item_type/:id/restore",
+            post(modules::trash::handler::restore_item),
+        )
+        .route(
+            "/api/admin/trash/:item_type/:id",
+            delete(modules::trash::handler::purge_item),
+        )
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())

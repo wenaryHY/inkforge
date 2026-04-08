@@ -8,4 +8,5 @@ pub mod seo;
 pub mod setting;
 pub mod tag;
 pub mod theme;
+pub mod trash;
 pub mod user;

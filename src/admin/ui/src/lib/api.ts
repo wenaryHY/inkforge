@@ -170,3 +170,28 @@ export async function mergeRestoreBackup(id: string) {
     method: 'POST',
   });
 }
+
+// ── 回收站 API ──
+
+export async function listTrash(type?: string) {
+  const params = type ? `?type=${type}` : '';
+  return apiData<import('../types').TrashItem[]>(`/api/admin/trash${params}`);
+}
+
+export async function restoreTrashItem(itemType: string, id: string) {
+  return apiData(`/api/admin/trash/${itemType}/${id}/restore`, {
+    method: 'POST',
+  });
+}
+
+export async function purgeTrashItem(itemType: string, id: string) {
+  return apiData(`/api/admin/trash/${itemType}/${id}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function purgeExpiredTrash() {
+  return apiData(`/api/admin/trash/purge-expired`, {
+    method: 'POST',
+  });
+}

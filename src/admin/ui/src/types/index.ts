@@ -225,3 +225,12 @@ export interface RestoreProgressResponse {
   status: string;
   message: string;
 }
+
+export interface TrashItem {
+  id: string;
+  item_type: string;
+  name: string;
+  subtitle: string | null;
+  deleted_at: string;
+  expires_in_days: number;
+}
