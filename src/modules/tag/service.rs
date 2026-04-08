@@ -7,7 +7,11 @@ use crate::{
     state::AppState,
 };
 
-use super::{domain::Tag, dto::{CreateTagRequest, UpdateTagRequest}, repository};
+use super::{
+    domain::Tag,
+    dto::{CreateTagRequest, UpdateTagRequest},
+    repository,
+};
 
 pub async fn list_tags(state: Arc<AppState>) -> AppResult<Vec<Tag>> {
     Ok(repository::list_tags(&state.pool).await?)
@@ -34,17 +38,21 @@ pub async fn create_tag(state: Arc<AppState>, body: CreateTagRequest) -> AppResu
         .ok_or(AppError::NotFound)
 }
 
-pub async fn update_tag(
-    state: Arc<AppState>,
-    id: &str,
-    body: UpdateTagRequest,
-) -> AppResult<Tag> {
+pub async fn update_tag(state: Arc<AppState>, id: &str, body: UpdateTagRequest) -> AppResult<Tag> {
     let existing = repository::get_tag(&state.pool, id)
         .await?
         .ok_or(AppError::NotFound)?;
 
-    let name = body.name.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty());
-    let slug = body.slug.as_deref().map(|s| s.trim()).filter(|s| !s.is_empty());
+    let name = body
+        .name
+        .as_deref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty());
+    let slug = body
+        .slug
+        .as_deref()
+        .map(|s| s.trim())
+        .filter(|s| !s.is_empty());
 
     if name.is_none() && slug.is_none() {
         return Ok(existing);

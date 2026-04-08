@@ -1,5 +1,8 @@
 use axum::{
-    extract::{ws::{Message, WebSocket, WebSocketUpgrade}, Query, State},
+    extract::{
+        ws::{Message, WebSocket, WebSocketUpgrade},
+        Query, State,
+    },
     response::Response,
 };
 use futures_util::stream::StreamExt;
@@ -34,9 +37,7 @@ pub enum ServerEvent {
         created_at: String,
     },
     #[serde(rename = "comment_deleted")]
-    CommentDeleted {
-        id: String,
-    },
+    CommentDeleted { id: String },
 }
 
 // ─── Admin WebSocket ────────────────────────────────────────────────────────
@@ -92,7 +93,11 @@ pub async fn ws_public_handler(
 /// 通用 WebSocket 消息推送循环
 ///
 /// - `post_id`：前台连接时传入文章 ID，仅推送该文章的 approved 事件；管理后台传 None 推送全部事件
-async fn handle_ws(socket: WebSocket, mut rx: broadcast::Receiver<ServerEvent>, post_id: Option<String>) {
+async fn handle_ws(
+    socket: WebSocket,
+    mut rx: broadcast::Receiver<ServerEvent>,
+    post_id: Option<String>,
+) {
     let (mut sender, mut receiver) = socket.split();
 
     // 独立 task：接收客户端消息（目前仅处理 Close 帧）

@@ -20,10 +20,7 @@ use super::{
     category,
     domain::MediaItem,
     dto::{
-        CreateMediaCategoryRequest,
-        MediaQuery,
-        RenameMediaRequest,
-        UpdateCategoryRequest,
+        CreateMediaCategoryRequest, MediaQuery, RenameMediaRequest, UpdateCategoryRequest,
         UpdateMediaCategoryCrudRequest,
     },
     service, MediaCategory,
@@ -36,7 +33,9 @@ pub async fn list_media(
     _admin: AdminUser,
     Query(query): Query<MediaQuery>,
 ) -> AppResult<Json<ApiResponse<PaginatedResponse<MediaItem>>>> {
-    Ok(Json(ApiResponse::success(service::list_media(state, query).await?)))
+    Ok(Json(ApiResponse::success(
+        service::list_media(state, query).await?,
+    )))
 }
 
 /// 手动解析 multipart 请求，避免 Axum extractor 顺序问题
@@ -54,8 +53,9 @@ pub async fn upload_media(
         .and_then(|v: &HeaderValue| v.to_str().ok())
         .ok_or_else(|| AppError::BadRequest("Missing Content-Type header".into()))?;
 
-    let boundary = extract_multipart_boundary(content_type)
-        .ok_or_else(|| AppError::BadRequest("Invalid multipart Content-Type, missing boundary".into()))?;
+    let boundary = extract_multipart_boundary(content_type).ok_or_else(|| {
+        AppError::BadRequest("Invalid multipart Content-Type, missing boundary".into())
+    })?;
 
     // 将 body 收集为 bytes
     let bytes = axum::body::to_bytes(body, 64 * 1024 * 1024) // 最大 64MB
@@ -115,16 +115,26 @@ fn parse_multipart_parts(body: &[u8], boundary: &str) -> AppResult<Vec<Multipart
 
     while pos < body.len() {
         // 找下一个 boundary
-        let Some(b_start) = find_bytes(&body[pos..], &boundary_bytes) else { break };
+        let Some(b_start) = find_bytes(&body[pos..], &boundary_bytes) else {
+            break;
+        };
         pos += b_start + boundary_bytes.len();
 
         // 跳过 \r\n
-        if body.get(pos) == Some(&b'\r') { pos += 1; }
-        if body.get(pos) == Some(&b'\n') { pos += 1; }
+        if body.get(pos) == Some(&b'\r') {
+            pos += 1;
+        }
+        if body.get(pos) == Some(&b'\n') {
+            pos += 1;
+        }
 
         // 检查是否是 end boundary
         if pos < body.len() && body[pos] == b'-' {
-            if body.get(pos..).map(|s| s.starts_with(&end_boundary_bytes)).unwrap_or(false) {
+            if body
+                .get(pos..)
+                .map(|s| s.starts_with(&end_boundary_bytes))
+                .unwrap_or(false)
+            {
                 break;
             }
         }
@@ -170,8 +180,12 @@ fn parse_multipart_parts(body: &[u8], boundary: &str) -> AppResult<Vec<Multipart
 
         // 去掉末尾的 \r\n
         let mut data_end = data_end;
-        if data_end > 0 && body[data_end - 1] == b'\n' { data_end -= 1; }
-        if data_end > 0 && body[data_end - 1] == b'\r' { data_end -= 1; }
+        if data_end > 0 && body[data_end - 1] == b'\n' {
+            data_end -= 1;
+        }
+        if data_end > 0 && body[data_end - 1] == b'\r' {
+            data_end -= 1;
+        }
 
         parts.push(MultipartPart {
             name,
@@ -181,8 +195,12 @@ fn parse_multipart_parts(body: &[u8], boundary: &str) -> AppResult<Vec<Multipart
         });
 
         pos = data_end;
-        if body.get(pos) == Some(&b'\r') { pos += 1; }
-        if body.get(pos) == Some(&b'\n') { pos += 1; }
+        if body.get(pos) == Some(&b'\r') {
+            pos += 1;
+        }
+        if body.get(pos) == Some(&b'\n') {
+            pos += 1;
+        }
     }
 
     Ok(parts)
@@ -201,7 +219,9 @@ pub async fn delete_media(
     _admin: AdminUser,
     Path(id): Path<String>,
 ) -> AppResult<Json<ApiResponse<serde_json::Value>>> {
-    Ok(Json(ApiResponse::success(service::delete_media(state, &id).await?)))
+    Ok(Json(ApiResponse::success(
+        service::delete_media(state, &id).await?,
+    )))
 }
 
 pub async fn rename_media(
@@ -230,7 +250,9 @@ pub async fn list_media_categories(
     State(state): State<Arc<AppState>>,
     _admin: AdminUser,
 ) -> AppResult<Json<ApiResponse<Vec<MediaCategory>>>> {
-    Ok(Json(ApiResponse::success(category::list_categories(state).await?)))
+    Ok(Json(ApiResponse::success(
+        category::list_categories(state).await?,
+    )))
 }
 
 pub async fn create_media_category(
@@ -238,7 +260,9 @@ pub async fn create_media_category(
     _admin: AdminUser,
     Json(body): Json<CreateMediaCategoryRequest>,
 ) -> AppResult<Json<ApiResponse<MediaCategory>>> {
-    Ok(Json(ApiResponse::success(category::create_category(state, body).await?)))
+    Ok(Json(ApiResponse::success(
+        category::create_category(state, body).await?,
+    )))
 }
 
 pub async fn update_media_category_crud(

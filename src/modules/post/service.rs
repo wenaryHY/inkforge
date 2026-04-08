@@ -16,8 +16,8 @@ use crate::{
 use super::{
     domain::{AdminPost, PublicPostSummary},
     dto::{
-        AdminPostResponse, CreatePostRequest, PostQuery,
-        PublicPostResponse, SearchQuery, UpdatePostRequest,
+        AdminPostResponse, CreatePostRequest, PostQuery, PublicPostResponse, SearchQuery,
+        UpdatePostRequest,
     },
     repository,
 };
@@ -62,7 +62,9 @@ pub async fn list_public_posts(
         page_size: query.page_size,
     };
     let (page, page_size, offset) = pagination.normalized(10, 100);
-    let items = repository::list_public_posts(&state.pool, query.keyword.as_deref(), page_size, offset).await?;
+    let items =
+        repository::list_public_posts(&state.pool, query.keyword.as_deref(), page_size, offset)
+            .await?;
     let total = repository::count_public_posts(&state.pool, query.keyword.as_deref()).await?;
     Ok(PaginatedResponse::new(items, page, page_size, total))
 }
@@ -115,7 +117,12 @@ pub async fn list_admin_posts(
         offset,
     )
     .await?;
-    let total = repository::count_admin_posts(&state.pool, query.status.as_deref(), query.keyword.as_deref()).await?;
+    let total = repository::count_admin_posts(
+        &state.pool,
+        query.status.as_deref(),
+        query.keyword.as_deref(),
+    )
+    .await?;
 
     let mut items = Vec::with_capacity(posts.len());
     for post in posts {
@@ -192,7 +199,8 @@ pub async fn update_post(
     let content_html = markdown_to_html(&content_md);
     let cover_media_id = body.cover_media_id.or(current.cover_media_id.clone());
     let status = normalize_status(body.status.as_deref().or(Some(&current.status)))?;
-    let visibility = normalize_visibility(body.visibility.as_deref().or(Some(&current.visibility)))?;
+    let visibility =
+        normalize_visibility(body.visibility.as_deref().or(Some(&current.visibility)))?;
     let category_id = body.category_id.or(current.category_id.clone());
     let allow_comment = body.allow_comment.unwrap_or(current.allow_comment == 1);
     let pinned = body.pinned.unwrap_or(current.pinned == 1);

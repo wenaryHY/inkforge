@@ -4,7 +4,10 @@ use tokio_cron_scheduler::{Job, JobScheduler};
 
 use crate::{shared::error::AppError, state::AppState};
 
-use super::{domain::{BackupProvider, BackupScheduleFrequency}, repository, service};
+use super::{
+    domain::{BackupProvider, BackupScheduleFrequency},
+    repository, service,
+};
 
 pub async fn start_backup_scheduler(state: Arc<AppState>) -> Result<(), AppError> {
     let schedule = repository::get_or_create_schedule(&state.pool).await?;

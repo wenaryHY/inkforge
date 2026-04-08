@@ -6,11 +6,7 @@ use axum::{
 };
 
 use crate::{
-    shared::{
-        auth::AdminUser,
-        error::AppResult,
-        response::ApiResponse,
-    },
+    shared::{auth::AdminUser, error::AppResult, response::ApiResponse},
     state::AppState,
 };
 
@@ -23,7 +19,9 @@ use super::{
 pub async fn list_categories(
     State(state): State<Arc<AppState>>,
 ) -> AppResult<Json<ApiResponse<Vec<Category>>>> {
-    Ok(Json(ApiResponse::success(service::list_categories(state).await?)))
+    Ok(Json(ApiResponse::success(
+        service::list_categories(state).await?,
+    )))
 }
 
 pub async fn create_category(
@@ -31,7 +29,9 @@ pub async fn create_category(
     _admin: AdminUser,
     Json(body): Json<CreateCategoryRequest>,
 ) -> AppResult<Json<ApiResponse<Category>>> {
-    Ok(Json(ApiResponse::success(service::create_category(state, body).await?)))
+    Ok(Json(ApiResponse::success(
+        service::create_category(state, body).await?,
+    )))
 }
 
 pub async fn update_category(
@@ -50,5 +50,7 @@ pub async fn delete_category(
     _admin: AdminUser,
     Path(id): Path<String>,
 ) -> AppResult<Json<ApiResponse<serde_json::Value>>> {
-    Ok(Json(ApiResponse::success(service::delete_category(state, &id).await?)))
+    Ok(Json(ApiResponse::success(
+        service::delete_category(state, &id).await?,
+    )))
 }

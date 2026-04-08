@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -223,6 +223,11 @@ a{color:var(--accent);text-decoration:none}
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
       管理后台
     </a>
+    {% if current_user %}
+    <a href="/profile" class="nav-admin">个人中心</a>
+    {% else %}
+    <a href="/login?redirect=/posts/{{ post.slug }}" class="nav-admin">登录</a>
+    {% endif %}
   </nav>
 
   <!-- Article -->
@@ -275,16 +280,19 @@ a{color:var(--accent);text-decoration:none}
     <!-- Comment Form -->
     <div class="comment-form-wrap">
       <h3 class="comment-form-title">发表评论</h3>
-      <form class="comment-form" id="commentForm" onsubmit="submitComment(event)">
-        <div class="comment-form-row">
-          <input type="text" name="author_name" placeholder="昵称 *" required />
-          <input type="email" name="author_email" placeholder="邮箱（可选，不公开）" />
+      {% if current_user %}
+        <p class="comment-form-hint" style="margin-bottom: 12px; color: var(--text-color);">当前登录用户：<strong>{{ current_user.username }}</strong></p>
+        <form class="comment-form" id="commentForm" onsubmit="submitComment(event)">
+          <textarea name="content" placeholder="写下你的评论... *" required></textarea>
+          <p class="comment-form-hint">评论提交后需管理员审核才会公开显示。</p>
+          <button type="submit" class="comment-form-submit">提交评论</button>
+        </form>
+      {% else %}
+        <div style="padding: 24px; text-align: center; background: rgba(0,0,0,0.03); border-radius: 12px;">
+          <p style="margin-bottom: 16px; color: var(--text-color);">你需要登录后才能发表评论。</p>
+          <a href="/login?redirect=/posts/{{ post.slug }}" class="comment-form-submit" style="display: inline-block; text-decoration: none;">前往登录</a>
         </div>
-        <input type="url" name="author_url" placeholder="网站（可选）" />
-        <textarea name="content" placeholder="写下你的评论... *" required></textarea>
-        <p class="comment-form-hint">* 为必填项。评论提交后需管理员审核才会公开显示。</p>
-        <button type="submit" class="comment-form-submit">提交评论</button>
-      </form>
+      {% endif %}
     </div>
   </section>
 
@@ -302,6 +310,10 @@ a{color:var(--accent);text-decoration:none}
     slug: "{{ post.slug }}"
   };
 </script>
+<script src="{{ theme_assets_url('js/site-api.js') }}"></script>
 <script src="{{ theme_assets_url('js/comments.js') }}"></script>
 <script>window.initComments();</script>
 </html>
+
+
+

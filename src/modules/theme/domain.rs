@@ -22,10 +22,7 @@ pub enum ThemeConfigField {
         options: Vec<SelectOption>,
     },
     #[serde(rename = "number")]
-    Number {
-        label: String,
-        default: Option<i32>,
-    },
+    Number { label: String, default: Option<i32> },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -61,4 +58,3 @@ pub struct ThemeSummary {
     pub active: bool,
     pub manifest: ThemeManifest,
 }
-

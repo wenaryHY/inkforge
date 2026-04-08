@@ -15,27 +15,55 @@ use super::{
 };
 
 pub async fn register(state: Arc<AppState>, body: RegisterRequest) -> AppResult<TokenPayload> {
-    let allow_register = setting_repository::get_bool(
-        &state.pool,
-        "allow_register",
-        true,
-    )
-    .await?;
+    let allow_register = setting_repository::get_bool(&state.pool, "allow_register", true).await?;
 
     if !allow_register {
+        tracing::warn!(
+            module = "auth",
+            event = "register_disabled",
+            username = %body.username,
+            email = %body.email,
+            "registration rejected"
+        );
         return Err(AppError::Forbidden);
     }
 
     if body.username.trim().len() < 3 {
-        return Err(AppError::BadRequest("username must be at least 3 characters".into()));
+        tracing::warn!(
+            module = "auth",
+            event = "register_invalid_username",
+            username = %body.username,
+            "registration rejected"
+        );
+        return Err(AppError::BadRequest(
+            "username must be at least 3 characters".into(),
+        ));
     }
     if body.password.len() < 6 {
-        return Err(AppError::BadRequest("password must be at least 6 characters".into()));
+        tracing::warn!(
+            module = "auth",
+            event = "register_invalid_password",
+            username = %body.username,
+            "registration rejected"
+        );
+        return Err(AppError::BadRequest(
+            "password must be at least 6 characters".into(),
+        ));
     }
 
-    let exists = repository::exists_by_username_or_email(&state.pool, &body.username, &body.email).await?;
+    let exists =
+        repository::exists_by_username_or_email(&state.pool, &body.username, &body.email).await?;
     if exists {
-        return Err(AppError::Conflict("username or email already exists".into()));
+        tracing::warn!(
+            module = "auth",
+            event = "register_conflict",
+            username = %body.username,
+            email = %body.email,
+            "registration rejected"
+        );
+        return Err(AppError::Conflict(
+            "username or email already exists".into(),
+        ));
     }
 
     let role = if repository::user_count(&state.pool).await? == 0 {
@@ -66,23 +94,67 @@ pub async fn register(state: Arc<AppState>, body: RegisterRequest) -> AppResult<
         body.username.trim().to_string(),
         role.to_string(),
     )?;
+    tracing::info!(
+        module = "auth",
+        event = "register_success",
+        username = %body.username.trim(),
+        role = %role,
+        "registration succeeded"
+    );
     Ok(TokenPayload { token })
 }
 
 pub async fn login(state: Arc<AppState>, body: LoginRequest) -> AppResult<TokenPayload> {
+    tracing::debug!(
+        module = "auth",
+        event = "login_lookup",
+        login = %body.login,
+        "looking up login account"
+    );
     let user = repository::find_by_login(&state.pool, body.login.trim())
         .await?
-        .ok_or(AppError::Unauthorized)?;
+        .ok_or_else(|| {
+            tracing::warn!(
+                module = "auth",
+                event = "login_user_not_found",
+                login = %body.login,
+                "login rejected"
+            );
+            AppError::Unauthorized
+        })?;
 
     if user.status != "active" {
+        tracing::warn!(
+            module = "auth",
+            event = "login_inactive_user",
+            user_id = %user.id,
+            username = %user.username,
+            status = %user.status,
+            "login rejected"
+        );
         return Err(AppError::Forbidden);
     }
 
     if !verify_password(&body.password, &user.password_hash)? {
+        tracing::warn!(
+            module = "auth",
+            event = "login_bad_password",
+            user_id = %user.id,
+            username = %user.username,
+            "login rejected"
+        );
         return Err(AppError::Unauthorized);
     }
 
     repository::touch_last_login(&state.pool, &user.id).await?;
+    tracing::info!(
+        module = "auth",
+        event = "login_success",
+        user_id = %user.id,
+        username = %user.username,
+        role = %user.role,
+        "login succeeded"
+    );
     let token = issue_token(
         &state.config.auth.secret,
         state.config.auth.expires_in_seconds,

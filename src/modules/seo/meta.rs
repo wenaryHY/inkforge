@@ -91,7 +91,12 @@ pub fn build_home_meta(
         og_type: "website".to_string(),
         og_url: site_url.to_string(),
         og_image: og_image.to_string(),
-        twitter_card: if og_image.is_empty() { "summary" } else { "summary_large_image" }.to_string(),
+        twitter_card: if og_image.is_empty() {
+            "summary"
+        } else {
+            "summary_large_image"
+        }
+        .to_string(),
         twitter_title: site_title.to_string(),
         twitter_description: description,
         twitter_image: og_image.to_string(),
@@ -125,7 +130,12 @@ pub fn build_post_meta(
         og_type: "article".to_string(),
         og_url: canonical_url,
         og_image: og_image.to_string(),
-        twitter_card: if og_image.is_empty() { "summary" } else { "summary_large_image" }.to_string(),
+        twitter_card: if og_image.is_empty() {
+            "summary"
+        } else {
+            "summary_large_image"
+        }
+        .to_string(),
         twitter_title: post_title.to_string(),
         twitter_description: description,
         twitter_image: og_image.to_string(),
@@ -135,7 +145,10 @@ pub fn build_post_meta(
 pub fn build_home_json_ld(site_title: &str, site_description: &str, site_url: &str) -> JsonLdNode {
     let mut extra = HashMap::new();
     extra.insert("name".to_string(), serde_json::json!(site_title));
-    extra.insert("description".to_string(), serde_json::json!(site_description));
+    extra.insert(
+        "description".to_string(),
+        serde_json::json!(site_description),
+    );
     extra.insert("url".to_string(), serde_json::json!(site_url));
 
     JsonLdNode {
@@ -160,7 +173,11 @@ pub fn build_post_json_ld(
     extra.insert("description".to_string(), serde_json::json!(post_excerpt));
     extra.insert(
         "mainEntityOfPage".to_string(),
-        serde_json::json!(format!("{}/posts/{}", site_url.trim_end_matches('/'), post_slug)),
+        serde_json::json!(format!(
+            "{}/posts/{}",
+            site_url.trim_end_matches('/'),
+            post_slug
+        )),
     );
     extra.insert(
         "author".to_string(),

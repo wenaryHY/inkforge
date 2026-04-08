@@ -13,6 +13,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Select } from '../components/Select';
+import { TimePicker } from '../components/TimePicker';
 import { useToast } from '../contexts/ToastContext';
 
 /* 样式常量 */
@@ -315,6 +316,34 @@ export default function Settings() {
             ))}
           </div>
         </div>
+      </SettingSection>
+
+      <SettingSection title="回收站与清理" description="配置已删除内容的保留天数与自动清理时间">
+        <FormRow label="保留天数" hint="软删除的内容将被保存的天数，最长90天。过期后自动永久清理。">
+          <Input 
+            type="number" 
+            min="1" 
+            max="90" 
+            value={kv.trash_retention_days || '30'} 
+            onChange={(e) => {
+              let val = parseInt(e.target.value);
+              if (isNaN(val)) val = 30;
+              if (val < 1) val = 1;
+              if (val > 90) val = 90;
+              update('trash_retention_days', val.toString());
+            }} 
+          />
+        </FormRow>
+        <FormRow label="自动清理时间" hint="每天执行自动永久清理任务的时间。建议设在凌晨避开访问高峰。">
+          <TimePicker 
+            hour={parseInt(kv.trash_cleanup_hour || '3')} 
+            minute={parseInt(kv.trash_cleanup_minute || '0')} 
+            onChange={(h, m) => {
+              update('trash_cleanup_hour', h.toString());
+              update('trash_cleanup_minute', m.toString());
+            }} 
+          />
+        </FormRow>
       </SettingSection>
 
       {/* 数据备份 */}

@@ -43,7 +43,7 @@
 - ✅ 主题详情查看
 - ✅ 主题配置保存（schema → 数据库）
 - ✅ 主题 zip 上传（含 theme.toml 校验）
-- ⬜ 前台主题渲染（router.rs 中 TODO）
+- ✅ 前台主题渲染（MiniJinja 动态加载 + SSR 数据注入）
 
 ### 备份与恢复
 - ✅ 本地备份（数据库 + 媒体文件打包为 zip）
@@ -55,7 +55,7 @@
 ### SEO
 - ✅ Sitemap 生成
 - ✅ Robots.txt 配置
-- ⚠️ Meta 标签构建器已编写但未接入前台渲染
+- ✅ Meta 标签构建器已全部接入前台页面渲染
 
 ### 实时通知
 - ✅ WebSocket（管理员通知 + 公开事件）
@@ -73,7 +73,6 @@
 
 | 模块 | 文件 | 状态 |
 |------|------|------|
-| SEO Meta | `seo/meta.rs` | 待前台渲染路由就绪后接入 |
 | 插件系统 | `infra/plugin/` | 纯接口占位，无实现 |
 | 存储后端 | `infra/storage/` | 抽象层占位，实际用直接文件 I/O |
 | S3 备份 | `infra/backup/s3.rs` | 编译通过但运行时未使用 |
@@ -135,7 +134,7 @@ inkforge/
 核心方向：**Headless Rust Core + Web-Based Theme Engine + Tauri 桌面应用**
 
 ### 近期优先级（v0.3 → v0.4）
-1. 前台主题渲染打通
+1. ✅ 前台主题渲染打通（已完成）
 2. 安装向导
 3. 插件系统最小可用
 4. Tauri 集成

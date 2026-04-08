@@ -1,10 +1,32 @@
-/**
- * InkForge 前台评论系统
- * 独立的 TypeScript 模块，通过 window.__POST_DATA__ 获取服务端注入的数据
+﻿/**
+ * InkForge comment frontend module.
  */
 
-/** Toast 通知 */
-function showToast(msg: string, type: 'success' | 'error' | 'info' = 'info'): void {
+type ToastType = 'success' | 'error' | 'info';
+
+function logDebug(event: string, details?: Record<string, unknown>): void {
+  console.debug('[InkForge][comments][debug]', event, details || {});
+}
+
+function logError(event: string, details?: Record<string, unknown>): void {
+  console.error('[InkForge][comments][error]', event, details || {});
+}
+
+declare global {
+  interface Window {
+    __POST_DATA__?: {
+      id?: string;
+      slug?: string;
+    };
+    InkForgeApi: {
+      apiRequest<T>(path: string, options?: RequestInit & { body?: unknown }): Promise<T>;
+      sanitizeRedirect(target: string | null | undefined, fallback?: string): string;
+    };
+    initComments?: () => void;
+  }
+}
+
+function showToast(message: string, type: ToastType = 'info'): void {
   let container = document.getElementById('toast-container');
   if (!container) {
     container = document.createElement('div');
@@ -22,9 +44,14 @@ function showToast(msg: string, type: 'success' | 'error' | 'info' = 'info'): vo
   }
 
   const toast = document.createElement('div');
-  const colors: Record<string, string> = { success: '#10b981', error: '#ef4444', info: '#3b82f6' };
+  const colors: Record<ToastType, string> = {
+    success: '#10b981',
+    error: '#ef4444',
+    info: '#3b82f6',
+  };
+
   Object.assign(toast.style, {
-    background: colors[type] || colors.info,
+    background: colors[type],
     color: '#fff',
     padding: '12px 20px',
     borderRadius: '8px',
@@ -35,7 +62,8 @@ function showToast(msg: string, type: 'success' | 'error' | 'info' = 'info'): vo
     transition: 'all .3s ease',
     maxWidth: '360px',
   });
-  toast.textContent = msg;
+
+  toast.textContent = message;
   container.appendChild(toast);
 
   requestAnimationFrame(() => {
@@ -50,131 +78,137 @@ function showToast(msg: string, type: 'success' | 'error' | 'info' = 'info'): vo
   }, 4000);
 }
 
-/** HTML 转义 */
-function esc(s: string): string {
-  return s
+function escapeHtml(value: string): string {
+  return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
 
-/** 提交评论 */
-async function submitComment(e: Event): Promise<void> {
-  e.preventDefault();
-  const form = e.target as HTMLFormElement;
-  const fd = new FormData(form);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const postId = (window as any).__POST_DATA__?.id || '';
-
-  const body = {
-    post_id: postId,
-    author_name: fd.get('author_name'),
-    author_email: fd.get('author_email'),
-    author_url: fd.get('author_url'),
-    content: fd.get('content'),
-  };
+async function submitComment(event: Event): Promise<void> {
+  event.preventDefault();
+  const form = event.target as HTMLFormElement;
+  const data = new FormData(form);
+  const slug = window.__POST_DATA__?.slug || '';
+  logDebug('submit_start', { slug });
 
   try {
-    const res = await fetch('/api/comments', {
+    await window.InkForgeApi.apiRequest(`/api/posts/${slug}/comments`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: {
+        content: String(data.get('content') || '').trim(),
+      },
     });
-    const r = await res.json();
 
-    if (r.code === 0) {
-      showToast('评论已提交，等待管理员审核后即可显示！', 'success');
-      form.reset();
-    } else {
-      showToast(r.message || '提交失败', 'error');
+    showToast('Comment submitted for review.', 'success');
+    logDebug('submit_success', { slug });
+    form.reset();
+  } catch (error) {
+    const requestError = error as Error & { status?: number };
+    if (requestError.status === 401) {
+      const target = window.InkForgeApi.sanitizeRedirect(window.location.pathname + window.location.search, '/');
+      logDebug('submit_redirect_login', { slug, target });
+      window.location.href = `/login?redirect=${encodeURIComponent(target)}`;
+      return;
     }
-  } catch {
-    showToast('网络错误，请重试', 'error');
+
+    logError('submit_error', {
+      slug,
+      message: requestError.message,
+      status: requestError.status,
+    });
+    showToast(requestError.message || 'Unable to submit comment.', 'error');
   }
 }
 
-/** WebSocket 实时评论 */
 function initCommentWebSocket(): void {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const postId = (window as any).__POST_DATA__?.id;
+  const postId = window.__POST_DATA__?.id;
   if (!postId) return;
 
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
   let reconnectDelay = 1000;
 
   function connect(): void {
+    logDebug('ws_connect_attempt', { postId });
     const ws = new WebSocket(
       `${protocol}//${location.host}/ws/public?post_id=${encodeURIComponent(postId)}`
     );
 
     ws.onopen = () => {
-      console.log('[InkForge WS] 前台评论连接成功');
+      logDebug('ws_open', { postId });
       reconnectDelay = 1000;
     };
 
-    ws.onmessage = (e) => {
+    ws.onmessage = (messageEvent) => {
       try {
-        const event = JSON.parse(e.data);
-        if (event.type === 'comment_approved' && event.data.post_id === postId) {
+        const event = JSON.parse(messageEvent.data) as {
+          type?: string;
+          data?: { post_id?: string; author_name?: string; created_at?: string; content?: string };
+        };
+
+        if (event.type === 'comment_approved' && event.data?.post_id === postId) {
           const list = document.getElementById('comment-list');
           const countEl = document.getElementById('comment-count');
 
-          if (list) {
+          if (list && event.data) {
             const item = document.createElement('div');
-            item.className = 'comment-item';
+            item.className = 'comment';
             item.style.cssText = 'animation:fadeIn .4s ease;';
+
             const name = event.data.author_name || '?';
-            const avatar = name.charAt(0);
+            const avatar = name.charAt(0).toUpperCase();
             const time = (event.data.created_at || '').substring(0, 16);
             item.innerHTML = `
               <div class="comment-header">
-                <div class="comment-avatar">${esc(avatar)}</div>
+                <div class="comment-avatar">${escapeHtml(avatar)}</div>
                 <div>
-                  <span class="comment-author">${esc(name)}</span>
-                  <span class="comment-time">${time}</span>
+                  <span class="comment-author">${escapeHtml(name)}</span>
+                  <span class="comment-time">${escapeHtml(time)}</span>
                 </div>
               </div>
-              <div class="comment-content">${esc(event.data.content)}</div>
+              <p class="comment-body">${escapeHtml(event.data.content || '')}</p>
             `;
             list.appendChild(item);
           }
 
           if (countEl) {
-            const current = parseInt(countEl.textContent || '0') || 0;
+            const current = parseInt(countEl.textContent || '0', 10) || 0;
             countEl.textContent = String(current + 1);
           }
-          showToast('新评论来了！', 'info');
+
+          showToast('A new approved comment just appeared.', 'info');
+          logDebug('ws_comment_approved', { postId });
         }
-      } catch (err) {
-        console.error('[InkForge WS] 解析失败:', err);
+      } catch (error) {
+        logError('ws_parse_error', { postId, error });
       }
     };
 
     ws.onclose = () => {
-      console.log(`[InkForge WS] 断开，${reconnectDelay / 1000} 秒后重连`);
+      logDebug('ws_close', { postId, reconnectDelay });
       setTimeout(connect, reconnectDelay);
       reconnectDelay = Math.min(reconnectDelay * 2, 30000);
     };
 
-    ws.onerror = () => {};
+    ws.onerror = () => {
+      logError('ws_error', { postId });
+      return undefined;
+    };
   }
 
   connect();
 }
 
-/** 初始化 */
 function initComments(): void {
-  // 绑定表单提交
   const form = document.querySelector('.comment-form');
+  logDebug('init', { hasForm: Boolean(form), postId: window.__POST_DATA__?.id || null });
   if (form) {
     form.addEventListener('submit', submitComment);
   }
 
-  // 初始化 WebSocket
   initCommentWebSocket();
 
-  // 添加 fadeIn 动画（如果不存在）
   if (!document.getElementById('inkforge-fadein-style')) {
     const style = document.createElement('style');
     style.id = 'inkforge-fadein-style';
@@ -184,6 +218,4 @@ function initComments(): void {
   }
 }
 
-// 挂载到全局
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).initComments = initComments;
+window.initComments = initComments;

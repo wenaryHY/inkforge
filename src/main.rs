@@ -36,7 +36,9 @@ async fn main() -> anyhow::Result<()> {
         .max_connections(5)
         .connect(&config.database.url)
         .await?;
-    sqlx::query("PRAGMA foreign_keys = ON").execute(&pool).await?;
+    sqlx::query("PRAGMA foreign_keys = ON")
+        .execute(&pool)
+        .await?;
     sqlx::migrate!("./migrations").run(&pool).await?;
 
     // 创建 WebSocket broadcast channel，容量 256
@@ -44,6 +46,7 @@ async fn main() -> anyhow::Result<()> {
 
     let state = Arc::new(AppState::new(config.clone(), pool, event_tx)?);
     modules::backup::scheduler::start_backup_scheduler(state.clone()).await?;
+    modules::trash::scheduler::start_trash_scheduler(state.clone()).await?;
     let app = build_router(state);
 
     let addr = SocketAddr::new(config.server.host.parse()?, config.server.port);

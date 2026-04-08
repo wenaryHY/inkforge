@@ -15,10 +15,7 @@ use crate::{
 };
 
 use super::{
-    dto::{
-        AdminPostResponse, CreatePostRequest, PostQuery,
-        PublicPostResponse, SearchQuery,
-    },
+    dto::{AdminPostResponse, CreatePostRequest, PostQuery, PublicPostResponse, SearchQuery},
     service,
 };
 
@@ -35,7 +32,9 @@ pub async fn get_public_post(
     State(state): State<Arc<AppState>>,
     Path(slug): Path<String>,
 ) -> AppResult<Json<ApiResponse<PublicPostResponse>>> {
-    Ok(Json(ApiResponse::success(service::get_public_post(state, &slug).await?)))
+    Ok(Json(ApiResponse::success(
+        service::get_public_post(state, &slug).await?,
+    )))
 }
 
 /// GET /api/search — FTS5 full-text search for public posts
@@ -63,7 +62,9 @@ pub async fn get_admin_post(
     _admin: AdminUser,
     Path(id): Path<String>,
 ) -> AppResult<Json<ApiResponse<AdminPostResponse>>> {
-    Ok(Json(ApiResponse::success(service::get_admin_post(state, &id).await?)))
+    Ok(Json(ApiResponse::success(
+        service::get_admin_post(state, &id).await?,
+    )))
 }
 
 pub async fn create_post(
@@ -92,5 +93,7 @@ pub async fn delete_post(
     _admin: AdminUser,
     Path(id): Path<String>,
 ) -> AppResult<Json<ApiResponse<serde_json::Value>>> {
-    Ok(Json(ApiResponse::success(service::delete_post(state, &id).await?)))
+    Ok(Json(ApiResponse::success(
+        service::delete_post(state, &id).await?,
+    )))
 }

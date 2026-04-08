@@ -1,10 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    modules::{
-        post::repository as post_repository,
-        setting::repository as setting_repository,
-    },
+    modules::{post::repository as post_repository, setting::repository as setting_repository},
     shared::{
         auth::AuthUser,
         error::{AppError, AppResult},
@@ -30,6 +27,12 @@ fn moderation_status(mode: &str, has_approved_comment: bool) -> &'static str {
 }
 
 pub async fn list_post_comments(state: Arc<AppState>, slug: &str) -> AppResult<Vec<CommentItem>> {
+    tracing::debug!(
+        module = "comment",
+        event = "list_post_comments",
+        slug = %slug,
+        "listing approved post comments"
+    );
     let post = post_repository::find_comment_target(&state.pool, slug)
         .await?
         .ok_or(AppError::NotFound)?;
@@ -43,6 +46,13 @@ pub async fn create_comment(
     body: CreateCommentRequest,
 ) -> AppResult<serde_json::Value> {
     if body.content.trim().is_empty() {
+        tracing::warn!(
+            module = "comment",
+            event = "create_rejected_empty",
+            user_id = %auth.id,
+            slug = %slug,
+            "comment creation rejected"
+        );
         return Err(AppError::BadRequest("comment content is required".into()));
     }
 
@@ -51,12 +61,29 @@ pub async fn create_comment(
     // 因此 comment_require_login setting 语义上已是"允许游客评论"（当前 AuthUser 已隐含登录），
     // 此处只保留 allow_comment 总开关检查。
     if !allow_comment {
+        tracing::warn!(
+            module = "comment",
+            event = "create_rejected_disabled",
+            user_id = %auth.id,
+            slug = %slug,
+            "comment creation rejected"
+        );
         return Err(AppError::Forbidden);
     }
 
-    let max_length = setting_repository::get_string(&state.pool, "comment_max_length", "2000").await?;
+    let max_length =
+        setting_repository::get_string(&state.pool, "comment_max_length", "2000").await?;
     let max_length = max_length.parse::<usize>().unwrap_or(2000);
     if body.content.chars().count() > max_length {
+        tracing::warn!(
+            module = "comment",
+            event = "create_rejected_too_long",
+            user_id = %auth.id,
+            slug = %slug,
+            content_length = body.content.chars().count(),
+            max_length = max_length,
+            "comment creation rejected"
+        );
         return Err(AppError::BadRequest("comment is too long".into()));
     }
 
@@ -64,12 +91,35 @@ pub async fn create_comment(
         .await?
         .ok_or(AppError::NotFound)?;
     if post.status != "published" || post.visibility != "public" || post.allow_comment == 0 {
+        tracing::warn!(
+            module = "comment",
+            event = "create_rejected_post_state",
+            user_id = %auth.id,
+            slug = %slug,
+            post_status = %post.status,
+            post_visibility = %post.visibility,
+            post_allow_comment = post.allow_comment,
+            "comment creation rejected"
+        );
         return Err(AppError::Forbidden);
     }
 
-    let moderation_mode = setting_repository::get_string(&state.pool, "comment_moderation_mode", "all").await?;
+    let moderation_mode =
+        setting_repository::get_string(&state.pool, "comment_moderation_mode", "all").await?;
     let has_approved = repository::count_approved_by_user(&state.pool, &auth.id).await? > 0;
     let status = moderation_status(&moderation_mode, has_approved);
+
+    tracing::info!(
+        module = "comment",
+        event = "create_attempt",
+        user_id = %auth.id,
+        username = %auth.username,
+        slug = %slug,
+        moderation_mode = %moderation_mode,
+        has_approved_comment = has_approved,
+        final_status = %status,
+        "creating comment"
+    );
 
     let (comment_id, created_at) = repository::insert_comment(
         &state.pool,
@@ -92,6 +142,16 @@ pub async fn create_comment(
     };
     let _ = state.event_tx.send(event);
 
+    tracing::info!(
+        module = "comment",
+        event = "create_success",
+        comment_id = %comment_id,
+        post_id = %post.id,
+        user_id = %auth.id,
+        status = %status,
+        "comment created"
+    );
+
     Ok(serde_json::json!({
         "id": comment_id,
         "status": status,
@@ -103,6 +163,14 @@ pub async fn my_comments(
     auth: &AuthUser,
     query: CommentQuery,
 ) -> AppResult<PaginatedResponse<AdminCommentItem>> {
+    tracing::debug!(
+        module = "comment",
+        event = "list_my_comments",
+        user_id = %auth.id,
+        page = query.page.unwrap_or(1),
+        page_size = query.page_size.unwrap_or(20),
+        "listing user comments"
+    );
     let pagination = PaginationQuery {
         page: query.page,
         page_size: query.page_size,
@@ -120,8 +188,22 @@ pub async fn delete_own_comment(
 ) -> AppResult<serde_json::Value> {
     let deleted = repository::soft_delete_owned(&state.pool, id, &auth.id).await?;
     if !deleted {
+        tracing::warn!(
+            module = "comment",
+            event = "delete_own_not_found",
+            comment_id = %id,
+            user_id = %auth.id,
+            "own comment delete rejected"
+        );
         return Err(AppError::NotFound);
     }
+    tracing::info!(
+        module = "comment",
+        event = "delete_own_success",
+        comment_id = %id,
+        user_id = %auth.id,
+        "own comment deleted"
+    );
     Ok(serde_json::json!({ "deleted": true }))
 }
 
@@ -134,7 +216,8 @@ pub async fn list_admin_comments(
         page_size: query.page_size,
     };
     let (page, page_size, offset) = pagination.normalized(20, 100);
-    let items = repository::list_admin(&state.pool, query.status.as_deref(), page_size, offset).await?;
+    let items =
+        repository::list_admin(&state.pool, query.status.as_deref(), page_size, offset).await?;
     let total = repository::count_admin(&state.pool, query.status.as_deref()).await?;
     Ok(PaginatedResponse::new(items, page, page_size, total))
 }
@@ -174,4 +257,20 @@ pub async fn delete_comment(state: Arc<AppState>, id: &str) -> AppResult<serde_j
     let _ = state.event_tx.send(event);
 
     Ok(serde_json::json!({ "deleted": true }))
+}
+
+pub async fn restore_comment(state: Arc<AppState>, id: &str) -> AppResult<serde_json::Value> {
+    let restored = repository::restore_deleted_admin(&state.pool, id).await?;
+    if !restored {
+        return Err(AppError::NotFound);
+    }
+    Ok(serde_json::json!({ "restored": true }))
+}
+
+pub async fn purge_comment(state: Arc<AppState>, id: &str) -> AppResult<serde_json::Value> {
+    let purged = repository::purge_admin(&state.pool, id).await?;
+    if !purged {
+        return Err(AppError::NotFound);
+    }
+    Ok(serde_json::json!({ "purged": true }))
 }

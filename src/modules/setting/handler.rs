@@ -16,7 +16,9 @@ pub async fn list_settings(
     State(state): State<Arc<AppState>>,
     _admin: AdminUser,
 ) -> AppResult<Json<ApiResponse<Vec<SettingItem>>>> {
-    Ok(Json(ApiResponse::success(service::list_settings(state).await?)))
+    Ok(Json(ApiResponse::success(
+        service::list_settings(state).await?,
+    )))
 }
 
 pub async fn update_setting(

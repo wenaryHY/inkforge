@@ -10,10 +10,12 @@ pub async fn run_migrations(pool: &SqlitePool) -> Result<()> {
         .execute(pool)
         .await?;
     // 003: 添加 media.category 字段（忽略已存在错误）
-    sqlx::query(include_str!("../../../migrations/003_add_media_category.sql"))
-        .execute(pool)
-        .await
-        .ok();
+    sqlx::query(include_str!(
+        "../../../migrations/003_add_media_category.sql"
+    ))
+    .execute(pool)
+    .await
+    .ok();
     tracing::info!("数据库迁移完成");
     Ok(())
 }

@@ -34,7 +34,8 @@ impl BackupStorageBackend for LocalBackupStorage {
         backup_id: &'a str,
         file_name: &'a str,
         data: &'a [u8],
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, AppError>> + Send + 'a>> {
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, AppError>> + Send + 'a>>
+    {
         Box::pin(async move {
             let path = self.build_path(backup_id, file_name);
             Self::ensure_parent(&path).await?;
@@ -47,7 +48,8 @@ impl BackupStorageBackend for LocalBackupStorage {
         &'a self,
         backup_id: &'a str,
         file_name: &'a str,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<u8>, AppError>> + Send + 'a>> {
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<u8>, AppError>> + Send + 'a>>
+    {
         Box::pin(async move {
             let path = self.build_path(backup_id, file_name);
             Ok(fs::read(path).await?)
@@ -58,7 +60,8 @@ impl BackupStorageBackend for LocalBackupStorage {
         &'a self,
         backup_id: &'a str,
         file_name: &'a str,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), AppError>> + Send + 'a>> {
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), AppError>> + Send + 'a>>
+    {
         Box::pin(async move {
             let path = self.build_path(backup_id, file_name);
             if fs::try_exists(&path).await? {

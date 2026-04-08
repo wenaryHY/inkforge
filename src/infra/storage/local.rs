@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use std::pin::Pin;
 use tokio::fs;
 
-use crate::shared::error::AppError;
 use super::traits::StorageBackend;
+use crate::shared::error::AppError;
 
 pub struct LocalStorage {
     pub base_dir: PathBuf,

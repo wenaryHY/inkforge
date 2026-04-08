@@ -52,7 +52,7 @@ pub async fn list_trash(
 
     let types: Vec<&str> = match type_filter {
         Some(t) => vec![t],
-        None => vec!["post", "category", "tag", "media", "media_category"],
+        None => vec!["post", "category", "tag", "media", "media_category", "comment"],
     };
 
     for t in types {
@@ -76,6 +76,10 @@ pub async fn list_trash(
             "media_category" => {
                 let rows = repository::list_trashed_media_categories(&state.pool).await?;
                 items.extend(to_trash_items(rows, "media_category", retention_days));
+            }
+            "comment" => {
+                let rows = repository::list_trashed_comments(&state.pool).await?;
+                items.extend(to_trash_items(rows, "comment", retention_days));
             }
             _ => {}
         }

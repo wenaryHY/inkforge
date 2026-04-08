@@ -5,7 +5,10 @@ use crate::{
     state::AppState,
 };
 
-use super::{dto::{SettingItem, UpdateSettingRequest}, repository};
+use super::{
+    dto::{SettingItem, UpdateSettingRequest},
+    repository,
+};
 
 const ALLOWED_SETTINGS: &[&str] = &[
     "site_title",

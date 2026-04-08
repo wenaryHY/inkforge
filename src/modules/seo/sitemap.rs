@@ -1,10 +1,6 @@
 use std::sync::Arc;
 
-use axum::{
-    extract::State,
-    http::header,
-    response::IntoResponse,
-};
+use axum::{extract::State, http::header, response::IntoResponse};
 
 use crate::{
     modules::{post::repository as post_repository, setting::repository as setting_repository},
@@ -40,7 +36,11 @@ pub async fn generate_sitemap_xml(state: &AppState) -> Result<String, String> {
 
     for post in posts {
         let post_url = format!("{site_url}/posts/{}", post.slug);
-        let lastmod = post.updated_at.split('T').next().unwrap_or(&post.updated_at);
+        let lastmod = post
+            .updated_at
+            .split('T')
+            .next()
+            .unwrap_or(&post.updated_at);
         xml.push_str(&format!(
             r#"  <url>
     <loc>{post_url}</loc>
@@ -57,9 +57,7 @@ pub async fn generate_sitemap_xml(state: &AppState) -> Result<String, String> {
 }
 
 /// Handler for GET /sitemap.xml
-pub async fn serve_sitemap(
-    State(state): State<Arc<AppState>>,
-) -> impl IntoResponse {
+pub async fn serve_sitemap(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     match generate_sitemap_xml(&state).await {
         Ok(xml) => (
             [

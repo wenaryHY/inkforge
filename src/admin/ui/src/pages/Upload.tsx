@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiData, getToken, paginationPages } from '../lib/api';
+import { apiData, getToken, paginationPages, API } from '../lib/api';
 import { esc } from '../lib/utils';
 import type { MediaItem, PaginatedResponse } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -65,30 +65,30 @@ export default function Upload() {
 
   useEffect(() => { void fetchMedia(page, kind, category, keyword); }, [page, kind, category, keyword, fetchMedia]);
 
-   async function doUpload(file: File) {
-     const fd = new FormData();
-     fd.append('file', file);
-     if (category) fd.append('category', category);
-     setResult(null);
-     try {
-      const res = await fetch('/api/admin/media', {
-         method: 'POST',
-         headers: { Authorization: `Bearer ${getToken()}` },
-         body: fd
-       });
-       const json = await res.json();
-       if (!res.ok || json.code !== 0) throw new Error(json.message || '上传失败');
-       setResult({ success: true, message: json.data.public_url });
-       toast('上传成功', 'success');
-       await fetchMedia(1, kind, category, keyword);
-       setPage(1);
-     } catch (error) {
-       const msg = error instanceof Error ? error.message : '上传失败';
-       setResult({ success: false, message: msg });
-       toast(msg, 'error');
-     }
-     if (fileInputRef.current) fileInputRef.current.value = '';
-   }
+  async function doUpload(file: File) {
+    const fd = new FormData();
+    fd.append('file', file);
+    if (category) fd.append('category', category);
+    setResult(null);
+    try {
+      const res = await fetch(`${API}/api/admin/media`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` },
+        body: fd
+      });
+      const json = await res.json();
+      if (!res.ok || json.code !== 0) throw new Error(json.message || '上传失败');
+      setResult({ success: true, message: json.data.public_url });
+      toast('上传成功', 'success');
+      await fetchMedia(1, kind, category, keyword);
+      setPage(1);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '上传失败';
+      setResult({ success: false, message: msg });
+      toast(msg, 'error');
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }
 
   async function deleteMedia(id: string) {
     if (!window.confirm('确定要删除此文件吗？')) return;
@@ -216,14 +216,14 @@ export default function Upload() {
                         onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); navigator.clipboard.writeText(result.message).then(() => toast('已复制到剪贴板', 'success')).catch(() => toast('复制失败', 'error')); }}
                         style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid #a7f3d0', background: '#fff', color: '#047857', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
                         复制链接
                       </button>
                       <button type="button"
                         onClick={(e: React.MouseEvent<HTMLButtonElement>) => { e.stopPropagation(); insertIntoEditor(result.message); }}
                         style={{ padding: '6px 14px', borderRadius: '8px', border: '1px solid rgba(255,107,53,0.4)', background: 'rgba(255,107,53,0.06)', color: '#e55a28', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px' }}
                       >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
                         插入编辑器
                       </button>
                     </div>
@@ -264,15 +264,15 @@ export default function Upload() {
                 <option value="audio">音频</option>
               </IfSelect>
             </div>
-             <div style={{ width: '130px' }}>
-               <MediaCategorySelect
-                 categories={categories}
-                 value={category}
-                 onChange={(val: string) => { setCategory(val); setPage(1); }}
-                 placeholder="全部分类"
-                 includeEmpty
-               />
-             </div>
+            <div style={{ width: '130px' }}>
+              <MediaCategorySelect
+                categories={categories}
+                value={category}
+                onChange={(val: string) => { setCategory(val); setPage(1); }}
+                placeholder="全部分类"
+                includeEmpty
+              />
+            </div>
           </div>
         </div>
 
@@ -294,12 +294,12 @@ export default function Upload() {
                   {/* 预览区 */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     {item.kind === 'image' ? (
-                      <img src={item.public_url} alt={item.original_name}
+                      <img src={`${API === '' ? '' : API}${item.public_url}`} alt={item.original_name}
                         style={{ height: '60px', width: '60px', objectFit: 'cover', borderRadius: '10px', border: '1px solid var(--border-light)', flexShrink: 0 }}
                       />
                     ) : (
                       <div style={{ width: '60px', height: '60px', borderRadius: '10px', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.8"><path d="M9 18V5l12-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="18" cy="16" r="3" /></svg>
                       </div>
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -332,20 +332,20 @@ export default function Upload() {
                     </div>
                   </div>
 
-                    {/* 分类标签 */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <IconFolder size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                      <select
-                        value={item.category || ''}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => void setItemCategory(item.id, e.target.value)}
-                        style={{ flex: 1, fontSize: '11.5px', color: 'var(--text-secondary)', border: '1px solid var(--border-light)', borderRadius: '6px', padding: '3px 6px', background: 'var(--bg-subtle)', cursor: 'pointer', outline: 'none', minWidth: 0 }}
-                      >
-                        <option value="">无分类</option>
-                        {categories.map(c => (
-                          <option key={c.id} value={c.slug}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                  {/* 分类标签 */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <IconFolder size={12} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                    <select
+                      value={item.category || ''}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => void setItemCategory(item.id, e.target.value)}
+                      style={{ flex: 1, fontSize: '11.5px', color: 'var(--text-secondary)', border: '1px solid var(--border-light)', borderRadius: '6px', padding: '3px 6px', background: 'var(--bg-subtle)', cursor: 'pointer', outline: 'none', minWidth: 0 }}
+                    >
+                      <option value="">无分类</option>
+                      {categories.map(c => (
+                        <option key={c.id} value={c.slug}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
 
                   {/* 操作按钮 */}
                   <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
@@ -355,7 +355,7 @@ export default function Upload() {
                       onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--primary-500)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--primary-500)'; }}
                       onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--border-light)'; (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'; }}
                     >
-                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
                       插入
                     </button>
                     <button type="button" onClick={() => startRename(item)}

@@ -1,9 +1,9 @@
+use crate::modules::theme::repository;
+use crate::modules::theme::{ThemeConfig, ThemeManifest};
+use crate::shared::error::{AppError, AppResult};
+use sqlx::SqlitePool;
 use std::fs;
 use std::path::PathBuf;
-use sqlx::SqlitePool;
-use crate::modules::theme::{ThemeManifest, ThemeConfig};
-use crate::shared::error::{AppResult, AppError};
-use crate::modules::theme::repository;
 
 pub struct ThemeService {
     themes_dir: PathBuf,
@@ -22,9 +22,7 @@ impl ThemeService {
             return Ok(themes);
         }
 
-        for entry in fs::read_dir(&self.themes_dir)
-            .map_err(|e| AppError::Io(e))?
-        {
+        for entry in fs::read_dir(&self.themes_dir).map_err(|e| AppError::Io(e))? {
             let entry = entry.map_err(|e| AppError::Io(e))?;
             let path = entry.path();
 
@@ -43,13 +41,13 @@ impl ThemeService {
         let manifest_path = theme_dir.join("theme.toml");
 
         if !manifest_path.exists() {
-            return Err(AppError::BadRequest(
-                format!("theme.toml not found in {:?}", theme_dir),
-            ));
+            return Err(AppError::BadRequest(format!(
+                "theme.toml not found in {:?}",
+                theme_dir
+            )));
         }
 
-        let content = fs::read_to_string(&manifest_path)
-            .map_err(|e| AppError::Io(e))?;
+        let content = fs::read_to_string(&manifest_path).map_err(|e| AppError::Io(e))?;
 
         let manifest: ThemeManifest = toml::from_str(&content)
             .map_err(|e| AppError::Anyhow(anyhow::anyhow!("Failed to parse theme.toml: {}", e)))?;

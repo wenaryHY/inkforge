@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { listTrash, restoreTrashItem, purgeTrashItem, purgeExpiredTrash } from '../lib/api';
 import type { TrashItem } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -10,7 +11,7 @@ import { CardTableSkeleton } from '../components/Skeleton';
 import { useToast } from '../contexts/ToastContext';
 import {
   IconTrash2, IconRefreshCw, IconFileText, IconFolderOpen,
-  IconTag, IconImage, IconFolder, IconCheck,
+  IconTag, IconImage, IconFolder, IconCheck, IconMessageSquare
 } from '../components/Icons';
 
 /* ═════════════ 类型标签配置 ═════════════ */
@@ -20,6 +21,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color:
   tag: { label: '标签', icon: <IconTag size={14} />, color: '#10b981' },
   media: { label: '媒体', icon: <IconImage size={14} />, color: '#f59e0b' },
   media_category: { label: '媒体分类', icon: <IconFolder size={14} />, color: '#ec4899' },
+  comment: { label: '评论', icon: <IconMessageSquare size={14} />, color: '#6366f1' },
 };
 
 const TABS = [
@@ -29,6 +31,7 @@ const TABS = [
   { key: 'tag', label: '标签' },
   { key: 'media', label: '媒体' },
   { key: 'media_category', label: '媒体分类' },
+  { key: 'comment', label: '评论' },
 ];
 
 /* ═════════════ 样式 ═════════════ */
@@ -127,7 +130,7 @@ function PreviewPanel({ item, onClose }: { item: TrashItem; onClose: () => void 
       <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
         <div style={{ marginBottom: '20px' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-            {item.item_type === 'post' ? '标题' : '名称'}
+            {item.item_type === 'post' ? '标题' : item.item_type === 'comment' ? '内容' : '名称'}
           </div>
           <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--if-text)', lineHeight: 1.5 }}>
             {item.name}
@@ -186,7 +189,11 @@ export default function RecycleBin() {
   const toast = useToast();
   const [items, setItems] = useState<TrashItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || '';
+  const setActiveTab = (tab: string) => {
+    setSearchParams(tab ? { tab } : {});
+  };
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [previewItem, setPreviewItem] = useState<TrashItem | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<TrashItem | null>(null);

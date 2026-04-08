@@ -36,7 +36,8 @@ impl BackupStorageBackend for S3BackupStorage {
         backup_id: &'a str,
         file_name: &'a str,
         data: &'a [u8],
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, AppError>> + Send + 'a>> {
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<String, AppError>> + Send + 'a>>
+    {
         Box::pin(async move {
             let key = self.key(backup_id, file_name);
             self.client
@@ -55,10 +56,12 @@ impl BackupStorageBackend for S3BackupStorage {
         &'a self,
         backup_id: &'a str,
         file_name: &'a str,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<u8>, AppError>> + Send + 'a>> {
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<u8>, AppError>> + Send + 'a>>
+    {
         Box::pin(async move {
             let key = self.key(backup_id, file_name);
-            let output = self.client
+            let output = self
+                .client
                 .get_object()
                 .bucket(&self.bucket)
                 .key(&key)
@@ -66,11 +69,10 @@ impl BackupStorageBackend for S3BackupStorage {
                 .await
                 .map_err(|e| AppError::Anyhow(anyhow::anyhow!("S3 download failed: {e}")))?;
 
-            let data = output
-                .body
-                .collect()
-                .await
-                .map_err(|e| AppError::Anyhow(anyhow::anyhow!("S3 body collect failed: {e}")))?;
+            let data =
+                output.body.collect().await.map_err(|e| {
+                    AppError::Anyhow(anyhow::anyhow!("S3 body collect failed: {e}"))
+                })?;
             Ok(data.into_bytes().to_vec())
         })
     }
@@ -79,7 +81,8 @@ impl BackupStorageBackend for S3BackupStorage {
         &'a self,
         backup_id: &'a str,
         file_name: &'a str,
-    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), AppError>> + Send + 'a>> {
+    ) -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<(), AppError>> + Send + 'a>>
+    {
         Box::pin(async move {
             let key = self.key(backup_id, file_name);
             self.client

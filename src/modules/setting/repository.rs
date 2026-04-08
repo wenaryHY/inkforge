@@ -13,12 +13,18 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<SettingItem>, sqlx::Error> {
         })
 }
 
-pub async fn get_string(pool: &SqlitePool, key: &str, default: &str) -> Result<String, sqlx::Error> {
-    Ok(sqlx::query_scalar::<_, String>("SELECT value FROM settings WHERE key = ?")
-        .bind(key)
-        .fetch_optional(pool)
-        .await?
-        .unwrap_or_else(|| default.to_string()))
+pub async fn get_string(
+    pool: &SqlitePool,
+    key: &str,
+    default: &str,
+) -> Result<String, sqlx::Error> {
+    Ok(
+        sqlx::query_scalar::<_, String>("SELECT value FROM settings WHERE key = ?")
+            .bind(key)
+            .fetch_optional(pool)
+            .await?
+            .unwrap_or_else(|| default.to_string()),
+    )
 }
 
 pub async fn get_bool(pool: &SqlitePool, key: &str, default: bool) -> Result<bool, sqlx::Error> {

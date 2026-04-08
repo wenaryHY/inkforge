@@ -62,4 +62,3 @@ fn parse_sqlite_url(url: &str) -> anyhow::Result<PathBuf> {
         Ok(std::env::current_dir()?.join(&path))
     }
 }
-

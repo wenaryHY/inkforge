@@ -11,4 +11,6 @@ pub struct MediaCategory {
     pub color: Option<String>,
     pub sort_order: i64,
     pub created_at: String,
+    pub updated_at: String,
+    pub deleted_at: Option<String>,
 }

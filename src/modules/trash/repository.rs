@@ -52,6 +52,16 @@ pub async fn list_trashed_media_categories(pool: &SqlitePool) -> AppResult<Vec<(
     Ok(rows)
 }
 
+/// 查询所有已软删除的评论
+pub async fn list_trashed_comments(pool: &SqlitePool) -> AppResult<Vec<(String, String, Option<String>, String)>> {
+    let rows = sqlx::query_as::<_, (String, String, Option<String>, String)>(
+        "SELECT id, substr(content, 1, 60), NULL, deleted_at FROM comments WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC",
+    )
+    .fetch_all(pool)
+    .await?;
+    Ok(rows)
+}
+
 /// 恢复（清除 deleted_at）
 pub async fn restore_item(pool: &SqlitePool, item_type: &str, id: &str) -> AppResult<bool> {
     let sql = match item_type {
@@ -60,6 +70,7 @@ pub async fn restore_item(pool: &SqlitePool, item_type: &str, id: &str) -> AppRe
         "tag" => "UPDATE tags SET deleted_at = NULL, updated_at = datetime('now') WHERE id = ? AND deleted_at IS NOT NULL",
         "media" => "UPDATE media SET deleted_at = NULL, updated_at = datetime('now') WHERE id = ? AND deleted_at IS NOT NULL",
         "media_category" => "UPDATE media_categories SET deleted_at = NULL, updated_at = datetime('now') WHERE id = ? AND deleted_at IS NOT NULL",
+        "comment" => "UPDATE comments SET deleted_at = NULL, updated_at = datetime('now') WHERE id = ? AND deleted_at IS NOT NULL",
         _ => return Ok(false),
     };
     let result = sqlx::query(sql).bind(id).execute(pool).await?;
@@ -87,6 +98,7 @@ pub async fn purge_item(pool: &SqlitePool, item_type: &str, id: &str) -> AppResu
         }
         "media" => "DELETE FROM media WHERE id = ? AND deleted_at IS NOT NULL",
         "media_category" => "DELETE FROM media_categories WHERE id = ? AND deleted_at IS NOT NULL",
+        "comment" => "DELETE FROM comments WHERE id = ? AND deleted_at IS NOT NULL",
         _ => return Ok(false),
     };
     let result = sqlx::query(sql).bind(id).execute(pool).await?;
@@ -112,7 +124,7 @@ pub async fn purge_expired(pool: &SqlitePool, retention_days: i64) -> AppResult<
     }
 
     let mut total_purged: i64 = 0;
-    let entity_tables = ["posts", "categories", "tags", "media", "media_categories"];
+    let entity_tables = ["posts", "categories", "tags", "media", "media_categories", "comments"];
     for table in &entity_tables {
         let sql = format!(
             "DELETE FROM {} WHERE deleted_at IS NOT NULL AND deleted_at < datetime('now', ?)",

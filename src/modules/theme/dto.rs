@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::modules::theme::{ThemeConfig, ThemeConfigSchema, ThemeManifest};
+use serde::{Deserialize, Serialize};
 
 /// 主题详情响应（包含 manifest + 当前配置 + schema）
 #[derive(Debug, Serialize)]

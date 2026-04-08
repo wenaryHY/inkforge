@@ -38,14 +38,23 @@ pub type AppResult<T> = Result<T, AppError>;
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
         let (status, code, message) = match self {
-            Self::NotFound => (StatusCode::NOT_FOUND, 40400, "resource not found".to_string()),
+            Self::NotFound => (
+                StatusCode::NOT_FOUND,
+                40400,
+                "resource not found".to_string(),
+            ),
             Self::Unauthorized => (StatusCode::UNAUTHORIZED, 40100, "unauthorized".to_string()),
             Self::Forbidden => (StatusCode::FORBIDDEN, 40300, "forbidden".to_string()),
             Self::BadRequest(msg) => (StatusCode::BAD_REQUEST, 40000, msg),
             Self::Conflict(msg) => (StatusCode::CONFLICT, 40900, msg),
             Self::Multipart(msg) => (StatusCode::BAD_REQUEST, 40000, msg),
             Self::Sqlx(err) => {
-                tracing::error!(error = ?err, "database error");
+                tracing::error!(
+                    module = "shared_error",
+                    event = "sqlx_error",
+                    error = ?err,
+                    "database error"
+                );
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     50000,
@@ -53,7 +62,12 @@ impl IntoResponse for AppError {
                 )
             }
             Self::Config(err) => {
-                tracing::error!(error = ?err, "config error");
+                tracing::error!(
+                    module = "shared_error",
+                    event = "config_error",
+                    error = ?err,
+                    "configuration error"
+                );
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     50000,
@@ -61,7 +75,12 @@ impl IntoResponse for AppError {
                 )
             }
             Self::Io(err) => {
-                tracing::error!(error = ?err, "io error");
+                tracing::error!(
+                    module = "shared_error",
+                    event = "io_error",
+                    error = ?err,
+                    "io error"
+                );
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     50000,
@@ -69,7 +88,12 @@ impl IntoResponse for AppError {
                 )
             }
             Self::Anyhow(err) => {
-                tracing::error!(error = ?err, "application error");
+                tracing::error!(
+                    module = "shared_error",
+                    event = "anyhow_error",
+                    error = ?err,
+                    "application error"
+                );
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     50000,
@@ -77,7 +101,12 @@ impl IntoResponse for AppError {
                 )
             }
             Self::SerdeJson(err) => {
-                tracing::error!(error = ?err, "json serialization error");
+                tracing::error!(
+                    module = "shared_error",
+                    event = "serde_json_error",
+                    error = ?err,
+                    "json serialization error"
+                );
                 (
                     StatusCode::INTERNAL_SERVER_ERROR,
                     50000,

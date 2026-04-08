@@ -27,7 +27,9 @@ pub async fn create_tag(
     _admin: AdminUser,
     Json(body): Json<CreateTagRequest>,
 ) -> AppResult<Json<ApiResponse<Tag>>> {
-    Ok(Json(ApiResponse::success(service::create_tag(state, body).await?)))
+    Ok(Json(ApiResponse::success(
+        service::create_tag(state, body).await?,
+    )))
 }
 
 pub async fn update_tag(
@@ -46,5 +48,7 @@ pub async fn delete_tag(
     _admin: AdminUser,
     Path(id): Path<String>,
 ) -> AppResult<Json<ApiResponse<serde_json::Value>>> {
-    Ok(Json(ApiResponse::success(service::delete_tag(state, &id).await?)))
+    Ok(Json(ApiResponse::success(
+        service::delete_tag(state, &id).await?,
+    )))
 }

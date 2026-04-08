@@ -49,7 +49,8 @@ pub async fn list_media(
     let kind = query.kind.as_deref();
     let keyword = query.keyword.as_deref().filter(|k| !k.trim().is_empty());
     let category = query.category.as_deref().filter(|k| !k.trim().is_empty());
-    let items = repository::list_media(&state.pool, kind, keyword, category, page_size, offset).await?;
+    let items =
+        repository::list_media(&state.pool, kind, keyword, category, page_size, offset).await?;
     let total = repository::count_media(&state.pool, kind, keyword, category).await?;
     Ok(PaginatedResponse::new(items, page, page_size, total))
 }
@@ -68,8 +69,8 @@ pub async fn upload_media_raw(
         .and_then(|ext| ext.to_str())
         .map(|ext| ext.to_lowercase())
         .ok_or_else(|| AppError::BadRequest("file extension is required".into()))?;
-    let (kind, expected_mime) = classify_file(&ext)
-        .ok_or_else(|| AppError::BadRequest("unsupported media type".into()))?;
+    let (kind, expected_mime) =
+        classify_file(&ext).ok_or_else(|| AppError::BadRequest("unsupported media type".into()))?;
     let mime_type = content_type
         .filter(|ct| !ct.is_empty())
         .or_else(|| mime_guess::from_ext(&ext).first().map(|m| m.to_string()))
@@ -80,7 +81,9 @@ pub async fn upload_media_raw(
     }
 
     if mime_type != expected_mime {
-        return Err(AppError::BadRequest("mime type does not match file extension".into()));
+        return Err(AppError::BadRequest(
+            "mime type does not match file extension".into(),
+        ));
     }
 
     let bytes = data;
@@ -92,12 +95,9 @@ pub async fn upload_media_raw(
         )));
     }
 
-    let resolved_category = super::category::ensure_category_exists_or_resolve(
-        &state,
-        category.as_deref(),
-        &ext,
-    )
-    .await?;
+    let resolved_category =
+        super::category::ensure_category_exists_or_resolve(&state, category.as_deref(), &ext)
+            .await?;
 
     let stored_name = format!("{}.{}", uuid::Uuid::new_v4(), ext);
     let relative_path = PathBuf::from("media").join(&stored_name);
@@ -140,7 +140,11 @@ pub async fn delete_media(state: Arc<AppState>, id: &str) -> AppResult<serde_jso
     Ok(serde_json::json!({ "deleted": true }))
 }
 
-pub async fn rename_media(state: Arc<AppState>, id: &str, new_name: &str) -> AppResult<serde_json::Value> {
+pub async fn rename_media(
+    state: Arc<AppState>,
+    id: &str,
+    new_name: &str,
+) -> AppResult<serde_json::Value> {
     if new_name.trim().is_empty() {
         return Err(AppError::BadRequest("文件名不能为空".into()));
     }

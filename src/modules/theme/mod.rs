@@ -1,12 +1,8 @@
 pub mod domain;
 pub mod dto;
-pub mod repository;
-pub mod service;
 pub mod engine;
 pub mod handler;
+pub mod repository;
+pub mod service;
 
-pub use domain::{
-    ThemeConfig,
-    ThemeConfigSchema,
-    ThemeManifest,
-};
+pub use domain::{ThemeConfig, ThemeConfigSchema, ThemeManifest};

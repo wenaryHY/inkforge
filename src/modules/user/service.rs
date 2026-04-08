@@ -8,7 +8,11 @@ use crate::{
     state::AppState,
 };
 
-use super::{domain::CurrentUser, dto::{UpdatePasswordRequest, UpdateProfileRequest}, repository};
+use super::{
+    domain::CurrentUser,
+    dto::{UpdatePasswordRequest, UpdateProfileRequest},
+    repository,
+};
 
 pub async fn me(state: Arc<AppState>, auth: &AuthUser) -> AppResult<CurrentUser> {
     repository::find_current(&state.pool, &auth.id)
@@ -21,7 +25,9 @@ pub async fn update_profile(
     auth: &AuthUser,
     body: UpdateProfileRequest,
 ) -> AppResult<CurrentUser> {
-    let theme_preference = body.theme_preference.unwrap_or_else(|| "system".to_string());
+    let theme_preference = body
+        .theme_preference
+        .unwrap_or_else(|| "system".to_string());
     if !matches!(theme_preference.as_str(), "system" | "light" | "dark") {
         return Err(AppError::BadRequest("invalid theme preference".into()));
     }
@@ -45,7 +51,9 @@ pub async fn update_password(
     body: UpdatePasswordRequest,
 ) -> AppResult<serde_json::Value> {
     if body.new_password.len() < 6 {
-        return Err(AppError::BadRequest("new password must be at least 6 characters".into()));
+        return Err(AppError::BadRequest(
+            "new password must be at least 6 characters".into(),
+        ));
     }
 
     let current_hash = repository::find_password_hash(&state.pool, &auth.id)

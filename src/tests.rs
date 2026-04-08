@@ -41,7 +41,11 @@ mod config_tests {
     fn default_config_loads_successfully() {
         // 确保默认配置可以加载（config/default.toml 存在）
         let config = AppConfig::load();
-        assert!(config.is_ok(), "default config should load: {:?}", config.err());
+        assert!(
+            config.is_ok(),
+            "default config should load: {:?}",
+            config.err()
+        );
     }
 
     #[test]
@@ -67,7 +71,10 @@ mod domain_tests {
 
     #[test]
     fn backup_provider_roundtrips() {
-        assert_eq!(BackupProvider::from_str("local"), Some(BackupProvider::Local));
+        assert_eq!(
+            BackupProvider::from_str("local"),
+            Some(BackupProvider::Local)
+        );
         assert_eq!(BackupProvider::from_str("s3"), Some(BackupProvider::S3));
         assert_eq!(BackupProvider::from_str("invalid"), None);
         assert_eq!(BackupProvider::Local.as_str(), "local");
@@ -89,7 +96,7 @@ mod domain_tests {
 
 #[cfg(test)]
 mod seo_tests {
-    use crate::modules::seo::meta::{generate_excerpt, build_home_meta};
+    use crate::modules::seo::meta::{build_home_meta, generate_excerpt};
 
     #[test]
     fn generate_excerpt_strips_html_and_truncates() {

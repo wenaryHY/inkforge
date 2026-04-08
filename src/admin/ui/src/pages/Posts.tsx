@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { apiData, paginationPages } from '../lib/api';
+import { useNavigate } from 'react-router-dom';
+import { apiData, API, paginationPages } from '../lib/api';
 import { esc } from '../lib/utils';
 import type { AdminPost, Category, PaginatedResponse, Tag } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -96,6 +97,7 @@ export default function Posts() {
   const [page, setPage] = useState(1);
   const [commentTotal, setCommentTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<AdminPost | null>(null);
@@ -266,6 +268,29 @@ export default function Posts() {
         actions={<Button onClick={() => openEditor()}><IconPlus /> 新建文章</Button>}
       />
 
+      <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-light)', marginBottom: '20px' }}>
+        <button
+          style={{
+            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--primary-600)',
+            borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
+          }}
+        >
+          活跃文章
+        </button>
+        <button
+          onClick={() => navigate('/admin/trash?tab=post')}
+          style={{
+            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)',
+            borderBottom: '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+        >
+          已删除
+        </button>
+      </div>
+
       <Card style={{ overflow: 'hidden' }}>
         {/* 批量操作栏 */}
         {selectedIds.size > 0 && (
@@ -373,6 +398,14 @@ export default function Posts() {
                     {/* 操作列 - 图标按钮始终可见 */}
                     <td style={{ ...T.td }}>
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px', alignItems: 'center' }}>
+                        {/* 查看 */}
+                        <button type="button"
+                          title="在首页中查看"
+                          style={T.iconBtn('#10b981')}
+                          onClick={() => window.open(`${API}/posts/${post.slug}`, '_blank')}
+                          onMouseEnter={e => { e.currentTarget.style.background = '#d1fae5'; e.currentTarget.style.color = '#059669'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10b981'; }}
+                        ><IconEye size={16} /></button>
                         {/* 编辑 */}
                         <button type="button"
                           title="编辑文章"

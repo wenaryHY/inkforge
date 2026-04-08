@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -12,7 +13,7 @@ import { useToast } from '../contexts/ToastContext';
 import { useMediaCategories } from '../hooks/useMediaCategories';
 import type { CreateMediaCategoryRequest, MediaCategory, UpdateMediaCategoryRequest } from '../types';
 import { esc } from '../lib/utils';
-import { IconFolder, IconPlus, IconEdit2, IconTrash2 } from '../components/Icons';
+import { IconFolder, IconPlus, IconEdit2, IconTrash2, IconImage, IconFileText, IconArchive, IconFolderOpen } from '../components/Icons';
 
 const TH = {
   padding: '14px 16px',
@@ -55,8 +56,17 @@ const INITIAL_FORM = {
   sort_order: '0',
 };
 
+const PREDEFINED_ICONS = [
+  { id: 'folder', name: '文件夹', icon: <IconFolder size={18} /> },
+  { id: 'folder-open', name: '打开的文件夹', icon: <IconFolderOpen size={18} /> },
+  { id: 'image', name: '图片', icon: <IconImage size={18} /> },
+  { id: 'file', name: '文件', icon: <IconFileText size={18} /> },
+  { id: 'archive', name: '压缩包', icon: <IconArchive size={18} /> },
+];
+
 export default function MediaCategories() {
   const toast = useToast();
+  const navigate = useNavigate();
   const { categories, loading, fetch, create, update, remove } = useMediaCategories();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<MediaCategory | null>(null);
@@ -171,6 +181,29 @@ export default function MediaCategories() {
         }
       />
 
+      <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-light)', marginBottom: '20px' }}>
+        <button
+          style={{
+            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--primary-600)',
+            borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
+          }}
+        >
+          活跃分类
+        </button>
+        <button
+          onClick={() => navigate('/admin/trash?tab=media_category')}
+          style={{
+            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)',
+            borderBottom: '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+        >
+          已删除
+        </button>
+      </div>
+
       <Card>
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <div>
@@ -213,11 +246,14 @@ export default function MediaCategories() {
                           justifyContent: 'center',
                           background: item.color || 'var(--bg-subtle)',
                           color: '#fff',
-                          fontSize: '12px',
                           flexShrink: 0,
                         }}
                       >
-                        {item.icon?.trim() || item.name.slice(0, 1).toUpperCase()}
+                        {item.icon === 'folder-open' ? <IconFolderOpen size={14} /> :
+                         item.icon === 'image' ? <IconImage size={14} /> :
+                         item.icon === 'file' ? <IconFileText size={14} /> :
+                         item.icon === 'archive' ? <IconArchive size={14} /> :
+                         <IconFolder size={14} />}
                       </span>
                       <span>{esc(item.name)}</span>
                     </div>
@@ -230,7 +266,9 @@ export default function MediaCategories() {
                   <td style={TD}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ width: '14px', height: '14px', borderRadius: '999px', background: item.color || '#d1d5db', border: '1px solid rgba(0,0,0,0.06)' }} />
-                      <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>{esc(item.icon || '自动首字母')}</span>
+                      <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                        {PREDEFINED_ICONS.find(i => i.id === item.icon)?.name || '默认图标'}
+                      </span>
                     </div>
                   </td>
                   <td style={TD}>{item.sort_order}</td>
@@ -299,16 +337,40 @@ export default function MediaCategories() {
           <Input label="名称" value={form.name} onChange={(e) => updateForm('name', e.target.value)} placeholder="例如：Banner / Podcast / Gallery" />
           <Input label="Slug" value={form.slug} onChange={(e) => updateForm('slug', e.target.value)} placeholder="可选，建议使用英文短横线" />
           <Textarea label="描述" value={form.description} onChange={(e) => updateForm('description', e.target.value)} placeholder="可选，用于说明这个分类的用途" minRows={3} />
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <Input label="图标/简称" value={form.icon} onChange={(e) => updateForm('icon', e.target.value)} placeholder="可选，如 BN / POD" maxLength={4} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>图标</label>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                {PREDEFINED_ICONS.map(icon => (
+                  <button
+                    key={icon.id}
+                    type="button"
+                    title={icon.name}
+                    onClick={() => updateForm('icon', icon.id)}
+                    style={{
+                      width: '40px', height: '40px', borderRadius: '8px',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: form.icon === icon.id ? 'var(--primary-50)' : 'var(--bg-subtle)',
+                      color: form.icon === icon.id ? 'var(--primary-600)' : 'var(--text-secondary)',
+                      border: `1.5px solid ${form.icon === icon.id ? 'var(--primary-500)' : 'transparent'}`,
+                      cursor: 'pointer', transition: 'all 0.15s ease'
+                    }}
+                  >
+                    {icon.icon}
+                  </button>
+                ))}
+              </div>
+            </div>
             <Input label="排序值" type="number" value={form.sort_order} onChange={(e) => updateForm('sort_order', e.target.value)} placeholder="数字越小越靠前" />
-          </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'end' }}>
             <Input label="颜色" value={form.color} onChange={(e) => updateForm('color', e.target.value)} placeholder="#ff6b35" />
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '40px' }}>
               <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>预览</span>
-              <span style={{ width: '40px', height: '40px', borderRadius: '10px', background: form.color || '#ff6b35', border: '1px solid var(--border-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
-                {(form.icon || form.name || 'M').slice(0, 2).toUpperCase()}
+              <span style={{ width: '40px', height: '40px', borderRadius: '10px', background: form.color || '#ff6b35', border: '1px solid var(--border-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                {form.icon === 'folder-open' ? <IconFolderOpen size={20} /> :
+                 form.icon === 'image' ? <IconImage size={20} /> :
+                 form.icon === 'file' ? <IconFileText size={20} /> :
+                 form.icon === 'archive' ? <IconArchive size={20} /> :
+                 <IconFolder size={20} />}
               </span>
             </div>
           </div>

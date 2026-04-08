@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>登录 - {{ site_title | default("InkForge") }}</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(circle at top,#ffe5d6 0,#f8fafc 42%,#eef2ff 100%);font-family:'Manrope',sans-serif;color:#1f2937}
+.card{width:min(100%,420px);padding:40px 34px;border:1px solid rgba(255,255,255,.7);border-radius:28px;background:rgba(255,255,255,.9);box-shadow:0 28px 80px rgba(15,23,42,.12);backdrop-filter:blur(18px)}
+h1{margin:0 0 8px;font-size:30px;line-height:1.05}
+p{margin:0;color:#64748b}
+.stack{display:flex;flex-direction:column;gap:16px;margin-top:28px}
+label{display:flex;flex-direction:column;gap:8px;font-size:13px;font-weight:700;color:#475569}
+input{width:100%;padding:14px 16px;border-radius:16px;border:1px solid #cbd5e1;background:#fff;font:inherit;transition:border-color .2s,box-shadow .2s}
+input:focus{outline:none;border-color:#f97316;box-shadow:0 0 0 4px rgba(249,115,22,.12)}
+button{margin-top:8px;padding:14px 18px;border:0;border-radius:16px;background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;font:inherit;font-weight:800;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 16px 30px rgba(249,115,22,.28)}
+button:hover{transform:translateY(-1px)}
+button:disabled{opacity:.65;cursor:not-allowed;transform:none;box-shadow:none}
+.alert{display:none;padding:12px 14px;border-radius:14px;background:#fff1f2;border:1px solid #fecdd3;color:#be123c;font-size:13px;font-weight:600}
+.footer{margin-top:22px;display:flex;justify-content:space-between;gap:12px;font-size:14px}
+a{color:#ea580c;text-decoration:none;font-weight:700}
+.muted{color:#64748b}
+@media(max-width:520px){.card{padding:30px 22px;border-radius:22px}.footer{flex-direction:column}}
+</style>
+</head>
+<body>
+<section class="card">
+  <h1>欢迎回来</h1>
+  <p>登录后即可评论、管理个人中心与同步会话。</p>
+  <div id="errorAlert" class="alert"></div>
+  <form id="loginForm" class="stack">
+    <label>
+      登录名
+      <input id="login" name="login" type="text" placeholder="用户名或邮箱" autocomplete="username" required>
+    </label>
+    <label>
+      密码
+      <input id="password" name="password" type="password" placeholder="请输入密码" autocomplete="current-password" required>
+    </label>
+    <button id="submitBtn" type="submit">登录</button>
+  </form>
+  <div class="footer">
+    <a href="/register">创建账号</a>
+    <a class="muted" href="/">返回首页</a>
+  </div>
+</section>
+<script src="{{ theme_assets_url('js/site-api.js') }}"></script>
+<script>
+const redirectTo = {{ redirect_to | tojson | safe }};
+const alertEl = document.getElementById('errorAlert');
+
+document.getElementById('loginForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const button = document.getElementById('submitBtn');
+  button.disabled = true;
+  alertEl.style.display = 'none';
+
+  try {
+    await window.InkForgeApi.login({
+      login: document.getElementById('login').value.trim(),
+      password: document.getElementById('password').value,
+    });
+    window.location.href = redirectTo;
+  } catch (error) {
+    alertEl.textContent = error.message || '登录失败，请稍后重试。';
+    alertEl.style.display = 'block';
+  } finally {
+    button.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
+

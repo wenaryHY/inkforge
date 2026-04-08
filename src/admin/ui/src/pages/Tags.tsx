@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiData } from '../lib/api';
 import { esc } from '../lib/utils';
 import type { Tag } from '../types';
@@ -43,6 +44,7 @@ export default function Tags() {
   const toast = useToast();
   const [items, setItems] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // Modal 状态：新建或编辑
   const [editorOpen, setEditorOpen] = useState(false);
@@ -189,6 +191,29 @@ export default function Tags() {
           </div>
         }
       />
+
+      <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-light)', marginBottom: '20px' }}>
+        <button
+          style={{
+            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--primary-600)',
+            borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
+          }}
+        >
+          活跃标签
+        </button>
+        <button
+          onClick={() => navigate('/admin/trash?tab=tag')}
+          style={{
+            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)',
+            borderBottom: '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+        >
+          已删除
+        </button>
+      </div>
 
       <Card>
         <div style={{ padding: '22px' }}>

@@ -62,4 +62,3 @@ pub struct AdminPostResponse {
     pub post: super::domain::AdminPost,
     pub tags: Vec<Tag>,
 }
-
