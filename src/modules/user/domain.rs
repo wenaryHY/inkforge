@@ -12,6 +12,7 @@ pub struct CurrentUser {
     pub role: String,
     pub status: String,
     pub theme_preference: String,
+    pub language: String,
     pub created_at: String,
     pub updated_at: String,
     pub deleted_at: Option<String>,

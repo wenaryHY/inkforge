@@ -7,7 +7,7 @@ pub async fn find_current(
     user_id: &str,
 ) -> Result<Option<CurrentUser>, sqlx::Error> {
     sqlx::query_as::<_, CurrentUser>(
-        "SELECT id, username, email, display_name, avatar_media_id, bio, role, status, theme_preference, created_at, updated_at, deleted_at
+        "SELECT id, username, email, display_name, avatar_media_id, bio, role, status, theme_preference, language, created_at, updated_at, deleted_at
          FROM users
          WHERE id = ? AND deleted_at IS NULL",
     )
@@ -33,16 +33,18 @@ pub async fn update_profile(
     bio: Option<&str>,
     avatar_media_id: Option<&str>,
     theme_preference: &str,
+    language: &str,
 ) -> Result<(), sqlx::Error> {
     sqlx::query(
         "UPDATE users
-         SET display_name = ?, bio = ?, avatar_media_id = ?, theme_preference = ?, updated_at = datetime('now')
+         SET display_name = ?, bio = ?, avatar_media_id = ?, theme_preference = ?, language = ?, updated_at = datetime('now')
          WHERE id = ?",
     )
     .bind(display_name)
     .bind(bio)
     .bind(avatar_media_id)
     .bind(theme_preference)
+    .bind(language)
     .bind(user_id)
     .execute(pool)
     .await?;

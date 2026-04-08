@@ -6,6 +6,7 @@ pub struct UpdateProfileRequest {
     pub bio: Option<String>,
     pub avatar_media_id: Option<String>,
     pub theme_preference: Option<String>,
+    pub language: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

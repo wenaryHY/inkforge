@@ -32,6 +32,11 @@ pub async fn update_profile(
         return Err(AppError::BadRequest("invalid theme preference".into()));
     }
 
+    let language = body.language.unwrap_or_else(|| "zh".to_string());
+    if !matches!(language.as_str(), "zh" | "en") {
+        return Err(AppError::BadRequest("invalid language".into()));
+    }
+
     repository::update_profile(
         &state.pool,
         &auth.id,
@@ -39,6 +44,7 @@ pub async fn update_profile(
         body.bio.as_deref(),
         body.avatar_media_id.as_deref(),
         &theme_preference,
+        &language,
     )
     .await?;
 
