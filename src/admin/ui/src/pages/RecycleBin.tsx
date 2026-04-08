@@ -9,29 +9,30 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { EmptyState } from '../components/EmptyState';
 import { CardTableSkeleton } from '../components/Skeleton';
 import { useToast } from '../contexts/ToastContext';
+import { useI18n } from '../i18n';
 import {
   IconTrash2, IconRefreshCw, IconFileText, IconFolderOpen,
   IconTag, IconImage, IconFolder, IconCheck, IconMessageSquare
 } from '../components/Icons';
 
 /* ═════════════ 类型标签配置 ═════════════ */
-const TYPE_CONFIG: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  post: { label: '文章', icon: <IconFileText size={14} />, color: '#3b82f6' },
-  category: { label: '分类', icon: <IconFolderOpen size={14} />, color: '#8b5cf6' },
-  tag: { label: '标签', icon: <IconTag size={14} />, color: '#10b981' },
-  media: { label: '媒体', icon: <IconImage size={14} />, color: '#f59e0b' },
-  media_category: { label: '媒体分类', icon: <IconFolder size={14} />, color: '#ec4899' },
-  comment: { label: '评论', icon: <IconMessageSquare size={14} />, color: '#6366f1' },
+const TYPE_CONFIG: Record<string, { labelKey: string; icon: React.ReactNode; color: string }> = {
+  post: { labelKey: 'tabPost', icon: <IconFileText size={14} />, color: '#3b82f6' },
+  category: { labelKey: 'tabCategory', icon: <IconFolderOpen size={14} />, color: '#8b5cf6' },
+  tag: { labelKey: 'tabTag', icon: <IconTag size={14} />, color: '#10b981' },
+  media: { labelKey: 'tabMedia', icon: <IconImage size={14} />, color: '#f59e0b' },
+  media_category: { labelKey: 'tabMediaCategory', icon: <IconFolder size={14} />, color: '#ec4899' },
+  comment: { labelKey: 'tabComment', icon: <IconMessageSquare size={14} />, color: '#6366f1' },
 };
 
 const TABS = [
-  { key: '', label: '全部' },
-  { key: 'post', label: '文章' },
-  { key: 'category', label: '分类' },
-  { key: 'tag', label: '标签' },
-  { key: 'media', label: '媒体' },
-  { key: 'media_category', label: '媒体分类' },
-  { key: 'comment', label: '评论' },
+  { key: '', labelKey: 'tabAll' },
+  { key: 'post', labelKey: 'tabPost' },
+  { key: 'category', labelKey: 'tabCategory' },
+  { key: 'tag', labelKey: 'tabTag' },
+  { key: 'media', labelKey: 'tabMedia' },
+  { key: 'media_category', labelKey: 'tabMediaCategory' },
+  { key: 'comment', labelKey: 'tabComment' },
 ];
 
 /* ═════════════ 样式 ═════════════ */
@@ -64,19 +65,19 @@ const iconBtn = (color: string): React.CSSProperties => ({
 
 /* ═════════════ 工具函数 ═════════════ */
 function formatDeletedAt(dateStr: string): string {
-  if (!dateStr) return '—';
+  if (!dateStr) return '-';
   return dateStr.replace('T', ' ').slice(0, 16);
 }
 
-function expiresLabel(days: number): { text: string; color: string } {
-  if (days <= 0) return { text: '已过期', color: '#ef4444' };
-  if (days <= 3) return { text: `${days}天后删除`, color: '#ef4444' };
-  if (days <= 7) return { text: `${days}天后删除`, color: '#f59e0b' };
-  return { text: `${days}天后删除`, color: 'var(--text-muted)' };
+function expiresLabel(days: number, format: (key: string, params?: Record<string, string | number>) => string, t: (key: string) => string): { text: string; color: string } {
+  if (days <= 0) return { text: t('expired'), color: '#ef4444' };
+  if (days <= 3) return { text: format('daysUntilDelete', { count: days }), color: '#ef4444' };
+  if (days <= 7) return { text: format('daysUntilDelete', { count: days }), color: '#f59e0b' };
+  return { text: format('daysUntilDelete', { count: days }), color: 'var(--text-muted)' };
 }
 
 /* ═════════════ 预览面板 ═════════════ */
-function PreviewPanel({ item, onClose }: { item: TrashItem; onClose: () => void }) {
+function PreviewPanel({ item, onClose, t, format }: { item: TrashItem; onClose: () => void; t: (key: string) => string; format: (key: string, params?: Record<string, string | number>) => string; }) {
   const config = TYPE_CONFIG[item.item_type];
   return (
     <div style={{
@@ -101,7 +102,7 @@ function PreviewPanel({ item, onClose }: { item: TrashItem; onClose: () => void 
           </span>
           <div>
             <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--if-text)' }}>
-              预览
+              {t('previewTitle')}
             </div>
             <span style={{
               fontSize: '11px', fontWeight: 600,
@@ -109,7 +110,7 @@ function PreviewPanel({ item, onClose }: { item: TrashItem; onClose: () => void 
               background: `${config?.color || '#999'}18`,
               color: config?.color || '#999',
             }}>
-              {config?.label || item.item_type}
+              {config?.labelKey ? t(config.labelKey) : item.item_type}
             </span>
           </div>
         </div>
@@ -130,7 +131,7 @@ function PreviewPanel({ item, onClose }: { item: TrashItem; onClose: () => void 
       <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
         <div style={{ marginBottom: '20px' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-            {item.item_type === 'post' ? '标题' : item.item_type === 'comment' ? '内容' : '名称'}
+            {item.item_type === 'post' ? t('previewPostTitle') : item.item_type === 'comment' ? t('previewContent') : t('previewName')}
           </div>
           <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--if-text)', lineHeight: 1.5 }}>
             {item.name}
@@ -139,7 +140,7 @@ function PreviewPanel({ item, onClose }: { item: TrashItem; onClose: () => void 
         {item.subtitle && (
           <div style={{ marginBottom: '20px' }}>
             <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-              {item.item_type === 'media' ? 'MIME 类型' : 'Slug'}
+              {item.item_type === 'media' ? t('mimeTypeLabel') : t('slugText')}
             </div>
             <div style={{
               fontSize: '13px', color: 'var(--text-secondary)',
@@ -152,7 +153,7 @@ function PreviewPanel({ item, onClose }: { item: TrashItem; onClose: () => void 
         )}
         <div style={{ marginBottom: '20px' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-            删除时间
+            {t('deletedAtLabel')}
           </div>
           <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
             {formatDeletedAt(item.deleted_at)}
@@ -160,10 +161,10 @@ function PreviewPanel({ item, onClose }: { item: TrashItem; onClose: () => void 
         </div>
         <div>
           <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
-            自动清理倒计时
+            {t('cleanupCountdown')}
           </div>
           {(() => {
-            const exp = expiresLabel(item.expires_in_days);
+            const exp = expiresLabel(item.expires_in_days, format, t);
             return (
               <div style={{
                 fontSize: '14px', fontWeight: 600, color: exp.color,
@@ -187,6 +188,7 @@ function PreviewPanel({ item, onClose }: { item: TrashItem; onClose: () => void 
 /* ═════════════ 主组件 ═════════════ */
 export default function RecycleBin() {
   const toast = useToast();
+  const { t, format } = useI18n();
   const [items, setItems] = useState<TrashItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -207,7 +209,7 @@ export default function RecycleBin() {
       const data = await listTrash(activeTab || undefined);
       setItems(data || []);
     } catch (error) {
-      toast(error instanceof Error ? error.message : '加载回收站失败', 'error');
+      toast(error instanceof Error ? error.message : t('loadRecycleBinFailed'), 'error');
     } finally {
       setLoading(false);
     }
@@ -230,24 +232,24 @@ export default function RecycleBin() {
   async function handleRestore(item: TrashItem) {
     try {
       await restoreTrashItem(item.item_type, item.id);
-      toast(`「${item.name}」已恢复`, 'success');
+      toast(format('restoreSuccess', { name: item.name }), 'success');
       setRestoreTarget(null);
       setPreviewItem(null);
       await fetchItems();
     } catch (error) {
-      toast(error instanceof Error ? error.message : '恢复失败', 'error');
+      toast(error instanceof Error ? error.message : t('actionFailed'), 'error');
     }
   }
 
   async function handlePurge(item: TrashItem) {
     try {
       await purgeTrashItem(item.item_type, item.id);
-      toast(`「${item.name}」已永久删除`, 'success');
+      toast(format('purgeSuccess', { name: item.name }), 'success');
       setPurgeTarget(null);
       setPreviewItem(null);
       await fetchItems();
     } catch (error) {
-      toast(error instanceof Error ? error.message : '永久删除失败', 'error');
+      toast(error instanceof Error ? error.message : t('deleteFailed'), 'error');
     }
   }
 
@@ -257,16 +259,16 @@ export default function RecycleBin() {
     try {
       if (batchAction === 'restore') {
         await Promise.all(selected.map(i => restoreTrashItem(i.item_type, i.id)));
-        toast(`已恢复 ${selected.length} 项`, 'success');
+        toast(format('recycleBatchRestoreSuccess', { count: selected.length }), 'success');
       } else {
         await Promise.all(selected.map(i => purgeTrashItem(i.item_type, i.id)));
-        toast(`已永久删除 ${selected.length} 项`, 'success');
+        toast(format('recycleBatchPurgeSuccess', { count: selected.length }), 'success');
       }
       setSelectedIds(new Set());
       setBatchAction(null);
       await fetchItems();
     } catch (error) {
-      toast(error instanceof Error ? error.message : '批量操作失败', 'error');
+      toast(error instanceof Error ? error.message : t('recycleBatchActionFailed'), 'error');
     }
   }
 
@@ -274,10 +276,10 @@ export default function RecycleBin() {
     setPurging(true);
     try {
       await purgeExpiredTrash();
-      toast('已清理过期数据', 'success');
+      toast(t('purgeExpiredSuccess'), 'success');
       await fetchItems();
     } catch (error) {
-      toast(error instanceof Error ? error.message : '清理失败', 'error');
+      toast(error instanceof Error ? error.message : t('purgeExpiredFailed'), 'error');
     } finally {
       setPurging(false);
     }
@@ -304,8 +306,8 @@ export default function RecycleBin() {
   return (
     <>
       <PageHeader
-        title="回收站"
-        subtitle={`共 ${items.length} 项已删除内容`}
+        title={t('recycleBinTitle')}
+        subtitle={format('recycleBinCount', { count: items.length })}
         actions={
           <Button
             variant="ghost"
@@ -313,7 +315,7 @@ export default function RecycleBin() {
             loading={purging}
             disabled={purging}
           >
-            <IconTrash2 size={14} /> 清理过期数据
+            <IconTrash2 size={14} /> {t('purgeExpired')}
           </Button>
         }
       />
@@ -350,7 +352,7 @@ export default function RecycleBin() {
                 if (!isActive) e.currentTarget.style.background = 'transparent';
               }}
             >
-              {tab.label}
+              {t(tab.labelKey)}
               {count > 0 && (
                 <span style={{
                   fontSize: '11px', fontWeight: 700,
@@ -378,14 +380,14 @@ export default function RecycleBin() {
             animation: 'slideDown 0.2s ease',
           }}>
             <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary-600)' }}>
-              已选择 {selectedIds.size} 项
+              {format('selectedItemsCount', { count: selectedIds.size })}
             </span>
             <div style={{ display: 'flex', gap: '8px' }}>
               <Button size="sm" variant="ghost" onClick={() => setBatchAction('restore')}>
-                <IconRefreshCw size={14} /> 批量恢复
+                <IconRefreshCw size={14} /> {t('batchRestore')}
               </Button>
               <Button size="sm" variant="danger" onClick={() => setBatchAction('purge')}>
-                <IconTrash2 size={14} /> 批量永久删除
+                <IconTrash2 size={14} /> {t('batchPurge')}
               </Button>
             </div>
           </div>
@@ -411,17 +413,17 @@ export default function RecycleBin() {
                     )}
                   </button>
                 </th>
-                <th style={TH}>类型</th>
-                <th style={TH}>名称</th>
-                <th style={{ ...TH, width: '140px' }}>删除时间</th>
-                <th style={{ ...TH, width: '100px' }}>剩余时间</th>
-                <th style={{ ...TH, width: '140px', textAlign: 'right' }}>操作</th>
+                <th style={TH}>{t('typeLabel')}</th>
+                <th style={TH}>{t('nameLabel')}</th>
+                <th style={{ ...TH, width: '140px' }}>{t('deletedAtLabel')}</th>
+                <th style={{ ...TH, width: '100px' }}>{t('remainingTime')}</th>
+                <th style={{ ...TH, width: '140px', textAlign: 'right' }}>{t('actionsLabel')}</th>
               </tr>
             </thead>
             <tbody>
               {filteredItems.length > 0 ? filteredItems.map(item => {
                 const config = TYPE_CONFIG[item.item_type];
-                const exp = expiresLabel(item.expires_in_days);
+                const exp = expiresLabel(item.expires_in_days, format, t);
                 const isSelected = selectedIds.has(item.id);
                 return (
                   <tr
@@ -456,7 +458,7 @@ export default function RecycleBin() {
                         background: `${config?.color || '#999'}12`,
                         color: config?.color || '#999',
                       }}>
-                        {config?.icon} {config?.label || item.item_type}
+                        {config?.icon} {config?.labelKey ? t(config.labelKey) : item.item_type}
                       </span>
                     </td>
                     <td style={{ ...TD, fontWeight: 600 }}>
@@ -488,7 +490,7 @@ export default function RecycleBin() {
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px' }}>
                         {/* 恢复 */}
                         <button
-                          title="恢复"
+                          title={t('restoreItem')}
                           style={iconBtn('#10b981')}
                           onClick={() => setRestoreTarget(item)}
                           onMouseEnter={e => { e.currentTarget.style.background = '#d1fae5'; e.currentTarget.style.color = '#059669'; }}
@@ -498,7 +500,7 @@ export default function RecycleBin() {
                         </button>
                         {/* 永久删除 */}
                         <button
-                          title="永久删除"
+                          title={t('purgeItem')}
                           style={iconBtn('#ef4444')}
                           onClick={() => setPurgeTarget(item)}
                           onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; }}
@@ -518,7 +520,7 @@ export default function RecycleBin() {
         {filteredItems.length === 0 && (
           <EmptyState
             icon={<IconTrash2 size={28} />}
-            message="回收站为空，没有已删除的内容"
+            message={t('recycleBinEmpty')}
           />
         )}
       </Card>
@@ -534,7 +536,7 @@ export default function RecycleBin() {
             }}
             onClick={() => setPreviewItem(null)}
           />
-          <PreviewPanel item={previewItem} onClose={() => setPreviewItem(null)} />
+          <PreviewPanel item={previewItem} onClose={() => setPreviewItem(null)} t={t} format={format} />
         </>
       )}
 
@@ -543,9 +545,9 @@ export default function RecycleBin() {
         open={!!restoreTarget}
         onClose={() => setRestoreTarget(null)}
         onConfirm={() => restoreTarget && handleRestore(restoreTarget)}
-        title="恢复内容"
-        message={`确定要恢复「${restoreTarget?.name || ''}」吗？恢复后将重新出现在对应的管理列表中。`}
-        confirmText="确认恢复"
+        title={t('restoreTitle')}
+        message={format('restoreMessage', { name: restoreTarget?.name || '' })}
+        confirmText={t('restoreConfirm')}
         variant="info"
       />
 
@@ -554,9 +556,9 @@ export default function RecycleBin() {
         open={!!purgeTarget}
         onClose={() => setPurgeTarget(null)}
         onConfirm={() => purgeTarget && handlePurge(purgeTarget)}
-        title="永久删除"
-        message={`确定要永久删除「${purgeTarget?.name || ''}」吗？此操作不可恢复！`}
-        confirmText="永久删除"
+        title={t('purgeTitle')}
+        message={format('purgeMessage', { name: purgeTarget?.name || '' })}
+        confirmText={t('purgeConfirm')}
         variant="danger"
       />
 
@@ -565,13 +567,13 @@ export default function RecycleBin() {
         open={!!batchAction}
         onClose={() => setBatchAction(null)}
         onConfirm={handleBatchAction}
-        title={batchAction === 'restore' ? '批量恢复' : '批量永久删除'}
+        title={batchAction === 'restore' ? t('batchRestoreTitle') : t('batchPurgeTitle')}
         message={
           batchAction === 'restore'
-            ? `确定要恢复选中的 ${selectedIds.size} 项内容吗？`
-            : `确定要永久删除选中的 ${selectedIds.size} 项内容吗？此操作不可恢复！`
+            ? format('batchRestoreMessage', { count: selectedIds.size })
+            : format('batchPurgeMessage', { count: selectedIds.size })
         }
-        confirmText={batchAction === 'restore' ? `恢复 ${selectedIds.size} 项` : `永久删除 ${selectedIds.size} 项`}
+        confirmText={batchAction === 'restore' ? format('batchRestoreConfirm', { count: selectedIds.size }) : format('batchPurgeConfirm', { count: selectedIds.size })}
         variant={batchAction === 'restore' ? 'info' : 'danger'}
       />
 

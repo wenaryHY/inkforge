@@ -14,6 +14,7 @@ import { EmptyState } from '../components/EmptyState';
 import { CardTableSkeleton } from '../components/Skeleton';
 import { IconFolderOpen, IconPlus, IconPencil, IconTrash2, IconCheck } from '../components/Icons';
 import { useToast } from '../contexts/ToastContext';
+import { useI18n } from '../i18n';
 
 /* 样式 */
 const TH = {
@@ -34,6 +35,7 @@ const iconBtn: React.CSSProperties = {
 
 export default function Categories() {
   const toast = useToast();
+  const { t, format } = useI18n();
   const [items, setItems] = useState<Category[]>([]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
@@ -52,7 +54,7 @@ export default function Categories() {
   const fetchCategories = useCallback(async () => {
     setLoading(true);
     try { setItems(await apiData<Category[]>('/api/categories')); }
-    catch (error) { toast(error instanceof Error ? error.message : '加载分类失败', 'error'); }
+    catch (error) { toast(error instanceof Error ? error.message : t('loadCategoriesFailed'), 'error'); }
     finally { setLoading(false); }
   }, [toast]);
 
@@ -69,14 +71,14 @@ export default function Categories() {
   }
 
   async function handleSave() {
-    if (!name.trim()) { toast('分类名称不能为空', 'error'); return; }
+    if (!name.trim()) { toast(t('categoryNameRequired'), 'error'); return; }
     setSaving(true);
     try {
       const body = { name: name.trim(), slug: slug || undefined, description: desc || null };
       if (editing?.id) await apiData(`/api/admin/categories/${editing.id}`, { method: 'PATCH', body: JSON.stringify(body) });
       else await apiData('/api/admin/categories', { method: 'POST', body: JSON.stringify(body) });
-      toast('保存成功', 'success'); closeEditor(); await fetchCategories();
-    } catch (error) { toast(error instanceof Error ? error.message : '保存失败', 'error'); }
+      toast(t('saveSuccess'), 'success'); closeEditor(); await fetchCategories();
+    } catch (error) { toast(error instanceof Error ? error.message : t('saveFailed'), 'error'); }
     finally { setSaving(false); }
   }
 
@@ -84,10 +86,10 @@ export default function Categories() {
     if (!deleteTarget) return;
     try {
       await apiData(`/api/admin/categories/${deleteTarget.id}`, { method: 'DELETE' });
-      toast('删除成功', 'success');
+      toast(t('deleteSuccess'), 'success');
       setSelectedIds(prev => { const next = new Set(prev); next.delete(deleteTarget.id); return next; });
       await fetchCategories();
-    } catch (error) { toast(error instanceof Error ? error.message : '删除失败', 'error'); }
+    } catch (error) { toast(error instanceof Error ? error.message : t('deleteFailed'), 'error'); }
     finally { setDeleteTarget(null); }
   }
 
@@ -100,10 +102,10 @@ export default function Categories() {
       await Promise.all([...selectedIds].map(id =>
         apiData(`/api/admin/categories/${id}`, { method: 'DELETE' })
       ));
-      toast(`成功删除 ${selectedIds.size} 个分类`, 'success');
+      toast(format('batchDeleteCategoriesSuccess', { count: selectedIds.size }), 'success');
       setSelectedIds(new Set());
       await fetchCategories();
-    } catch (error) { toast(error instanceof Error ? error.message : '批量删除失败', 'error'); }
+    } catch (error) { toast(error instanceof Error ? error.message : t('batchDeleteFailed'), 'error'); }
     finally { setBatchDeleteOpen(false); }
   }
 
@@ -126,16 +128,16 @@ export default function Categories() {
   return (
     <>
       <PageHeader
-        title="分类管理"
-        subtitle={`共 ${items.length} 个分类`}
+        title={t('categoriesTitle')}
+        subtitle={format('categoriesCount', { count: items.length })}
         actions={
           <div style={{ display: 'flex', gap: '8px' }}>
             {selectedIds.size > 0 && (
               <Button variant="danger" onClick={handleBatchDelete}>
-                <IconTrash2 size={14} /> 批量删除 ({selectedIds.size})
+                <IconTrash2 size={14} /> {format('batchDeleteCategories', { count: selectedIds.size })}
               </Button>
             )}
-            <Button onClick={() => openEditor()}><IconPlus size={14} /> 新建分类</Button>
+            <Button onClick={() => openEditor()}><IconPlus size={14} /> {t('newCategory')}</Button>
           </div>
         }
       />
@@ -147,10 +149,10 @@ export default function Categories() {
             borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
           }}
         >
-          活跃分类
+          {t('activeCategories')}
         </button>
         <button
-          onClick={() => navigate('/admin/trash?tab=category')}
+          onClick={() => navigate('/trash?tab=category')}
           style={{
             padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)',
             borderBottom: '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer',
@@ -159,7 +161,7 @@ export default function Categories() {
           onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
           onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
         >
-          已删除
+          {t('deletedItems')}
         </button>
       </div>
 
@@ -182,10 +184,10 @@ export default function Categories() {
                     {selectedIds.size === items.length && items.length > 0 && <IconCheck size={12} color="#fff" />}
                   </button>
                 </th>
-                <th style={TH}>名称</th>
-                <th style={TH}>Slug</th>
-                <th style={TH}>描述</th>
-                <th style={{ ...TH, width: '100px', textAlign: 'right' as const }}>操作</th>
+                <th style={TH}>{t('categoryName')}</th>
+                <th style={TH}>{t('slugLabel')}</th>
+                <th style={TH}>{t('descriptionLabel')}</th>
+                <th style={{ ...TH, width: '100px', textAlign: 'right' as const }}>{t('actionsLabel')}</th>
               </tr>
             </thead>
             <tbody>
@@ -218,19 +220,19 @@ export default function Categories() {
                         fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-muted)',
                       }}>{esc(cat.slug)}</span>
                     </td>
-                    <td style={{ ...TD, color: 'var(--text-secondary)' }}>{esc(cat.description || '—')}</td>
+                    <td style={{ ...TD, color: 'var(--text-secondary)' }}>{esc(cat.description || '-')}</td>
                     <td style={TD}>
                       <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
                         <button
                           onClick={() => openEditor(cat)}
-                          title="编辑分类"
+                          title={t('editCategory')}
                           style={{ ...iconBtn, background: 'transparent', color: '#10b981' }}
                           onMouseEnter={e => { e.currentTarget.style.background = '#ecfdf5'; e.currentTarget.style.color = '#059669'; }}
                           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10b981'; }}
                         ><IconPencil size={16} /></button>
                         <button
                           onClick={() => setDeleteTarget({ id: cat.id, name: cat.name })}
-                          title="删除分类"
+                          title={t('deleteCategory')}
                           style={{ ...iconBtn, background: 'transparent', color: '#ef4444' }}
                           onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; }}
                           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ef4444'; }}
@@ -242,7 +244,7 @@ export default function Categories() {
               }) : (
                 <tr>
                   <td colSpan={5}>
-                    <EmptyState icon={<IconFolderOpen size={28} />} message="暂无分类" />
+                    <EmptyState icon={<IconFolderOpen size={28} />} message={t('noCategories')} />
                   </td>
                 </tr>
               )}
@@ -252,18 +254,18 @@ export default function Categories() {
       </Card>
 
       <ConfirmDialog open={!!deleteTarget} onClose={() => setDeleteTarget(null)} onConfirm={confirmDelete}
-        title="删除分类" message={`确定要删除分类「${deleteTarget?.name || ''}」吗？`} variant="danger" confirmText="删除" />
+        title={t('deleteCategoryTitle')} message={format('deleteCategoryMessage', { name: deleteTarget?.name || '' })} variant="danger" confirmText={t('delete')} />
 
       <ConfirmDialog open={batchDeleteOpen} onClose={() => setBatchDeleteOpen(false)} onConfirm={confirmBatchDelete}
-        title="批量删除分类" message={`确定要删除选中的 ${selectedIds.size} 个分类吗？此操作不可恢复。`}
-        variant="danger" confirmText={`删除 ${selectedIds.size} 个`} />
+        title={t('batchDeleteCategoryTitle')} message={format('batchDeleteCategoryMessage', { count: selectedIds.size })}
+        variant="danger" confirmText={format('deleteCountConfirm', { count: selectedIds.size })} />
 
-      <Modal open={editorOpen} onClose={closeEditor} title={editing ? '编辑分类' : '新建分类'}
-        actions={<><Button variant="ghost" onClick={closeEditor}>取消</Button><Button onClick={handleSave} disabled={saving} loading={saving}>保存</Button></>}>
+      <Modal open={editorOpen} onClose={closeEditor} title={editing ? t('editCategoryTitle') : t('createCategoryTitle')}
+        actions={<><Button variant="ghost" onClick={closeEditor}>{t('cancel')}</Button><Button onClick={handleSave} disabled={saving} loading={saving}>{t('save')}</Button></>}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-          <Input label="名称" value={name} onChange={(e) => setName(e.target.value)} placeholder="分类名称" />
-          <Input label="Slug" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="可选，URL别名" />
-          <Textarea label="描述" value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="可选，简要描述" minRows={3} />
+          <Input label={t('categoryName')} value={name} onChange={(e) => setName(e.target.value)} placeholder={t('categoryNamePlaceholder')} />
+          <Input label={t('slugLabel')} value={slug} onChange={(e) => setSlug(e.target.value)} placeholder={t('categorySlugPlaceholder')} />
+          <Textarea label={t('descriptionLabel')} value={desc} onChange={(e) => setDesc(e.target.value)} placeholder={t('categoryDescPlaceholder')} minRows={3} />
         </div>
       </Modal>
     </>

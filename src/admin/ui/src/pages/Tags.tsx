@@ -13,6 +13,7 @@ import { EmptyState } from '../components/EmptyState';
 import { Skeleton } from '../components/Skeleton';
 import { IconTag, IconPlus, IconPencil, IconTrash2, IconCheck } from '../components/Icons';
 import { useToast } from '../contexts/ToastContext';
+import { useI18n } from '../i18n';
 
 /* ═════════════ 样式常量 ═════════════ */
 const tagCardBase: React.CSSProperties = {
@@ -42,6 +43,7 @@ const iconBtn: React.CSSProperties = {
 /* ═════════════ 主组件 ═════════════ */
 export default function Tags() {
   const toast = useToast();
+  const { t, format } = useI18n();
   const [items, setItems] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -63,7 +65,7 @@ export default function Tags() {
   const fetchTags = useCallback(async () => {
     setLoading(true);
     try { setItems(await apiData<Tag[]>('/api/tags')); }
-    catch (error) { toast(error instanceof Error ? error.message : '加载标签失败', 'error'); }
+    catch (error) { toast(error instanceof Error ? error.message : t('loadTagsFailed'), 'error'); }
     finally { setLoading(false); }
   }, [toast]);
 
@@ -94,7 +96,7 @@ export default function Tags() {
   }
 
   async function handleSave() {
-    if (!name.trim()) { toast('标签名称不能为空', 'error'); return; }
+    if (!name.trim()) { toast(t('tagNameRequired'), 'error'); return; }
     setSaving(true);
     try {
       if (editingTag) {
@@ -103,19 +105,19 @@ export default function Tags() {
           method: 'PATCH',
           body: JSON.stringify({ name: name.trim(), slug: slug || undefined })
         });
-        toast('更新成功', 'success');
+        toast(t('updateSuccess'), 'success');
       } else {
         // 新建模式
         await apiData('/api/admin/tags', {
           method: 'POST',
           body: JSON.stringify({ name: name.trim(), slug: slug || undefined })
         });
-        toast('创建成功', 'success');
+        toast(t('createSuccess'), 'success');
       }
       closeEditor();
       await fetchTags();
     } catch (error) {
-      toast(error instanceof Error ? error.message : '保存失败', 'error');
+      toast(error instanceof Error ? error.message : t('saveFailed'), 'error');
     } finally {
       setSaving(false);
     }
@@ -125,11 +127,11 @@ export default function Tags() {
     if (!deleteTag) return;
     try {
       await apiData(`/api/admin/tags/${deleteTag.id}`, { method: 'DELETE' });
-      toast('删除成功', 'success');
+      toast(t('deleteSuccess'), 'success');
       setSelectedIds(prev => { const next = new Set(prev); next.delete(deleteTag.id); return next; });
       await fetchTags();
     } catch (error) {
-      toast(error instanceof Error ? error.message : '删除失败', 'error');
+      toast(error instanceof Error ? error.message : t('deleteFailed'), 'error');
     } finally {
       setDeleteTag(null);
     }
@@ -147,11 +149,11 @@ export default function Tags() {
           apiData(`/api/admin/tags/${id}`, { method: 'DELETE' })
         )
       );
-      toast(`成功删除 ${selectedIds.size} 个标签`, 'success');
+      toast(format('tagsDeletedSuccess', { count: selectedIds.size }), 'success');
       setSelectedIds(new Set());
       await fetchTags();
     } catch (error) {
-      toast(error instanceof Error ? error.message : '批量删除失败', 'error');
+      toast(error instanceof Error ? error.message : t('batchDeleteFailed'), 'error');
     } finally {
       setBatchDeleteOpen(false);
     }
@@ -178,16 +180,16 @@ export default function Tags() {
   return (
     <>
       <PageHeader
-        title="标签管理"
-        subtitle={`共 ${items.length} 个标签`}
+        title={t('tagsTitle')}
+        subtitle={format('tagsCount', { count: items.length })}
         actions={
           <div style={{ display: 'flex', gap: '8px' }}>
             {selectedIds.size > 0 && (
               <Button variant="danger" onClick={handleBatchDelete}>
-                <IconTrash2 size={14} /> 批量删除 ({selectedIds.size})
+                <IconTrash2 size={14} /> {format('batchDeleteTags', { count: selectedIds.size })}
               </Button>
             )}
-            <Button onClick={openCreate}><IconPlus size={14} /> 新建标签</Button>
+            <Button onClick={openCreate}><IconPlus size={14} /> {t('newTag')}</Button>
           </div>
         }
       />
@@ -199,10 +201,10 @@ export default function Tags() {
             borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
           }}
         >
-          活跃标签
+          {t('activeTags')}
         </button>
         <button
-          onClick={() => navigate('/admin/trash?tab=tag')}
+          onClick={() => navigate('/trash?tab=tag')}
           style={{
             padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)',
             borderBottom: '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer',
@@ -211,7 +213,7 @@ export default function Tags() {
           onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
           onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
         >
-          已删除
+          {t('deletedItems')}
         </button>
       </div>
 
@@ -240,7 +242,7 @@ export default function Tags() {
                 {selectedIds.size === items.length && <IconCheck size={12} color="#fff" />}
               </button>
               <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                {selectedIds.size > 0 ? `已选择 ${selectedIds.size} 项` : '全选'}
+                {selectedIds.size > 0 ? format('selectedCount', { count: selectedIds.size }) : t('selectAll')}
               </span>
             </div>
           )}
@@ -306,7 +308,7 @@ export default function Tags() {
                     <div style={{ display: 'flex', gap: '2px', marginLeft: '4px' }}>
                       <button
                         onClick={() => openEdit(tag)}
-                        title="编辑标签"
+                        title={t('editTag')}
                         style={{
                           ...iconBtn,
                           background: 'transparent', color: '#6b7280',
@@ -322,7 +324,7 @@ export default function Tags() {
                       ><IconPencil size={13} /></button>
                       <button
                         onClick={() => setDeleteTag(tag)}
-                        title="删除标签"
+                        title={t('deleteTag')}
                         style={{
                           ...iconBtn,
                           background: 'transparent', color: '#6b7280',
@@ -342,8 +344,8 @@ export default function Tags() {
               })}
             </div>
           ) : (
-            <EmptyState icon={<IconTag size={28} />} message="暂无标签"
-              action={<Button size="sm" onClick={openCreate}><IconPlus size={14} /> 创建第一个标签</Button>} />
+            <EmptyState icon={<IconTag size={28} />} message={t('noTags')}
+              action={<Button size="sm" onClick={openCreate}><IconPlus size={14} /> {t('createFirstTag')}</Button>} />
           )}
         </div>
       </Card>
@@ -353,10 +355,10 @@ export default function Tags() {
         open={!!deleteTag}
         onClose={() => setDeleteTag(null)}
         onConfirm={confirmDelete}
-        title="删除标签"
-        message={`确定要删除标签「${deleteTag?.name || ''}」吗？`}
+        title={t('deleteTagTitle')}
+        message={format('deleteTagMessage', { name: deleteTag?.name || '' })}
         variant="danger"
-        confirmText="删除"
+        confirmText={t('delete')}
       />
 
       {/* 批量删除确认 */}
@@ -364,38 +366,38 @@ export default function Tags() {
         open={batchDeleteOpen}
         onClose={() => setBatchDeleteOpen(false)}
         onConfirm={confirmBatchDelete}
-        title="批量删除标签"
-        message={`确定要删除选中的 ${selectedIds.size} 个标签吗？此操作不可恢复。`}
+        title={t('batchDeleteTagTitle')}
+        message={format('batchDeleteTagMessage', { count: selectedIds.size })}
         variant="danger"
-        confirmText={`删除 ${selectedIds.size} 个`}
+        confirmText={format('deleteCountConfirm', { count: selectedIds.size })}
       />
 
       {/* 新建/编辑 Modal */}
       <Modal
         open={editorOpen}
         onClose={closeEditor}
-        title={editingTag ? '编辑标签' : '新建标签'}
+        title={editingTag ? t('editTagTitle') : t('createTagTitle')}
         width="420px"
         actions={
           <>
-            <Button variant="ghost" onClick={closeEditor}>取消</Button>
-            <Button onClick={handleSave} disabled={saving} loading={saving}>保存</Button>
+            <Button variant="ghost" onClick={closeEditor}>{t('cancel')}</Button>
+            <Button onClick={handleSave} disabled={saving} loading={saving}>{t('save')}</Button>
           </>
         }
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <Input
-            label="名称"
+            label={t('categoryName')}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="标签名称"
+            placeholder={t('tagNamePlaceholder')}
             autoFocus
           />
           <Input
-            label="Slug"
+            label={t('slugLabel')}
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
-            placeholder="可选，URL 别名，将从名称自动生成"
+            placeholder={t('tagSlugPlaceholder')}
           />
         </div>
       </Modal>
