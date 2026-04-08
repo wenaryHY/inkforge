@@ -90,6 +90,7 @@ pub async fn delete_tag(pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error> 
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn list_post_tags(pool: &SqlitePool, post_id: &str) -> Result<Vec<Tag>, sqlx::Error> {
     sqlx::query_as::<_, Tag>(
         "SELECT t.*
@@ -103,6 +104,7 @@ pub async fn list_post_tags(pool: &SqlitePool, post_id: &str) -> Result<Vec<Tag>
     .await
 }
 
+#[allow(dead_code)]
 pub async fn replace_post_tags(pool: &SqlitePool, post_id: &str, tag_ids: &[String]) -> Result<(), sqlx::Error> {
     sqlx::query("DELETE FROM post_tags WHERE post_id = ?")
         .bind(post_id)

@@ -6,6 +6,9 @@ mod shared;
 mod state;
 mod ws;
 
+#[cfg(test)]
+mod tests;
+
 use std::{net::SocketAddr, sync::Arc};
 
 use bootstrap::{config::AppConfig, router::build_router};

@@ -11,6 +11,7 @@ use crate::{
     state::AppState,
 };
 
+#[allow(dead_code)]
 pub async fn render_profile(
     State(state): State<Arc<AppState>>,
 ) -> AppResult<Html<String>> {

@@ -35,6 +35,7 @@ fn hash_bytes(data: &[u8]) -> String {
     hex::encode(hasher.finalize())
 }
 
+#[allow(dead_code)]
 fn build_archive(db_bytes: &[u8], manifest_hash: &str, provider: &str) -> AppResult<Vec<u8>> {
     let cursor = Cursor::new(Vec::new());
     let mut writer = ZipWriter::new(cursor);
@@ -239,6 +240,7 @@ pub async fn delete_backup(state: Arc<AppState>, id: String) -> AppResult<serde_
     Ok(serde_json::json!({ "deleted": true, "id": backup.id }))
 }
 
+#[allow(dead_code)]
 pub async fn restore_backup(state: Arc<AppState>, backup_id: String) -> AppResult<Vec<RestoreProgressResponse>> {
     let backup = repository::get_backup(&state.pool, &backup_id).await?
         .ok_or(AppError::NotFound)?;

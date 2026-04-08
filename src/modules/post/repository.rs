@@ -4,6 +4,7 @@ use uuid::Uuid;
 use crate::modules::tag::domain::Tag;
 use super::domain::{AdminPost, CommentTargetPost, PublicPostDetail, PublicPostSummary, SitemapItem};
 
+#[allow(dead_code)]
 pub async fn list_recent_public_posts(pool: &SqlitePool, limit: i64) -> Result<Vec<PublicPostSummary>, sqlx::Error> {
     sqlx::query_as::<_, PublicPostSummary>(
         "SELECT
@@ -228,6 +229,7 @@ pub async fn find_comment_target(pool: &SqlitePool, slug: &str) -> Result<Option
     .await
 }
 
+#[allow(dead_code)]
 pub async fn list_post_tags(pool: &SqlitePool, post_id: &str) -> Result<Vec<Tag>, sqlx::Error> {
     sqlx::query_as::<_, Tag>(
         "SELECT t.*

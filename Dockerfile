@@ -1,4 +1,4 @@
-FROM rust:1.77-slim AS builder
+FROM rust:1.82-slim AS builder
 WORKDIR /app
 COPY Cargo.toml Cargo.lock* ./
 COPY src ./src
@@ -17,13 +17,14 @@ COPY --from=builder /app/target/release/inkforge /app/inkforge
 COPY --from=builder /app/migrations /app/migrations
 COPY --from=builder /app/themes /app/themes
 COPY --from=builder /app/config /app/config
-RUN mkdir -p /app/uploads /app/data
+RUN mkdir -p /app/uploads /app/backups
 
 ENV RUST_LOG=info
 ENV INKFORGE__SERVER__PORT=3000
-ENV INKFORGE__DATABASE__URL=sqlite:///app/data.db
+ENV INKFORGE__DATABASE__URL=sqlite://inkforge.db?mode=rwc
 ENV INKFORGE__STORAGE__UPLOAD_DIR=/app/uploads
 
 EXPOSE 3000
-VOLUME ["/app/data", "/app/uploads"]
+HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost:3000/api/health || exit 1
+VOLUME ["/app/uploads", "/app/backups"]
 ENTRYPOINT ["/app/inkforge"]

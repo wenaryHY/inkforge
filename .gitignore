@@ -5,8 +5,12 @@ data.db-wal
 inkforge.db
 inkforge.db-shm
 inkforge.db-wal
+inkforge.db.backup
+inkforge.db.bak
+inkforge.db.restore
 uploads/*
 !uploads/.gitkeep
+backups/
 .env
 *.log
 .DS_Store

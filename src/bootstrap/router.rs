@@ -183,10 +183,12 @@ pub fn build_router(state: Arc<AppState>) -> Router {
                 .layer(TraceLayer::new_for_http())
                 .layer(CompressionLayer::new())
                 .layer(
-                    CorsLayer::new()
-                        .allow_origin(Any)
-                        .allow_methods(Any)
-                        .allow_headers(Any),
+                // CORS: 开发模式 - 允许所有来源
+                // 生产环境应配置为特定域名: .allow_origin("https://your-domain.com".parse::<HeaderValue>().unwrap())
+                CorsLayer::new()
+                    .allow_origin(Any)
+                    .allow_methods(Any)
+                    .allow_headers(Any),
                 ),
         )
         .with_state(state)

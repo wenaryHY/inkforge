@@ -57,6 +57,7 @@ pub async fn delete_backup(pool: &SqlitePool, id: &str) -> Result<(), sqlx::Erro
     Ok(())
 }
 
+#[allow(dead_code)]
 pub async fn update_backup_status(
     pool: &SqlitePool,
     id: &str,

@@ -3,6 +3,7 @@ use std::pin::Pin;
 
 use crate::shared::error::AppError;
 
+#[allow(dead_code)]
 pub trait BackupStorageBackend: Send + Sync {
     fn save<'a>(
         &'a self,

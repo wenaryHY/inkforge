@@ -62,22 +62,3 @@ pub struct ThemeSummary {
     pub manifest: ThemeManifest,
 }
 
-/// 兼容旧命名
-pub type Theme = ThemeManifest;
-pub type ThemeMetadata = ThemeManifest;
-
-/// 主题配置记录（数据库）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ThemeConfigRecord {
-    pub id: String,
-    pub theme_slug: String,
-    pub config_json: String,
-    pub created_at: String,
-    pub updated_at: String,
-}
-
-/// 活跃主题设置
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ActiveThemeSetting {
-    pub theme_slug: String,
-}

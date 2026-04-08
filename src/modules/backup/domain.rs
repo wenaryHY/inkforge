@@ -25,6 +25,7 @@ impl BackupProvider {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum BackupStatus {
@@ -44,6 +45,7 @@ impl BackupStatus {
         }
     }
 
+    #[allow(dead_code)]
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "pending" => Some(BackupStatus::Pending),

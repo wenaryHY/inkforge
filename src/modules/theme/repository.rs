@@ -65,6 +65,7 @@ pub async fn get_active_theme(pool: &SqlitePool) -> AppResult<String> {
     Ok(result.map(|(v,)| v).unwrap_or_else(|| "default".to_string()))
 }
 
+#[allow(dead_code)]
 pub async fn config_exists(pool: &SqlitePool, theme_slug: &str) -> AppResult<bool> {
     let result = sqlx::query_scalar::<_, i64>(
         "SELECT COUNT(*) FROM theme_configs WHERE theme_slug = ? LIMIT 1"

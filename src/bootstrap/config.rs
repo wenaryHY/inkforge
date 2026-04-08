@@ -35,6 +35,7 @@ pub struct StorageConfig {
     pub max_upload_size_mb: u64,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct ThemeConfig {
     pub theme_dir: String,
@@ -69,7 +70,11 @@ impl AppConfig {
     }
 
     pub fn validate(&self) -> Result<()> {
-        if self.auth.secret == "change-me-in-production-please" {
+        const UNSAFE_SECRETS: &[&str] = &[
+            "inkforge-change-me-in-production",
+            "change-me-in-production-please",
+        ];
+        if UNSAFE_SECRETS.contains(&self.auth.secret.as_str()) {
             tracing::warn!("⚠️  JWT secret is using default value. Please set INKFORGE__AUTH__SECRET in production!");
         }
         Ok(())

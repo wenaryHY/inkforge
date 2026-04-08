@@ -15,6 +15,7 @@ pub struct BackupListResponse {
     pub error_message: Option<String>,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RestoreBackupRequest {
     pub backup_id: String,

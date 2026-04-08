@@ -1,6 +1,7 @@
 use anyhow::Result;
 use sqlx::SqlitePool;
 
+#[allow(dead_code)]
 pub async fn run_migrations(pool: &SqlitePool) -> Result<()> {
     sqlx::query(include_str!("../../../migrations/001_init.sql"))
         .execute(pool)
