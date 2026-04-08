@@ -265,7 +265,7 @@ a{color:inherit;text-decoration:none}
 
 <script>
 function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-const _posts = {{ posts_json | safe }};
+const _posts = {{ get_recent_posts(100) | tojson | safe }};
 let _currentKeyword = '';
 let _currentCategory = '';
 let _allPosts = _posts;

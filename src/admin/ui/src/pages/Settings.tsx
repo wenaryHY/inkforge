@@ -113,7 +113,7 @@ export default function Settings() {
           <Input value={kv.site_description || ''} onChange={(e) => update('site_description', e.target.value)} placeholder="A personal blog powered by InkForge" />
         </FormRow>
         <FormRow label="站点 URL" hint="博客的完整访问地址，包含协议前缀">
-          <Input value={kv.site_url || ''} onChange={(e) => update('site_url', e.target.value)} placeholder="http://localhost:3000" />
+          <Input value={kv.site_url || ''} onChange={(e) => update('site_url', e.target.value)} placeholder="https://example.com" />
         </FormRow>
       </SettingSection>
 
@@ -232,7 +232,7 @@ export default function Settings() {
             <Button
               onClick={() => {
                 const token = getToken();
-                fetch('http://localhost:3000/api/admin/backup/list', {
+                fetch('/api/admin/backup/list', {
                   headers: { Authorization: `Bearer ${token}` },
                 })
                   .then((r) => r.json())
@@ -241,7 +241,7 @@ export default function Settings() {
                       throw new Error('没有可用的备份');
                     }
                     const backup = json.data[0];
-                    return fetch(`http://localhost:3000/api/admin/backup/${backup.id}`, {
+                    return fetch(`/api/admin/backup/${backup.id}`, {
                       headers: { Authorization: `Bearer ${token}` },
                     });
                   })
@@ -288,7 +288,7 @@ export default function Settings() {
                   const formData = new FormData();
                   formData.append('file', file);
                   const token = getToken();
-                  fetch('http://localhost:3000/api/admin/backup/restore', {
+                  fetch('/api/admin/backup/restore', {
                     method: 'POST',
                     headers: { Authorization: `Bearer ${token}` },
                     body: formData,

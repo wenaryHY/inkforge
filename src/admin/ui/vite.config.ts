@@ -9,4 +9,11 @@ export default defineConfig({
     outDir: '../dist',
     emptyOutDir: true,
   },
+  server: {
+    proxy: {
+      '/api': 'http://127.0.0.1:3000',
+      '/ws': { target: 'ws://127.0.0.1:3000', ws: true },
+      '/uploads': 'http://127.0.0.1:3000',
+    }
+  }
 })

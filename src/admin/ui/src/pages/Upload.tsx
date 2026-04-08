@@ -71,7 +71,7 @@ export default function Upload() {
      if (category) fd.append('category', category);
      setResult(null);
      try {
-       const res = await fetch('http://localhost:3000/api/admin/media', {
+      const res = await fetch('/api/admin/media', {
          method: 'POST',
          headers: { Authorization: `Bearer ${getToken()}` },
          body: fd

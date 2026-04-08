@@ -1,0 +1,12 @@
+{
+  "name": "inkforge",
+  "version": "0.3.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n rust,vite -c blue,green \"cargo run\" \"npm run dev --prefix src/admin/ui\"",
+    "dev:watch": "concurrently -n rust,vite -c blue,green \"cargo watch -x run\" \"npm run dev --prefix src/admin/ui\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

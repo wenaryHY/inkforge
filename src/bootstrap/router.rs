@@ -39,11 +39,11 @@ pub fn build_router(state: Arc<AppState>) -> Router {
     let upload_dir = state.upload_dir.clone();
 
     Router::new()
-        // TODO: 前台主题渲染路由（阶段8+）
-        // .route("/", get(modules::theme::handler::render_home))
-        // .route("/posts/:slug", get(modules::theme::handler::render_post))
-        // .route("/profile", get(modules::user::theme_handler::render_profile))
-        // .route("/static/*path", get(modules::theme::handler::serve_active_static))
+        // 前台主题渲染路由
+        .route("/", get(modules::theme::handler::render_home))
+        .route("/posts/:slug", get(modules::theme::handler::render_post))
+        .route("/profile", get(modules::user::theme_handler::render_profile))
+        .route("/static/themes/:theme_slug/*file_path", get(modules::theme::handler::serve_active_static))
         .route("/admin", get(serve_admin_index))
         .route("/admin/*path", get(admin::admin_static))
         .route("/sitemap.xml", get(modules::seo::sitemap::serve_sitemap))

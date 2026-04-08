@@ -1,8 +1,6 @@
 import type { ApiResponse, PaginatedResponse } from '../types';
 
-const API = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? 'http://localhost:3000'
-  : `${window.location.protocol}//${window.location.host}`;
+const API = '';
 
 export class ApiClientError extends Error {
   code: number;

@@ -2,19 +2,21 @@ use std::sync::Arc;
 
 use axum::{
     extract::{Multipart, Path, State},
+    response::{Html, IntoResponse, Response},
+    http::{header, StatusCode},
     Json,
 };
 
 use crate::{
     shared::{
         auth::AdminUser,
-        error::AppResult,
+        error::{AppResult, AppError},
         response::ApiResponse,
     },
     state::AppState,
 };
 
-use super::{domain::ThemeSummary, service::ThemeService};
+use super::{domain::ThemeSummary, service::ThemeService, engine};
 
 pub async fn active_theme(
     State(state): State<Arc<AppState>>,
@@ -154,4 +156,90 @@ pub async fn upload_theme_archive(
         version: manifest.version.clone(),
         message: "主题已上传".to_string(),
     })))
+}
+
+// --- 前台主题渲染 Handlers ---
+
+pub async fn render_home(
+    State(state): State<Arc<AppState>>,
+) -> AppResult<Html<String>> {
+    let site_title = crate::modules::setting::repository::get_string(&state.pool, "site_title", "InkForge").await.unwrap_or_default();
+    let site_desc = crate::modules::setting::repository::get_string(&state.pool, "site_description", "").await.unwrap_or_default();
+    let site_url = crate::modules::setting::repository::get_string(&state.pool, "site_url", "http://localhost:3000").await.unwrap_or_default();
+    let site_kw = crate::modules::setting::repository::get_string(&state.pool, "seo_keywords", "").await.unwrap_or_default();
+    
+    let seo_meta = crate::modules::seo::meta::build_home_meta(
+        &site_title, &site_desc, &site_url, &site_kw, ""
+    );
+
+    let env = engine::build_template_engine(state.clone()).await?;
+    let tmpl = env.get_template("index.html")
+        .map_err(|e| AppError::Anyhow(anyhow::anyhow!("Template error: {}", e)))?;
+    
+    let rendered = tmpl.render(minijinja::context!(
+        seo_meta => seo_meta
+    )).map_err(|e| AppError::Anyhow(anyhow::anyhow!("Render error: {}", e)))?;
+        
+    Ok(Html(rendered))
+}
+
+pub async fn render_post(
+    State(state): State<Arc<AppState>>,
+    Path(slug): Path<String>,
+) -> AppResult<Response> {
+    let post = crate::modules::post::repository::get_public_post_by_slug(&state.pool, &slug).await?;
+    if post.is_none() {
+        return Ok((StatusCode::NOT_FOUND, "Not Found").into_response());
+    }
+    let p = post.unwrap();
+
+    let site_title = crate::modules::setting::repository::get_string(&state.pool, "site_title", "InkForge").await.unwrap_or_default();
+    let site_url = crate::modules::setting::repository::get_string(&state.pool, "site_url", "http://localhost:3000").await.unwrap_or_default();
+    let site_kw = crate::modules::setting::repository::get_string(&state.pool, "seo_keywords", "").await.unwrap_or_default();
+    
+    let seo_meta = crate::modules::seo::meta::build_post_meta(
+        &site_title, &site_url, &p.title, &p.slug, p.excerpt.as_deref(), &p.content_html, &site_kw, ""
+    );
+
+    let env = engine::build_template_engine(state.clone()).await?;
+    let tmpl = env.get_template("post.html")
+        .map_err(|e| AppError::Anyhow(anyhow::anyhow!("Template error: {}", e)))?;
+        
+    let rendered = tmpl.render(minijinja::context! {
+        post => p,
+        seo_meta => seo_meta
+    }).map_err(|e| AppError::Anyhow(anyhow::anyhow!("Render error: {}", e)))?;
+    
+    Ok(Html(rendered).into_response())
+}
+
+pub async fn serve_active_static(
+    State(state): State<Arc<AppState>>,
+    Path((theme_slug, file_path)): Path<(String, String)>,
+) -> impl IntoResponse {
+    if file_path.contains("..") || file_path.contains('\\') || file_path.starts_with('/') {
+        return (StatusCode::FORBIDDEN, "403 Forbidden").into_response();
+    }
+    
+    let full_path = state.theme_dir.join(&theme_slug).join("static").join(&file_path);
+    
+    let ext = full_path.extension().and_then(|s| s.to_str()).unwrap_or("");
+    let mime = match ext {
+        "css" => "text/css",
+        "js" => "application/javascript",
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "gif" => "image/gif",
+        "svg" => "image/svg+xml",
+        "webp" => "image/webp",
+        "woff" => "font/woff",
+        "woff2" => "font/woff2",
+        "ttf" => "font/ttf",
+        _ => "application/octet-stream",
+    };
+    
+    match tokio::fs::read(&full_path).await {
+        Ok(d) => ([(header::CONTENT_TYPE, mime)], d).into_response(),
+        Err(_) => (StatusCode::NOT_FOUND, "404 Not Found").into_response(),
+    }
 }

@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use axum::{
     extract::State,
@@ -6,25 +6,19 @@ use axum::{
 };
 
 use crate::{
-    modules::setting::repository as setting_repository,
-    shared::error::AppResult,
+    shared::error::{AppError, AppResult},
     state::AppState,
 };
 
-#[allow(dead_code)]
 pub async fn render_profile(
     State(state): State<Arc<AppState>>,
 ) -> AppResult<Html<String>> {
-    let site_title = setting_repository::get_string(&state.pool, "site_title", "InkForge").await?;
-    let site_url = setting_repository::get_string(&state.pool, "site_url", "").await?;
+    let env = crate::modules::theme::engine::build_template_engine(state.clone()).await?;
+    let tmpl = env.get_template("profile.html")
+        .map_err(|e| AppError::Anyhow(anyhow::anyhow!("Template error: {}", e)))?;
 
-    let _payload = HashMap::from([
-        ("site_title", serde_json::json!(site_title)),
-        ("site_url", serde_json::json!(site_url)),
-    ]);
+    let rendered = tmpl.render(minijinja::context!())
+        .map_err(|e| AppError::Anyhow(anyhow::anyhow!("Render error: {}", e)))?;
 
-    // TODO: 实现前台主题渲染（阶段8+）
-    Err(crate::shared::error::AppError::BadRequest(
-        "Theme rendering not yet implemented".to_string(),
-    ))
+    Ok(Html(rendered))
 }
