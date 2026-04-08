@@ -11,6 +11,7 @@ import { EmptyState } from '../components/EmptyState';
 import { CardTableSkeleton } from '../components/Skeleton';
 import { useToast } from '../contexts/ToastContext';
 import { useMediaCategories } from '../hooks/useMediaCategories';
+import { useI18n } from '../i18n';
 import type { CreateMediaCategoryRequest, MediaCategory, UpdateMediaCategoryRequest } from '../types';
 import { esc } from '../lib/utils';
 import { IconFolder, IconPlus, IconEdit2, IconTrash2, IconImage, IconFileText, IconArchive, IconFolderOpen } from '../components/Icons';
@@ -56,18 +57,20 @@ const INITIAL_FORM = {
   sort_order: '0',
 };
 
-const PREDEFINED_ICONS = [
-  { id: 'folder', name: '文件夹', icon: <IconFolder size={18} /> },
-  { id: 'folder-open', name: '打开的文件夹', icon: <IconFolderOpen size={18} /> },
-  { id: 'image', name: '图片', icon: <IconImage size={18} /> },
-  { id: 'file', name: '文件', icon: <IconFileText size={18} /> },
-  { id: 'archive', name: '压缩包', icon: <IconArchive size={18} /> },
+const getPredefinedIcons = (t: (key: string) => string) => [
+  { id: 'folder', name: t('folderIcon'), icon: <IconFolder size={18} /> },
+  { id: 'folder-open', name: t('folderOpenIcon'), icon: <IconFolderOpen size={18} /> },
+  { id: 'image', name: t('imageIcon'), icon: <IconImage size={18} /> },
+  { id: 'file', name: t('fileIcon'), icon: <IconFileText size={18} /> },
+  { id: 'archive', name: t('archiveIcon'), icon: <IconArchive size={18} /> },
 ];
 
 export default function MediaCategories() {
+  const { t, format } = useI18n();
   const toast = useToast();
   const navigate = useNavigate();
   const { categories, loading, fetch, create, update, remove } = useMediaCategories();
+  const PREDEFINED_ICONS = useMemo(() => getPredefinedIcons(t), [t]);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<MediaCategory | null>(null);
   const [saving, setSaving] = useState(false);
@@ -76,7 +79,7 @@ export default function MediaCategories() {
 
   useEffect(() => {
     void fetch().catch((error) => {
-      toast(error instanceof Error ? error.message : '加载媒体分类失败', 'error');
+      toast(error instanceof Error ? error.message : t('loadMediaCategoriesFailed'), 'error');
     });
   }, [fetch, toast]);
 
@@ -117,13 +120,13 @@ export default function MediaCategories() {
 
   async function handleSave() {
     if (!form.name.trim()) {
-      toast('分类名称不能为空', 'error');
+      toast(t('mediaCategoryNameRequired'), 'error');
       return;
     }
 
     const sortOrder = Number(form.sort_order || '0');
     if (Number.isNaN(sortOrder)) {
-      toast('排序值必须是数字', 'error');
+      toast(t('sortOrderInvalid'), 'error');
       return;
     }
 
@@ -140,14 +143,14 @@ export default function MediaCategories() {
     try {
       if (editing) {
         await update(editing.id, payload);
-        toast('媒体分类已更新', 'success');
+        toast(t('mediaCategoryUpdated'), 'success');
       } else {
         await create(payload as CreateMediaCategoryRequest);
-        toast('媒体分类已创建', 'success');
+        toast(t('mediaCategoryCreated'), 'success');
       }
       resetEditor();
     } catch (error) {
-      toast(error instanceof Error ? error.message : '保存媒体分类失败', 'error');
+      toast(error instanceof Error ? error.message : t('saveMediaCategoryFailed'), 'error');
     } finally {
       setSaving(false);
     }
@@ -157,9 +160,9 @@ export default function MediaCategories() {
     if (!deleteTarget) return;
     try {
       await remove(deleteTarget.id);
-      toast('媒体分类已删除', 'success');
+      toast(t('mediaCategoryDeleted'), 'success');
     } catch (error) {
-      toast(error instanceof Error ? error.message : '删除媒体分类失败', 'error');
+      toast(error instanceof Error ? error.message : t('deleteMediaCategoryFailed'), 'error');
     } finally {
       setDeleteTarget(null);
     }
@@ -172,11 +175,11 @@ export default function MediaCategories() {
   return (
     <>
       <PageHeader
-        title="媒体分类"
-        subtitle={`共 ${categories.length} 个分类，用于媒体上传筛选与素材归档`}
+        title={t('mediaCategoriesTitle')}
+        subtitle={format('mediaCategoriesSubtitle', { count: categories.length })}
         actions={
           <Button onClick={openCreate}>
-            <IconPlus size={14} /> 新建媒体分类
+            <IconPlus size={14} /> {t('newMediaCategory')}
           </Button>
         }
       />
@@ -188,10 +191,10 @@ export default function MediaCategories() {
             borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
           }}
         >
-          活跃分类
+          {t('activeMediaCategories')}
         </button>
         <button
-          onClick={() => navigate('/admin/trash?tab=media_category')}
+          onClick={() => navigate('/trash?tab=media_category')}
           style={{
             padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)',
             borderBottom: '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer',
@@ -200,22 +203,22 @@ export default function MediaCategories() {
           onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
           onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
         >
-          已删除
+          {t('deletedItems')}
         </button>
       </div>
 
       <Card>
         <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--if-text)' }}>媒体分类列表</div>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--if-text)' }}>{t('mediaCategoryListTitle')}</div>
             <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
-              当前分类会同步用于上传页筛选与媒体项归类。
+              {t('mediaCategoryListDesc')}
             </div>
           </div>
           <Button variant="ghost" onClick={() => void fetch().catch((error) => {
-            toast(error instanceof Error ? error.message : '刷新失败', 'error');
+            toast(error instanceof Error ? error.message : t('refreshFailed'), 'error');
           })}>
-            刷新列表
+            {t('refreshList')}
           </Button>
         </div>
 
@@ -223,12 +226,12 @@ export default function MediaCategories() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr>
-                <th style={TH}>名称</th>
-                <th style={TH}>Slug</th>
-                <th style={TH}>样式</th>
-                <th style={TH}>排序</th>
-                <th style={TH}>描述</th>
-                <th style={{ ...TH, width: '104px', textAlign: 'right' as const }}>操作</th>
+                <th style={TH}>{t('mediaCategoryName')}</th>
+                <th style={TH}>{t('mediaCategorySlug')}</th>
+                <th style={TH}>{t('mediaCategoryStyle')}</th>
+                <th style={TH}>{t('mediaCategorySort')}</th>
+                <th style={TH}>{t('mediaCategoryDesc')}</th>
+                <th style={{ ...TH, width: '104px', textAlign: 'right' as const }}>{t('actionsLabel')}</th>
               </tr>
             </thead>
             <tbody>
@@ -267,7 +270,7 @@ export default function MediaCategories() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ width: '14px', height: '14px', borderRadius: '999px', background: item.color || '#d1d5db', border: '1px solid rgba(0,0,0,0.06)' }} />
                       <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
-                        {PREDEFINED_ICONS.find(i => i.id === item.icon)?.name || '默认图标'}
+                        {PREDEFINED_ICONS.find(i => i.id === item.icon)?.name || t('defaultIcon')}
                       </span>
                     </div>
                   </td>
@@ -278,7 +281,7 @@ export default function MediaCategories() {
                       <button
                         type="button"
                         onClick={() => openEdit(item)}
-                        title="编辑媒体分类"
+                        title={t('editMediaCategory')}
                         style={{ ...iconBtn, background: 'transparent', color: '#10b981' }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.background = '#ecfdf5';
@@ -294,7 +297,7 @@ export default function MediaCategories() {
                       <button
                         type="button"
                         onClick={() => setDeleteTarget(item)}
-                        title="删除媒体分类"
+                        title={t('deleteMediaCategory')}
                         style={{ ...iconBtn, background: 'transparent', color: '#ef4444' }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.background = '#fef2f2';
@@ -313,7 +316,7 @@ export default function MediaCategories() {
               )) : (
                 <tr>
                   <td colSpan={6}>
-                    <EmptyState icon={<IconFolder size={28} />} message="暂无媒体分类，先创建一个用于上传页筛选" />
+                    <EmptyState icon={<IconFolder size={28} />} message={t('noMediaCategories')} />
                   </td>
                 </tr>
               )}
@@ -325,20 +328,20 @@ export default function MediaCategories() {
       <Modal
         open={editorOpen}
         onClose={resetEditor}
-        title={editing ? '编辑媒体分类' : '新建媒体分类'}
+        title={editing ? t('editMediaCategoryTitle') : t('createMediaCategoryTitle')}
         actions={(
           <>
-            <Button variant="ghost" onClick={resetEditor}>取消</Button>
-            <Button onClick={handleSave} disabled={saving} loading={saving}>保存</Button>
+            <Button variant="ghost" onClick={resetEditor}>{t('cancel')}</Button>
+            <Button onClick={handleSave} disabled={saving} loading={saving}>{t('save')}</Button>
           </>
         )}
       >
         <div style={{ display: 'grid', gap: '16px' }}>
-          <Input label="名称" value={form.name} onChange={(e) => updateForm('name', e.target.value)} placeholder="例如：Banner / Podcast / Gallery" />
-          <Input label="Slug" value={form.slug} onChange={(e) => updateForm('slug', e.target.value)} placeholder="可选，建议使用英文短横线" />
-          <Textarea label="描述" value={form.description} onChange={(e) => updateForm('description', e.target.value)} placeholder="可选，用于说明这个分类的用途" minRows={3} />
+          <Input label={t('mediaCategoryName')} value={form.name} onChange={(e) => updateForm('name', e.target.value)} placeholder={t('mediaCategoryNamePlaceholder')} />
+          <Input label={t('mediaCategorySlug')} value={form.slug} onChange={(e) => updateForm('slug', e.target.value)} placeholder={t('mediaCategorySlugPlaceholder')} />
+          <Textarea label={t('mediaCategoryDesc')} value={form.description} onChange={(e) => updateForm('description', e.target.value)} placeholder={t('mediaCategoryDescPlaceholder')} minRows={3} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>图标</label>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t('iconLabel')}</label>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {PREDEFINED_ICONS.map(icon => (
                   <button
@@ -360,11 +363,11 @@ export default function MediaCategories() {
                 ))}
               </div>
             </div>
-            <Input label="排序值" type="number" value={form.sort_order} onChange={(e) => updateForm('sort_order', e.target.value)} placeholder="数字越小越靠前" />
+            <Input label={t('sortOrderLabel')} type="number" value={form.sort_order} onChange={(e) => updateForm('sort_order', e.target.value)} placeholder={t('sortOrderHint')} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'end' }}>
-            <Input label="颜色" value={form.color} onChange={(e) => updateForm('color', e.target.value)} placeholder="#ff6b35" />
+            <Input label={t('colorLabel')} value={form.color} onChange={(e) => updateForm('color', e.target.value)} placeholder="#ff6b35" />
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '40px' }}>
-              <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>预览</span>
+              <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{t('previewLabel')}</span>
               <span style={{ width: '40px', height: '40px', borderRadius: '10px', background: form.color || '#ff6b35', border: '1px solid var(--border-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                 {form.icon === 'folder-open' ? <IconFolderOpen size={20} /> :
                  form.icon === 'image' ? <IconImage size={20} /> :
@@ -381,10 +384,10 @@ export default function MediaCategories() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="删除媒体分类"
-        message={`确定要删除媒体分类「${deleteTarget?.name || ''}」吗？已绑定该分类的媒体项将失去分类。`}
+        title={t('deleteMediaCategoryTitle')}
+        message={format('deleteMediaCategoryMessage', { name: deleteTarget?.name || '' })}
         variant="danger"
-        confirmText="删除"
+        confirmText={t('deletePost')}
       />
     </>
   );

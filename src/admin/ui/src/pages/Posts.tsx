@@ -20,6 +20,7 @@ import {
   IconPlus, IconPencil, IconEye, IconTrash2, IconCheck
 } from '../components/Icons';
 import { useToast } from '../contexts/ToastContext';
+import { useI18n } from '../i18n';
 
 interface DeleteTarget { id: string; title: string; }
 
@@ -68,7 +69,7 @@ function formatDate(dateStr: string | null | undefined): string {
   return dateStr?.slice(0, 10) || '—';
 }
 
-function PostEmptyState() {
+function PostEmptyState({ t }: { t: (key: string) => string }) {
   return (
     <div style={{ padding: '64px 16px', textAlign: 'center' }}>
       <div style={{
@@ -80,9 +81,9 @@ function PostEmptyState() {
       }}>
         <IconFileText size={30} style={{ color: '#ffb08a' }} />
       </div>
-      <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--if-text)', marginBottom: '6px' }}>暂无文章</h3>
+      <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--if-text)', marginBottom: '6px' }}>{t('noPosts')}</h3>
       <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', maxWidth: '240px', margin: '0 auto', lineHeight: 1.65 }}>
-        点击右上角「新建文章」开始你的第一篇内容吧
+        {t('noPostsHint')}
       </p>
     </div>
   );
@@ -90,6 +91,7 @@ function PostEmptyState() {
 
 /* ═════════════ 主组件 ═════════════ */
 export default function Posts() {
+  const { t, format } = useI18n();
   const toast = useToast();
   const [posts, setPosts] = useState<AdminPost[]>([]);
   const [total, setTotal] = useState(0);
@@ -128,7 +130,7 @@ export default function Posts() {
       setTotal(payload.pagination.total || 0);
       setPages(paginationPages(payload));
     } catch (error) {
-      toast(error instanceof Error ? error.message : '加载数据失败', 'error');
+      toast(error instanceof Error ? error.message : t('loadPostsFailed'), 'error');
     } finally {
       setLoading(false);
     }
@@ -145,7 +147,7 @@ export default function Posts() {
       setTags(tagData || []);
       setCommentTotal(commentData.pagination.total || 0);
     } catch (error) {
-      toast(error instanceof Error ? error.message : '加载元数据失败', 'error');
+      toast(error instanceof Error ? error.message : t('loadMetaFailed'), 'error');
     }
   }, [toast]);
 
@@ -167,7 +169,7 @@ export default function Posts() {
   }
 
   async function handleSave() {
-    if (!title.trim()) { toast('标题不能为空', 'error'); return; }
+    if (!title.trim()) { toast(t('titleRequired'), 'error'); return; }
     setSaving(true);
     try {
       const body = {
@@ -181,12 +183,12 @@ export default function Posts() {
       } else {
         await apiData('/api/admin/posts', { method: 'POST', body: JSON.stringify(body) });
       }
-      toast('保存成功', 'success');
+      toast(t('saveSuccess'), 'success');
       setEditorOpen(false);
       setPage(1);
       await fetchPosts(1);
     } catch (error) {
-      toast(error instanceof Error ? error.message : '保存失败', 'error');
+      toast(error instanceof Error ? error.message : t('saveFailed'), 'error');
     } finally {
       setSaving(false);
     }
@@ -196,10 +198,10 @@ export default function Posts() {
     if (!deleteTarget) return;
     try {
       await apiData(`/api/admin/posts/${deleteTarget.id}`, { method: 'DELETE' });
-      toast('删除成功', 'success');
+      toast(t('deleteSuccess'), 'success');
       await fetchPosts(page);
     } catch (error) {
-      toast(error instanceof Error ? error.message : '删除失败', 'error');
+      toast(error instanceof Error ? error.message : t('deleteFailed'), 'error');
     } finally {
       setDeleteTarget(null);
     }
@@ -218,11 +220,11 @@ export default function Posts() {
           apiData(`/api/admin/posts/${id}`, { method: 'DELETE' })
         )
       );
-      toast(`成功删除 ${selectedIds.size} 篇文章`, 'success');
+      toast(format('batchDeletePostsSuccess', { count: selectedIds.size }), 'success');
       setSelectedIds(new Set());
       await fetchPosts(page);
     } catch (error) {
-      toast(error instanceof Error ? error.message : '批量删除失败', 'error');
+      toast(error instanceof Error ? error.message : t('batchDeletePostsFailed'), 'error');
     } finally {
       setBatchDeleteTarget(false);
     }
@@ -256,16 +258,16 @@ export default function Posts() {
     <>
       {/* 统计卡片 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        <StatsCard icon={<IconFileText size={20} />} value={total} label="文章总数" theme="orange" />
-        <StatsCard icon={<IconCheckCircle size={20} />} value={publishedCount} label="已发布" theme="emerald" />
-        <StatsCard icon={<IconEdit size={20} />} value={draftCount} label="草稿" theme="amber" />
-        <StatsCard icon={<IconMessageSquare size={20} />} value={commentTotal} label="评论总数" theme="blue" />
+        <StatsCard icon={<IconFileText size={20} />} value={total} label={t('postsTotal')} theme="orange" />
+        <StatsCard icon={<IconCheckCircle size={20} />} value={publishedCount} label={t('publishedCount')} theme="emerald" />
+        <StatsCard icon={<IconEdit size={20} />} value={draftCount} label={t('draftCount')} theme="amber" />
+        <StatsCard icon={<IconMessageSquare size={20} />} value={commentTotal} label={t('commentsTotal')} theme="blue" />
       </div>
 
       <PageHeader
-        title="文章管理"
-        subtitle={`共 ${total} 篇文章`}
-        actions={<Button onClick={() => openEditor()}><IconPlus /> 新建文章</Button>}
+        title={t('postsTitle')}
+        subtitle={format('postsCount', { count: total })}
+        actions={<Button onClick={() => openEditor()}><IconPlus /> {t('newPost')}</Button>}
       />
 
       <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-light)', marginBottom: '20px' }}>
@@ -275,10 +277,10 @@ export default function Posts() {
             borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
           }}
         >
-          活跃文章
+          {t('activePosts')}
         </button>
         <button
-          onClick={() => navigate('/admin/trash?tab=post')}
+          onClick={() => navigate('/trash?tab=post')}
           style={{
             padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)',
             borderBottom: '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer',
@@ -287,7 +289,7 @@ export default function Posts() {
           onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
           onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
         >
-          已删除
+          {t('deletedItems')}
         </button>
       </div>
 
@@ -302,10 +304,10 @@ export default function Posts() {
             animation: 'slideDown 0.2s ease',
           }}>
             <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary-600)' }}>
-              已选择 {selectedIds.size} 项
+              {format('selectedCount', { count: selectedIds.size })}
             </span>
             <Button size="sm" variant="danger" onClick={handleBatchDelete}>
-              <IconTrash2 size={14} /> 批量删除
+              <IconTrash2 size={14} /> {t('batchDelete')}
             </Button>
           </div>
         )}
@@ -332,11 +334,11 @@ export default function Posts() {
                     )}
                   </button>
                 </th>
-                <th style={{ ...T.th }}>标题</th>
-                <th style={{ ...T.th, width: '100px' }}>分类</th>
-                <th style={{ ...T.th, width: '88px' }}>状态</th>
-                <th style={{ ...T.th, width: '110px' }}>发布时间</th>
-                <th style={{ ...T.th, width: '120px', textAlign: 'right' as const }}>操作</th>
+                <th style={{ ...T.th }}>{t('titleLabel')}</th>
+                <th style={{ ...T.th, width: '100px' }}>{t('categoryLabel')}</th>
+                <th style={{ ...T.th, width: '88px' }}>{t('statusLabel')}</th>
+                <th style={{ ...T.th, width: '110px' }}>{t('publishTimeLabel')}</th>
+                <th style={{ ...T.th, width: '120px', textAlign: 'right' as const }}>{t('actionsLabel')}</th>
               </tr>
             </thead>
             <tbody>
@@ -387,7 +389,7 @@ export default function Posts() {
                     </td>
                     {/* 分类 */}
                     <td style={{ ...T.td }}>
-                      <span style={T.catBadge}>{category?.name || '未分类'}</span>
+                      <span style={T.catBadge}>{category?.name || t('uncategorized')}</span>
                     </td>
                     {/* 状态 */}
                     <td style={{ ...T.td }}><StatusBadge status={post.status} /></td>
@@ -400,7 +402,7 @@ export default function Posts() {
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '4px', alignItems: 'center' }}>
                         {/* 查看 */}
                         <button type="button"
-                          title="在首页中查看"
+                          title={t('viewOnHomepage')}
                           style={T.iconBtn('#10b981')}
                           onClick={() => window.open(`${API}/posts/${post.slug}`, '_blank')}
                           onMouseEnter={e => { e.currentTarget.style.background = '#d1fae5'; e.currentTarget.style.color = '#059669'; }}
@@ -408,7 +410,7 @@ export default function Posts() {
                         ><IconEye size={16} /></button>
                         {/* 编辑 */}
                         <button type="button"
-                          title="编辑文章"
+                          title={t('editPost')}
                           style={T.iconBtn('#3b82f6')}
                           onClick={() => openEditor(post)}
                           onMouseEnter={e => { e.currentTarget.style.background = '#eff6ff'; e.currentTarget.style.color = '#2563eb'; }}
@@ -416,7 +418,7 @@ export default function Posts() {
                         ><IconPencil size={16} /></button>
                         {/* 删除 */}
                         <button type="button"
-                          title="删除文章"
+                          title={t('deletePost')}
                           style={T.iconBtn('#ef4444')}
                           onClick={() => setDeleteTarget({ id: post.id, title: post.title })}
                           onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; }}
@@ -432,7 +434,7 @@ export default function Posts() {
         </div>
 
         {posts.length === 0 ? (
-          <PostEmptyState />
+          <PostEmptyState t={t} />
         ) : (
           <div style={{
             padding: '14px 16px',
@@ -470,25 +472,25 @@ export default function Posts() {
       <Modal
         open={editorOpen}
         onClose={() => setEditorOpen(false)}
-        title={editingPost ? '编辑文章' : '新建文章'}
+        title={editingPost ? t('editPostTitle') : t('createPostTitle')}
         width="90%"
         actions={
           <>
-            <Button variant="ghost" onClick={() => setEditorOpen(false)}>取消</Button>
-            <Button onClick={handleSave} disabled={saving} loading={saving}>保存</Button>
+            <Button variant="ghost" onClick={() => setEditorOpen(false)}>{t('cancel')}</Button>
+            <Button onClick={handleSave} disabled={saving} loading={saving}>{t('save')}</Button>
           </>
         }
       >
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '24px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            <Input label="标题" placeholder="请输入文章标题..." value={title} onChange={(e) => setTitle(e.target.value)} />
+            <Input label={t('titleLabel')} placeholder={t('titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} />
             <div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>正文</div>
+              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>{t('postContentLabel')}</div>
               <div style={{ height: '420px', display: 'flex', flexDirection: 'column' }}>
                 <MarkdownEditor value={content} onChange={setContent} />
               </div>
             </div>
-            <Input label="摘要" placeholder="文章摘要，可选填..." value={excerpt} onChange={(e) => setExcerpt(e.target.value)} />
+            <Input label={t('excerptLabel')} placeholder={t('excerptPlaceholder')} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} />
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <div style={{
@@ -501,10 +503,10 @@ export default function Posts() {
                 textTransform: 'uppercase', letterSpacing: '0.07em',
                 marginBottom: '16px',
                 paddingBottom: '12px', borderBottom: '1px solid var(--border-light)',
-              }}>发布设置</div>
-              <Select label="状态" value={status} onChange={(e) => setStatus(e.target.value as 'published' | 'draft')}>
-                <option value="draft">草稿</option>
-                <option value="published">已发布</option>
+              }}>{t('publishSettings')}</div>
+              <Select label={t('statusLabel')} value={status} onChange={(e) => setStatus(e.target.value as 'published' | 'draft')}>
+                <option value="draft">{t('draftOption')}</option>
+                <option value="published">{t('publishedOption')}</option>
               </Select>
             </div>
             <div style={{
@@ -517,9 +519,9 @@ export default function Posts() {
                 textTransform: 'uppercase', letterSpacing: '0.07em',
                 marginBottom: '16px',
                 paddingBottom: '12px', borderBottom: '1px solid var(--border-light)',
-              }}>分类与标签</div>
+              }}>{t('categoryAndTags')}</div>
               <Select value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-                <option value="">无分类</option>
+                <option value="">{t('noCategory')}</option>
                 {categories.map((cat) => (<option key={cat.id} value={cat.id}>{esc(cat.name)}</option>))}
               </Select>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginTop: '14px' }}>
@@ -535,7 +537,7 @@ export default function Posts() {
                     boxShadow: selectedTagIds.includes(tag.id) ? '0 2px 10px rgba(255,107,53,0.25)' : undefined,
                     transition: 'all 0.18s ease',
                   }}>{esc(tag.name)}</button>
-                )) : <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>暂无标签</span>}
+                )) : <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('noTagsAvailable')}</span>}
               </div>
             </div>
           </div>
