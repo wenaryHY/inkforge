@@ -15,26 +15,26 @@ import ThemeDetail from './pages/ThemeDetail';
 import RecycleBin from './pages/RecycleBin';
 
 const pageToRoute: Record<string, string> = {
-  posts: '/admin/posts',
-  categories: '/admin/categories',
-  tags: '/admin/tags',
-  comments: '/admin/comments',
-  settings: '/admin/settings',
-  upload: '/admin/upload',
-  'media-categories': '/admin/media-categories',
-  themes: '/admin/themes',
-  trash: '/admin/trash',
+  posts: '/posts',
+  categories: '/categories',
+  tags: '/tags',
+  comments: '/comments',
+  settings: '/settings',
+  upload: '/upload',
+  'media-categories': '/media-categories',
+  themes: '/themes',
+  trash: '/trash',
 };
 
 function getActivePage(pathname: string): string {
-  if (pathname.startsWith('/admin/themes')) return 'themes';
-  if (pathname.startsWith('/admin/categories')) return 'categories';
-  if (pathname.startsWith('/admin/tags')) return 'tags';
-  if (pathname.startsWith('/admin/comments')) return 'comments';
-  if (pathname.startsWith('/admin/settings')) return 'settings';
-  if (pathname.startsWith('/admin/upload')) return 'upload';
-  if (pathname.startsWith('/admin/media-categories')) return 'media-categories';
-  if (pathname.startsWith('/admin/trash')) return 'trash';
+  if (pathname.startsWith('/themes')) return 'themes';
+  if (pathname.startsWith('/categories')) return 'categories';
+  if (pathname.startsWith('/tags')) return 'tags';
+  if (pathname.startsWith('/comments')) return 'comments';
+  if (pathname.startsWith('/settings')) return 'settings';
+  if (pathname.startsWith('/upload')) return 'upload';
+  if (pathname.startsWith('/media-categories')) return 'media-categories';
+  if (pathname.startsWith('/trash')) return 'trash';
   return 'posts';
 }
 
@@ -47,21 +47,21 @@ function AppShell() {
     <div className="flex h-screen overflow-hidden">
       <Sidebar
         activePage={activePage}
-        onNavigate={(page) => navigate(pageToRoute[page] || '/admin/posts')}
+        onNavigate={(page) => navigate(pageToRoute[page] || '/posts')}
       />
       <main className="flex-1 overflow-y-auto" style={{ padding: '24px 32px', background: 'var(--bg-base)' }}>
         <Routes>
-          <Route path="/admin" element={<Navigate to="/admin/posts" replace />} />
-          <Route path="/admin/posts" element={<Posts />} />
-          <Route path="/admin/categories" element={<Categories />} />
-          <Route path="/admin/tags" element={<Tags />} />
-          <Route path="/admin/comments" element={<Comments />} />
-          <Route path="/admin/settings" element={<Settings />} />
-          <Route path="/admin/upload" element={<Upload />} />
-          <Route path="/admin/media-categories" element={<MediaCategories />} />
-          <Route path="/admin/themes" element={<Themes />} />
-          <Route path="/admin/themes/:slug" element={<ThemeDetail />} />
-          <Route path="/admin/trash" element={<RecycleBin />} />
+          <Route path="/" element={<Navigate to="/posts" replace />} />
+          <Route path="/posts" element={<Posts />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/tags" element={<Tags />} />
+          <Route path="/comments" element={<Comments />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/upload" element={<Upload />} />
+          <Route path="/media-categories" element={<MediaCategories />} />
+          <Route path="/themes" element={<Themes />} />
+          <Route path="/themes/:slug" element={<ThemeDetail />} />
+          <Route path="/trash" element={<RecycleBin />} />
         </Routes>
       </main>
     </div>
@@ -84,7 +84,7 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/admin">
       <AppShell />
     </BrowserRouter>
   );

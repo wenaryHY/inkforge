@@ -186,6 +186,7 @@ export interface CurrentUser {
   role: string;
   status: string;
   theme_preference: 'system' | 'light' | 'dark';
+  language: 'zh' | 'en';
   created_at: string;
   updated_at: string;
 }

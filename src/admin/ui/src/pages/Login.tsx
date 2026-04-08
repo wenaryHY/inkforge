@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
+import { useI18n } from '../i18n';
 
 type Tab = 'login' | 'register';
 
@@ -8,6 +9,7 @@ export default function Login() {
   const [tab, setTab] = useState<Tab>('login');
   const { login, register } = useAuth();
   const toast = useToast();
+  const { t, lang, setLang } = useI18n();
 
   const [loginValue, setLoginValue] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -25,7 +27,8 @@ export default function Login() {
     try {
       const result = await login(loginValue, loginPassword);
       if (result.success) {
-        window.location.reload();
+        // 延迟刷新确保 token 已写入 localStorage
+        setTimeout(() => window.location.reload(), 100);
       } else {
         toast(result.message || '登录失败', 'error');
       }
@@ -47,7 +50,8 @@ export default function Login() {
       });
       if (result.success) {
         toast('注册成功，将自动跳转登录', 'success');
-        window.location.reload();
+        // 延迟刷新确保 token 已写入 localStorage
+        setTimeout(() => window.location.reload(), 100);
       } else {
         toast(result.message || '注册失败', 'error');
       }
@@ -154,6 +158,36 @@ export default function Login() {
         }} />
       </div>
 
+      {/* 语言切换 — 右上角 */}
+      <div style={{
+        position: 'fixed', top: '20px', right: '20px',
+        display: 'flex', gap: '4px',
+        background: 'var(--bg-card)', padding: '4px',
+        borderRadius: 'var(--radius-md)',
+        boxShadow: 'var(--elevation-1)',
+        zIndex: 100,
+      }}>
+        {(['zh', 'en'] as const).map((l) => (
+          <button
+            key={l}
+            onClick={() => setLang(l)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: 'var(--radius-sm)',
+              border: 'none',
+              background: lang === l ? 'var(--primary-500)' : 'transparent',
+              color: lang === l ? '#fff' : 'var(--text-secondary)',
+              fontSize: '13px',
+              fontWeight: lang === l ? 600 : 400,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {l === 'zh' ? '中文' : 'English'}
+          </button>
+        ))}
+      </div>
+
       {/* 登录卡片 — elevation-2（独立卡片，略强于列表卡片） */}
       <div
         style={{
@@ -194,8 +228,8 @@ export default function Login() {
             </svg>
           </div>
           {/* 设计指南：标题字母间距收紧 2%~3%，行高 110%~120% */}
-          <h1 style={{ color: '#ffffff', fontSize: '22px', fontWeight: 800, margin: 0, letterSpacing: '-0.5px', lineHeight: 1.15 }}>InkForge</h1>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '6px', fontWeight: 500 }}>博客管理后台</p>
+          <h1 style={{ color: '#ffffff', fontSize: '22px', fontWeight: 800, margin: 0, letterSpacing: '-0.5px', lineHeight: 1.15 }}>{t('title')}</h1>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '6px', fontWeight: 500 }}>{t('subtitle')}</p>
         </div>
 
         {/* 设计指南：Tab 切换 — 容器框暗示关联性，被框住的 tab 暗示选中 */}
@@ -213,19 +247,19 @@ export default function Login() {
             transform: tab === 'login' ? 'translateX(0)' : 'translateX(100%)',
             transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           }} />
-          {(['login', 'register'] as Tab[]).map(t => (
+          {(['login', 'register'] as Tab[]).map(tabKey => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={tabKey}
+              onClick={() => setTab(tabKey)}
               style={{
                 flex: 1, padding: '10px', textAlign: 'center',
                 fontSize: '14px', fontWeight: 600,
                 border: 'none', background: 'transparent', cursor: 'pointer',
-                color: tab === t ? 'var(--primary-500)' : 'var(--text-muted)',
+                color: tab === tabKey ? 'var(--primary-500)' : 'var(--text-muted)',
                 transition: 'color 0.2s', position: 'relative', zIndex: 1,
               }}
             >
-              {t === 'login' ? '登录' : '注册'}
+              {t(tabKey)}
             </button>
           ))}
         </div>
@@ -235,9 +269,9 @@ export default function Login() {
           {tab === 'login' && (
             <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <input type="text" value={loginValue} onChange={e => setLoginValue(e.target.value)}
-                placeholder="用户名或邮箱" required style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
+                placeholder={t('usernameOrEmail')} required style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
               <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
-                placeholder="密码" required style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
+                placeholder={t('password')} required style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
               {/* 设计指南：实心按钮 + hover 上浮 + active 按压反馈 */}
               <button
                 type="submit"
@@ -248,7 +282,7 @@ export default function Login() {
                 onMouseDown={e => btnDown(e, loginLoading)}
                 onMouseUp={e => btnUp(e, loginLoading)}
               >
-                {loginLoading ? '正在登录...' : '登 录'}
+                {loginLoading ? t('loggingIn') : t('loginBtn')}
               </button>
             </form>
           )}
@@ -256,13 +290,13 @@ export default function Login() {
           {tab === 'register' && (
             <form onSubmit={handleRegister} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <input type="text" value={regUsername} onChange={e => setRegUsername(e.target.value)}
-                placeholder="用户名" required style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
+                placeholder={t('username')} required style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
               <input type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)}
-                placeholder="邮箱地址" required style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
+                placeholder={t('email')} required style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
               <input type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)}
-                placeholder="密码" required style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
+                placeholder={t('password')} required style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
               <input type="text" value={regDisplayName} onChange={e => setRegDisplayName(e.target.value)}
-                placeholder="显示名称（选填）" style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
+                placeholder={t('displayName')} style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
               <button
                 type="submit"
                 disabled={loginLoading}
@@ -272,7 +306,7 @@ export default function Login() {
                 onMouseDown={e => btnDown(e, loginLoading)}
                 onMouseUp={e => btnUp(e, loginLoading)}
               >
-                {loginLoading ? '创建中...' : '创建账户'}
+                {loginLoading ? t('creating') : t('registerBtn')}
               </button>
             </form>
           )}
@@ -293,7 +327,7 @@ export default function Login() {
             onMouseEnter={e => e.currentTarget.style.color = 'var(--primary-500)'}
             onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
           >
-            ← 返回首页
+            ← {t('backToHome')}
           </a>
         </div>
       </div>

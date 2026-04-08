@@ -15,6 +15,8 @@ import { Input } from '../components/Input';
 import { Select } from '../components/Select';
 import { TimePicker } from '../components/TimePicker';
 import { useToast } from '../contexts/ToastContext';
+import { useI18n } from '../i18n';
+import { useAuth } from '../contexts/AuthContext';
 
 /* 样式常量 */
 const sectionStyle: React.CSSProperties = {
@@ -69,6 +71,8 @@ function formatBytes(size: number): string {
 
 export default function Settings() {
   const toast = useToast();
+  const { t, lang, setLang } = useI18n();
+  const { user, refreshUser } = useAuth();
   const restoreInputRef = useRef<HTMLInputElement>(null);
   const [themes, setThemes] = useState<ThemeSummary[]>([]);
   const [backups, setBackups] = useState<BackupListResponse[]>([]);
@@ -196,10 +200,29 @@ export default function Settings() {
 
   const activeThemeOptions = useMemo(() => themes.map((t) => ({ value: t.manifest.slug, label: t.manifest.name })), [themes]);
 
+  // 处理语言切换并同步到后端
+  const handleLanguageChange = async (newLang: 'zh' | 'en') => {
+    setLang(newLang);
+    if (user) {
+      try {
+        await apiData('/api/me/profile', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            display_name: user.display_name,
+            language: newLang,
+          }),
+        });
+        await refreshUser();
+      } catch (error) {
+        toast(error instanceof Error ? error.message : '保存语言设置失败', 'error');
+      }
+    }
+  };
+
   return (
     <>
-      <PageHeader title="站点设置" subtitle="管理博客的基础配置、评论规则和主题外观"
-        actions={<Button onClick={handleSave} disabled={saving} loading={saving}>保存更改</Button>} />
+      <PageHeader title={t('title')} subtitle={t('subtitle')}
+        actions={<Button onClick={handleSave} disabled={saving} loading={saving}>{t('saveChanges')}</Button>} />
 
       <SettingSection title="基础信息" description="站点名称、描述等核心信息">
         <FormRow label="站点标题">
@@ -346,10 +369,20 @@ export default function Settings() {
         </FormRow>
       </SettingSection>
 
+      {/* 界面设置 */}
+      <SettingSection title={t('uiSettings')} description={t('uiSettingsDesc')}>
+        <FormRow label={t('interfaceLanguage')}>
+          <Select value={lang} onChange={(e) => handleLanguageChange(e.target.value as 'zh' | 'en')}>
+            <option value="zh">{t('languageZh')}</option>
+            <option value="en">{t('languageEn')}</option>
+          </Select>
+        </FormRow>
+      </SettingSection>
+
       {/* 数据备份 */}
       <SettingSection
-        title="数据备份"
-        description="管理数据库备份，支持创建、下载、合并恢复和导入操作"
+        title={t('dataBackup')}
+        description={t('dataBackupDesc')}
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* 操作按钮行 */}

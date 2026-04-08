@@ -1,38 +1,41 @@
 import { useAuth } from '../contexts/AuthContext';
+import { useI18n } from '../i18n';
 import {
   IconFileText, IconFolderOpen, IconTag, IconMessageSquare,
   IconUpload, IconSettings, IconUser, IconLogOut, IconPalette, IconTrash2,
 } from './Icons';
 
-interface NavItem {
+// 导航配置类型
+interface NavItemConfig {
   key: string;
-  icon: React.ReactNode;
-  label: string;
+  icon: React.FC<{ size?: number }>;
+  labelKey: string;
 }
 
-interface NavGroup {
-  section: string;
-  items: NavItem[];
+interface NavGroupConfig {
+  sectionKey: string;
+  items: NavItemConfig[];
 }
 
-const navGroups: NavGroup[] = [
+// 导航配置（key 用于匹配路由，labelKey 用于翻译）
+const navConfig: NavGroupConfig[] = [
   {
-    section: '内容',
+    sectionKey: 'content',
     items: [
-      { key: 'posts', icon: <IconFileText />, label: '文章' },
-      { key: 'categories', icon: <IconFolderOpen />, label: '分类' },
-      { key: 'tags', icon: <IconTag />, label: '标签' },
-      { key: 'comments', icon: <IconMessageSquare />, label: '评论' },
+      { key: 'posts', icon: IconFileText, labelKey: 'posts' },
+      { key: 'categories', icon: IconFolderOpen, labelKey: 'categories' },
+      { key: 'tags', icon: IconTag, labelKey: 'tags' },
+      { key: 'comments', icon: IconMessageSquare, labelKey: 'comments' },
     ],
   },
   {
-    section: '系统',
+    sectionKey: 'system',
     items: [
-      { key: 'upload', icon: <IconUpload />, label: '上传' },
-      { key: 'media-categories', icon: <IconFolderOpen />, label: '媒体分类' },
-      { key: 'themes', icon: <IconPalette />, label: '主题管理' },
-      { key: 'trash', icon: <IconTrash2 />, label: '回收站' },
-      { key: 'settings', icon: <IconSettings />, label: '设置' },
+      { key: 'upload', icon: IconUpload, labelKey: 'upload' },
+      { key: 'media-categories', icon: IconFolderOpen, labelKey: 'mediaCategories' },
+      { key: 'themes', icon: IconPalette, labelKey: 'themes' },
+      { key: 'trash', icon: IconTrash2, labelKey: 'trash' },
+      { key: 'settings', icon: IconSettings, labelKey: 'settings' },
     ],
   },
 ];
@@ -44,6 +47,7 @@ interface SidebarProps {
 
 export function Sidebar({ activePage, onNavigate }: SidebarProps) {
   const { user, logout } = useAuth();
+  const { lang, setLang, t } = useI18n();
 
   return (
     <aside
@@ -101,8 +105,8 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
 
       {/* ── 导航（设计指南：Ghost 按钮 + 左侧指示条） ── */}
       <nav style={{ flex: 1, padding: '8px 10px', overflowY: 'auto' }}>
-        {navGroups.map(group => (
-          <div key={group.section} style={{ marginBottom: '4px' }}>
+        {navConfig.map(group => (
+          <div key={group.sectionKey} style={{ marginBottom: '4px' }}>
             {/* 分组标题 */}
             <div style={{
               padding: '16px 10px 8px',
@@ -112,11 +116,12 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
               textTransform: 'uppercase',
               letterSpacing: '0.08em',
             }}>
-              {group.section}
+              {t(group.sectionKey)}
             </div>
             {/* 菜单项 */}
             {group.items.map(item => {
               const isActive = activePage === item.key;
+              const IconComponent = item.icon;
               return (
                 <button
                   key={item.key}
@@ -169,9 +174,9 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
                     }} />
                   )}
                   <span style={{ width: '20px', textAlign: 'center', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {item.icon}
+                    <IconComponent />
                   </span>
-                  <span>{item.label}</span>
+                  <span>{t(item.labelKey)}</span>
                 </button>
               );
             })}
@@ -181,6 +186,29 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
 
       {/* ── 底部用户区 ── */}
       <div style={{ padding: '12px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+        {/* 语言切换 */}
+        <div style={{ display: 'flex', gap: '4px', padding: '0 12px 8px' }}>
+          {(['zh', 'en'] as const).map((l) => (
+            <button
+              key={l}
+              onClick={() => setLang(l)}
+              style={{
+                flex: 1,
+                padding: '4px 8px',
+                borderRadius: 'var(--radius-sm)',
+                border: 'none',
+                background: lang === l ? 'rgba(255,107,53,0.2)' : 'transparent',
+                color: lang === l ? 'var(--primary-400)' : 'rgba(255,255,255,0.5)',
+                fontSize: '11px',
+                fontWeight: lang === l ? 600 : 400,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {l === 'zh' ? '中' : 'En'}
+            </button>
+          ))}
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', marginBottom: '4px' }}>
           <div style={{
             width: '32px', height: '32px', borderRadius: 'var(--radius-sm)',
@@ -193,9 +221,9 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
           </div>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {user?.display_name || '管理员'}
+              {user?.display_name || t('admin')}
             </div>
-            <div style={{ fontSize: '11px', color: '#555' }}>{user?.role || 'member'}</div>
+            <div style={{ fontSize: '11px', color: '#555' }}>{user?.role === 'admin' ? t('admin') : t('member')}</div>
           </div>
         </div>
         {/* 退出按钮 — 语义色：红色=危险操作 */}
@@ -221,7 +249,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
           <IconLogOut />
-          <span>退出登录</span>
+          <span>{t('logout')}</span>
         </button>
       </div>
     </aside>

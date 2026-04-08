@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { apiData, getToken, removeToken, setToken } from '../lib/api';
 import type { CurrentUser } from '../types';
+import { useI18n } from '../i18n';
+import { saveLanguage } from '../i18n/detector';
 
 interface RegisterData {
   username: string;
@@ -25,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [token, setTokenState] = useState(() => getToken());
   const [isLoading, setIsLoading] = useState(true);
+  const { setLang } = useI18n();
 
   const clearAuth = useCallback(() => {
     removeToken();
@@ -44,7 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const me = await apiData<CurrentUser>('/api/me');
     setUser(me);
-  }, []);
+    // 同步用户语言偏好
+    if (me.language) {
+      setLang(me.language);
+      saveLanguage(me.language);
+    }
+  }, [setLang]);
 
   useEffect(() => {
     if (!token) {
