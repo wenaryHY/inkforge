@@ -14,4 +14,5 @@ pub struct CurrentUser {
     pub theme_preference: String,
     pub created_at: String,
     pub updated_at: String,
+    pub deleted_at: Option<String>,
 }

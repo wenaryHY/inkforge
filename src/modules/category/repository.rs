@@ -4,13 +4,15 @@ use uuid::Uuid;
 use super::domain::Category;
 
 pub async fn list_categories(pool: &SqlitePool) -> Result<Vec<Category>, sqlx::Error> {
-    sqlx::query_as::<_, Category>("SELECT * FROM categories ORDER BY sort_order ASC, name ASC")
+    sqlx::query_as::<_, Category>(
+        "SELECT * FROM categories WHERE deleted_at IS NULL ORDER BY sort_order ASC, name ASC",
+    )
         .fetch_all(pool)
         .await
 }
 
 pub async fn get_category(pool: &SqlitePool, id: &str) -> Result<Option<Category>, sqlx::Error> {
-    sqlx::query_as::<_, Category>("SELECT * FROM categories WHERE id = ? LIMIT 1")
+    sqlx::query_as::<_, Category>("SELECT * FROM categories WHERE id = ? AND deleted_at IS NULL LIMIT 1")
         .bind(id)
         .fetch_optional(pool)
         .await
@@ -24,7 +26,7 @@ pub async fn category_slug_or_name_exists(
 ) -> Result<bool, sqlx::Error> {
     if let Some(exclude_id) = exclude_id {
         sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM categories WHERE (slug = ? OR name = ?) AND id != ?)",
+            "SELECT EXISTS(SELECT 1 FROM categories WHERE (slug = ? OR name = ?) AND id != ? AND deleted_at IS NULL)",
         )
         .bind(slug)
         .bind(name)
@@ -32,7 +34,9 @@ pub async fn category_slug_or_name_exists(
         .fetch_one(pool)
         .await
     } else {
-        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM categories WHERE slug = ? OR name = ?)")
+        sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM categories WHERE (slug = ? OR name = ?) AND deleted_at IS NULL)",
+        )
             .bind(slug)
             .bind(name)
             .fetch_one(pool)
@@ -75,7 +79,7 @@ pub async fn update_category(
 ) -> Result<(), sqlx::Error> {
     sqlx::query(
         "UPDATE categories
-         SET name = ?, slug = ?, description = ?, parent_id = ?, sort_order = ?
+         SET name = ?, slug = ?, description = ?, parent_id = ?, sort_order = ?, updated_at = datetime('now')
          WHERE id = ?",
     )
     .bind(name)
@@ -94,7 +98,11 @@ pub async fn delete_category(pool: &SqlitePool, id: &str) -> Result<(), sqlx::Er
         .bind(id)
         .execute(pool)
         .await?;
-    sqlx::query("DELETE FROM categories WHERE id = ?")
+    sqlx::query(
+        "UPDATE categories
+         SET deleted_at = datetime('now'), updated_at = datetime('now')
+         WHERE id = ?",
+    )
         .bind(id)
         .execute(pool)
         .await?;

@@ -1,0 +1,11 @@
+dbs:
+  - path: ./inkforge.db
+    replicas:
+      - type: s3
+        bucket: ${LITESTREAM_S3_BUCKET}
+        path: inkforge
+        region: ${AWS_REGION}
+        access-key-id: ${AWS_ACCESS_KEY_ID}
+        secret-access-key: ${AWS_SECRET_ACCESS_KEY}
+        retention: 720h
+        snapshot-interval: 24h

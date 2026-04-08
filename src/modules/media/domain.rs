@@ -19,4 +19,6 @@ pub struct MediaItem {
     /// 文件分类，可为 null
     pub category: Option<String>,
     pub created_at: String,
+    pub updated_at: String,
+    pub deleted_at: Option<String>,
 }

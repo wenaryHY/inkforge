@@ -13,16 +13,28 @@ pub async fn list_media(
 ) -> Result<Vec<MediaItem>, sqlx::Error> {
     let like = keyword.map(|k| format!("%{}%", k));
 
-    let mut sql = String::from("SELECT * FROM media WHERE 1=1");
-    if kind.is_some() { sql.push_str(" AND kind = ?"); }
-    if like.is_some() { sql.push_str(" AND original_name LIKE ?"); }
-    if category.is_some() { sql.push_str(" AND category = ?"); }
+    let mut sql = String::from("SELECT * FROM media WHERE deleted_at IS NULL");
+    if kind.is_some() {
+        sql.push_str(" AND kind = ?");
+    }
+    if like.is_some() {
+        sql.push_str(" AND original_name LIKE ?");
+    }
+    if category.is_some() {
+        sql.push_str(" AND category = ?");
+    }
     sql.push_str(" ORDER BY created_at DESC LIMIT ? OFFSET ?");
 
     let mut q = sqlx::query_as::<_, MediaItem>(&sql);
-    if let Some(k) = kind { q = q.bind(k); }
-    if let Some(l) = like { q = q.bind(l); }
-    if let Some(c) = category { q = q.bind(c); }
+    if let Some(k) = kind {
+        q = q.bind(k);
+    }
+    if let Some(l) = like {
+        q = q.bind(l);
+    }
+    if let Some(c) = category {
+        q = q.bind(c);
+    }
     q = q.bind(limit).bind(offset);
     q.fetch_all(pool).await
 }
@@ -35,15 +47,27 @@ pub async fn count_media(
 ) -> Result<i64, sqlx::Error> {
     let like = keyword.map(|k| format!("%{}%", k));
 
-    let mut sql = String::from("SELECT COUNT(*) FROM media WHERE 1=1");
-    if kind.is_some() { sql.push_str(" AND kind = ?"); }
-    if like.is_some() { sql.push_str(" AND original_name LIKE ?"); }
-    if category.is_some() { sql.push_str(" AND category = ?"); }
+    let mut sql = String::from("SELECT COUNT(*) FROM media WHERE deleted_at IS NULL");
+    if kind.is_some() {
+        sql.push_str(" AND kind = ?");
+    }
+    if like.is_some() {
+        sql.push_str(" AND original_name LIKE ?");
+    }
+    if category.is_some() {
+        sql.push_str(" AND category = ?");
+    }
 
     let mut q = sqlx::query_scalar::<_, i64>(&sql);
-    if let Some(k) = kind { q = q.bind(k); }
-    if let Some(l) = like { q = q.bind(l); }
-    if let Some(c) = category { q = q.bind(c); }
+    if let Some(k) = kind {
+        q = q.bind(k);
+    }
+    if let Some(l) = like {
+        q = q.bind(l);
+    }
+    if let Some(c) = category {
+        q = q.bind(c);
+    }
     q.fetch_one(pool).await
 }
 
@@ -81,26 +105,22 @@ pub async fn insert_media(
 }
 
 pub async fn get_media(pool: &SqlitePool, id: &str) -> Result<Option<MediaItem>, sqlx::Error> {
-    sqlx::query_as::<_, MediaItem>("SELECT * FROM media WHERE id = ? LIMIT 1")
+    sqlx::query_as::<_, MediaItem>("SELECT * FROM media WHERE id = ? AND deleted_at IS NULL LIMIT 1")
         .bind(id)
         .fetch_optional(pool)
         .await
 }
 
 pub async fn delete_media(pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error> {
-    sqlx::query("DELETE FROM media WHERE id = ?")
+    sqlx::query("UPDATE media SET deleted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?")
         .bind(id)
         .execute(pool)
         .await?;
     Ok(())
 }
 
-pub async fn rename_media(
-    pool: &SqlitePool,
-    id: &str,
-    new_name: &str,
-) -> Result<(), sqlx::Error> {
-    sqlx::query("UPDATE media SET original_name = ? WHERE id = ?")
+pub async fn rename_media(pool: &SqlitePool, id: &str, new_name: &str) -> Result<(), sqlx::Error> {
+    sqlx::query("UPDATE media SET original_name = ?, updated_at = datetime('now') WHERE id = ?")
         .bind(new_name)
         .bind(id)
         .execute(pool)
@@ -113,7 +133,7 @@ pub async fn update_media_category(
     id: &str,
     category: Option<&str>,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query("UPDATE media SET category = ? WHERE id = ?")
+    sqlx::query("UPDATE media SET category = ?, updated_at = datetime('now') WHERE id = ?")
         .bind(category)
         .bind(id)
         .execute(pool)

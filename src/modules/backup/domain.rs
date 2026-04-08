@@ -121,6 +121,7 @@ pub struct BackupSchedule {
 pub enum RestoreStep {
     Validate,
     Extract,
+    Merge,
     Replace,
     ClearCache,
 }
@@ -130,6 +131,7 @@ impl RestoreStep {
         match self {
             RestoreStep::Validate => "validate",
             RestoreStep::Extract => "extract",
+            RestoreStep::Merge => "merge",
             RestoreStep::Replace => "replace",
             RestoreStep::ClearCache => "clear_cache",
         }

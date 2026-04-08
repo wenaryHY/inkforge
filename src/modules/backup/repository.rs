@@ -1,6 +1,6 @@
+use chrono::Utc;
 use sqlx::SqlitePool;
 use uuid::Uuid;
-use chrono::Utc;
 
 use super::domain::{Backup, BackupSchedule};
 
@@ -64,20 +64,16 @@ pub async fn update_backup_status(
     status: &str,
     error_message: Option<&str>,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "UPDATE backups SET status = ?, error_message = ? WHERE id = ?",
-    )
-    .bind(status)
-    .bind(error_message)
-    .bind(id)
-    .execute(pool)
-    .await?;
+    sqlx::query("UPDATE backups SET status = ?, error_message = ? WHERE id = ?")
+        .bind(status)
+        .bind(error_message)
+        .bind(id)
+        .execute(pool)
+        .await?;
     Ok(())
 }
 
-pub async fn get_or_create_schedule(
-    pool: &SqlitePool,
-) -> Result<BackupSchedule, sqlx::Error> {
+pub async fn get_or_create_schedule(pool: &SqlitePool) -> Result<BackupSchedule, sqlx::Error> {
     let existing = sqlx::query_as::<_, BackupSchedule>(
         "SELECT id, enabled, frequency, hour, minute, provider, last_run_at, next_run_at, created_at, updated_at
          FROM backup_schedules

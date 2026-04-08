@@ -54,6 +54,7 @@ pub struct AdminPost {
     pub published_at: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    pub deleted_at: Option<String>,
 }
 
 #[derive(Debug, Clone, FromRow)]

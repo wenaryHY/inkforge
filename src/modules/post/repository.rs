@@ -1,11 +1,16 @@
 use sqlx::SqlitePool;
 use uuid::Uuid;
 
+use super::domain::{
+    AdminPost, CommentTargetPost, PublicPostDetail, PublicPostSummary, SitemapItem,
+};
 use crate::modules::tag::domain::Tag;
-use super::domain::{AdminPost, CommentTargetPost, PublicPostDetail, PublicPostSummary, SitemapItem};
 
 #[allow(dead_code)]
-pub async fn list_recent_public_posts(pool: &SqlitePool, limit: i64) -> Result<Vec<PublicPostSummary>, sqlx::Error> {
+pub async fn list_recent_public_posts(
+    pool: &SqlitePool,
+    limit: i64,
+) -> Result<Vec<PublicPostSummary>, sqlx::Error> {
     sqlx::query_as::<_, PublicPostSummary>(
         "SELECT
             p.id,
@@ -20,7 +25,7 @@ pub async fn list_recent_public_posts(pool: &SqlitePool, limit: i64) -> Result<V
          FROM posts p
          JOIN users u ON u.id = p.author_id
          LEFT JOIN categories c ON c.id = p.category_id
-         WHERE p.status = 'published' AND p.visibility = 'public'
+         WHERE p.status = 'published' AND p.visibility = 'public' AND p.deleted_at IS NULL
          ORDER BY p.pinned DESC, p.published_at DESC, p.created_at DESC
          LIMIT ?",
     )
@@ -33,7 +38,7 @@ pub async fn list_for_sitemap(pool: &SqlitePool) -> Result<Vec<SitemapItem>, sql
     sqlx::query_as::<_, SitemapItem>(
         "SELECT slug, published_at, updated_at
          FROM posts
-         WHERE status = 'published' AND visibility = 'public'
+         WHERE status = 'published' AND visibility = 'public' AND deleted_at IS NULL
          ORDER BY published_at DESC",
     )
     .fetch_all(pool)
@@ -72,6 +77,7 @@ pub async fn search_posts(
              JOIN posts_fts fts ON fts.rowid = p.rowid
              WHERE p.status = 'published'
                AND p.visibility = 'public'
+               AND p.deleted_at IS NULL
                AND fts.posts_fts MATCH ?
                AND (? IS NULL OR p.category_id = ?)
              ORDER BY rank
@@ -102,6 +108,7 @@ pub async fn search_posts(
              JOIN posts_fts fts ON fts.rowid = p.rowid
              WHERE p.status = 'published'
                AND p.visibility = 'public'
+               AND p.deleted_at IS NULL
                AND fts.posts_fts MATCH ?
              ORDER BY rank
              LIMIT ? OFFSET ?",
@@ -137,6 +144,7 @@ pub async fn list_public_posts(
              JOIN users u ON u.id = p.author_id
              LEFT JOIN categories c ON c.id = p.category_id
              WHERE p.status = 'published' AND p.visibility = 'public'
+               AND p.deleted_at IS NULL
                AND (p.title LIKE ? OR p.excerpt LIKE ? OR p.content_md LIKE ?)
              ORDER BY p.pinned DESC, p.published_at DESC, p.created_at DESC
              LIMIT ? OFFSET ?",
@@ -164,6 +172,7 @@ pub async fn list_public_posts(
              JOIN users u ON u.id = p.author_id
              LEFT JOIN categories c ON c.id = p.category_id
              WHERE p.status = 'published' AND p.visibility = 'public'
+               AND p.deleted_at IS NULL
              ORDER BY p.pinned DESC, p.published_at DESC, p.created_at DESC
              LIMIT ? OFFSET ?",
         )
@@ -174,13 +183,17 @@ pub async fn list_public_posts(
     }
 }
 
-pub async fn count_public_posts(pool: &SqlitePool, keyword: Option<&str>) -> Result<i64, sqlx::Error> {
+pub async fn count_public_posts(
+    pool: &SqlitePool,
+    keyword: Option<&str>,
+) -> Result<i64, sqlx::Error> {
     if let Some(keyword) = keyword {
         let like = format!("%{}%", keyword);
         sqlx::query_scalar(
             "SELECT COUNT(*)
              FROM posts
              WHERE status = 'published' AND visibility = 'public'
+               AND deleted_at IS NULL
                AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)",
         )
         .bind(&like)
@@ -189,13 +202,18 @@ pub async fn count_public_posts(pool: &SqlitePool, keyword: Option<&str>) -> Res
         .fetch_one(pool)
         .await
     } else {
-        sqlx::query_scalar("SELECT COUNT(*) FROM posts WHERE status = 'published' AND visibility = 'public'")
-            .fetch_one(pool)
-            .await
+        sqlx::query_scalar(
+            "SELECT COUNT(*) FROM posts WHERE status = 'published' AND visibility = 'public' AND deleted_at IS NULL",
+        )
+        .fetch_one(pool)
+        .await
     }
 }
 
-pub async fn get_public_post_by_slug(pool: &SqlitePool, slug: &str) -> Result<Option<PublicPostDetail>, sqlx::Error> {
+pub async fn get_public_post_by_slug(
+    pool: &SqlitePool,
+    slug: &str,
+) -> Result<Option<PublicPostDetail>, sqlx::Error> {
     sqlx::query_as::<_, PublicPostDetail>(
         "SELECT
             p.id,
@@ -212,7 +230,7 @@ pub async fn get_public_post_by_slug(pool: &SqlitePool, slug: &str) -> Result<Op
          FROM posts p
          JOIN users u ON u.id = p.author_id
          LEFT JOIN categories c ON c.id = p.category_id
-         WHERE p.slug = ? AND p.status = 'published' AND p.visibility = 'public'
+         WHERE p.slug = ? AND p.status = 'published' AND p.visibility = 'public' AND p.deleted_at IS NULL
          LIMIT 1",
     )
     .bind(slug)
@@ -220,9 +238,12 @@ pub async fn get_public_post_by_slug(pool: &SqlitePool, slug: &str) -> Result<Op
     .await
 }
 
-pub async fn find_comment_target(pool: &SqlitePool, slug: &str) -> Result<Option<CommentTargetPost>, sqlx::Error> {
+pub async fn find_comment_target(
+    pool: &SqlitePool,
+    slug: &str,
+) -> Result<Option<CommentTargetPost>, sqlx::Error> {
     sqlx::query_as::<_, CommentTargetPost>(
-        "SELECT id, status, visibility, allow_comment FROM posts WHERE slug = ? LIMIT 1",
+        "SELECT id, status, visibility, allow_comment FROM posts WHERE slug = ? AND deleted_at IS NULL LIMIT 1",
     )
     .bind(slug)
     .fetch_optional(pool)
@@ -235,7 +256,7 @@ pub async fn list_post_tags(pool: &SqlitePool, post_id: &str) -> Result<Vec<Tag>
         "SELECT t.*
          FROM tags t
          JOIN post_tags pt ON pt.tag_id = t.id
-         WHERE pt.post_id = ?
+         WHERE pt.post_id = ? AND t.deleted_at IS NULL
          ORDER BY t.name ASC",
     )
     .bind(post_id)
@@ -346,7 +367,11 @@ pub async fn count_admin_posts(
             .fetch_one(pool)
             .await
         }
-        (None, None) => sqlx::query_scalar("SELECT COUNT(*) FROM posts").fetch_one(pool).await,
+        (None, None) => {
+            sqlx::query_scalar("SELECT COUNT(*) FROM posts")
+                .fetch_one(pool)
+                .await
+        }
     }
 }
 
@@ -357,7 +382,11 @@ pub async fn get_admin_post(pool: &SqlitePool, id: &str) -> Result<Option<AdminP
         .await
 }
 
-pub async fn slug_exists(pool: &SqlitePool, slug: &str, exclude_id: Option<&str>) -> Result<bool, sqlx::Error> {
+pub async fn slug_exists(
+    pool: &SqlitePool,
+    slug: &str,
+    exclude_id: Option<&str>,
+) -> Result<bool, sqlx::Error> {
     if let Some(exclude_id) = exclude_id {
         sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM posts WHERE slug = ? AND id != ?)")
             .bind(slug)
@@ -474,7 +503,11 @@ pub async fn update_post(
     Ok(())
 }
 
-pub async fn replace_tags(pool: &SqlitePool, post_id: &str, tag_ids: &[String]) -> Result<(), sqlx::Error> {
+pub async fn replace_tags(
+    pool: &SqlitePool,
+    post_id: &str,
+    tag_ids: &[String],
+) -> Result<(), sqlx::Error> {
     sqlx::query("DELETE FROM post_tags WHERE post_id = ?")
         .bind(post_id)
         .execute(pool)
@@ -490,7 +523,7 @@ pub async fn replace_tags(pool: &SqlitePool, post_id: &str, tag_ids: &[String]) 
 }
 
 pub async fn delete_post(pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error> {
-    sqlx::query("DELETE FROM posts WHERE id = ?")
+    sqlx::query("UPDATE posts SET deleted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?")
         .bind(id)
         .execute(pool)
         .await?;

@@ -1,14 +1,24 @@
 import type { ApiResponse, PaginatedResponse } from '../types';
 
-const API = '';
+export const API = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  ? 'http://localhost:3000'
+  : `${window.location.protocol}//${window.location.host}`;
 
 export class ApiClientError extends Error {
   code: number;
+  clientRequestId?: string;
 
   constructor(message: string, code = 50000) {
     super(message);
     this.code = code;
   }
+}
+
+function generateClientRequestId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `req_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
 export function getToken(): string {
@@ -26,6 +36,9 @@ export function removeToken(): void {
 export async function api<T = unknown>(path: string, opts: RequestInit = {}): Promise<ApiResponse<T>> {
   const token = getToken();
   const headers = new Headers(opts.headers || {});
+  const clientRequestId = generateClientRequestId();
+
+  headers.set('X-Client-Request-Id', clientRequestId);
 
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
@@ -34,18 +47,22 @@ export async function api<T = unknown>(path: string, opts: RequestInit = {}): Pr
     headers.set('Content-Type', 'application/json');
   }
 
-  const res = await fetch(API + path, { ...opts, headers });
+  const res = await fetch(API + path, { ...opts, headers, credentials: 'include' });
   const text = await res.text();
   let data: ApiResponse<T>;
 
   try {
     data = text ? (JSON.parse(text) as ApiResponse<T>) : ({ code: res.ok ? 0 : 50000, message: text || 'Empty response', data: null, request_id: '' } as ApiResponse<T>);
   } catch {
-    throw new ApiClientError(text || 'Invalid server response');
+    const err = new ApiClientError(text || 'Invalid server response');
+    err.clientRequestId = clientRequestId;
+    throw err;
   }
 
   if (!res.ok || data.code !== 0) {
-    throw new ApiClientError(data.message || `Request failed with ${res.status}`, data.code);
+    const err = new ApiClientError(data.message || `Request failed with ${res.status}`, data.code);
+    err.clientRequestId = clientRequestId;
+    throw err;
   }
 
   return data;
@@ -145,5 +162,11 @@ export async function updateBackupSchedule(data: import('../types').BackupSchedu
 export async function deleteBackup(id: string) {
   return apiData(`/api/admin/backup/${id}`, {
     method: 'DELETE',
+  });
+}
+
+export async function mergeRestoreBackup(id: string) {
+  return apiData<import('../types').RestoreProgressResponse[]>(`/api/admin/backups/${id}/merge-restore`, {
+    method: 'POST',
   });
 }

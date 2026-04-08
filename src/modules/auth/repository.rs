@@ -4,7 +4,7 @@ use uuid::Uuid;
 use super::domain::UserRow;
 
 pub async fn user_count(pool: &SqlitePool) -> Result<i64, sqlx::Error> {
-    sqlx::query_scalar("SELECT COUNT(*) FROM users")
+    sqlx::query_scalar("SELECT COUNT(*) FROM users WHERE deleted_at IS NULL")
         .fetch_one(pool)
         .await
 }
@@ -14,7 +14,9 @@ pub async fn exists_by_username_or_email(
     username: &str,
     email: &str,
 ) -> Result<bool, sqlx::Error> {
-    sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM users WHERE username = ? OR email = ?)")
+    sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM users WHERE (username = ? OR email = ?) AND deleted_at IS NULL)",
+    )
         .bind(username)
         .bind(email)
         .fetch_one(pool)
@@ -49,12 +51,12 @@ pub async fn insert_user(
 
 pub async fn find_by_login(pool: &SqlitePool, login: &str) -> Result<Option<UserRow>, sqlx::Error> {
     sqlx::query_as::<_, UserRow>(
-        "SELECT * FROM users WHERE username = ? OR email = ? LIMIT 1",
+        "SELECT * FROM users WHERE (username = ? OR email = ?) AND deleted_at IS NULL LIMIT 1",
     )
-    .bind(login)
-    .bind(login)
-    .fetch_optional(pool)
-    .await
+        .bind(login)
+        .bind(login)
+        .fetch_optional(pool)
+        .await
 }
 
 pub async fn touch_last_login(pool: &SqlitePool, user_id: &str) -> Result<(), sqlx::Error> {

@@ -1,8 +1,13 @@
-use std::{io::{Cursor, Read, Write}, path::PathBuf, sync::Arc};
+use std::{
+    io::{Cursor, Read, Write},
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use anyhow::Context;
 use chrono::{Duration, Utc};
 use sha2::{Digest, Sha256};
+use sqlx::Row;
 use tokio::fs;
 use zip::{write::SimpleFileOptions, ZipArchive, ZipWriter};
 
@@ -14,12 +19,16 @@ use crate::{
 
 use super::{
     domain::{BackupProvider, BackupScheduleFrequency, BackupStatus, RestoreStep},
-    dto::{BackupListResponse, BackupScheduleRequest, BackupScheduleResponse, RestoreProgressResponse},
+    dto::{
+        BackupListResponse, BackupScheduleRequest, BackupScheduleResponse, RestoreProgressResponse,
+    },
     repository,
 };
 
 const BACKUP_ARCHIVE_NAME: &str = "backup.zip";
 const BACKUP_DB_ENTRY: &str = "database/inkforge.db";
+const BACKUP_MANIFEST_VERSION: i64 = 2;
+const CURRENT_SCHEMA_VERSION: i64 = 7;
 
 fn backup_root_dir() -> AppResult<PathBuf> {
     Ok(std::env::current_dir()?.join("backups"))
@@ -35,6 +44,70 @@ fn hash_bytes(data: &[u8]) -> String {
     hex::encode(hasher.finalize())
 }
 
+fn quote_sqlite_literal(value: &str) -> String {
+    value.replace('\'', "''")
+}
+
+async fn export_consistent_db_snapshot_strict(state: &AppState) -> AppResult<Vec<u8>> {
+    let backups_dir = backup_root_dir()?;
+    fs::create_dir_all(&backups_dir).await?;
+
+    let snapshot_path = backups_dir.join(format!("snapshot-{}.db", uuid::Uuid::new_v4()));
+    let snapshot_literal = quote_sqlite_literal(snapshot_path.to_string_lossy().as_ref());
+    let vacuum_sql = format!("VACUUM INTO '{}'", snapshot_literal);
+
+    let mut conn = state.pool.acquire().await?;
+    let _ = sqlx::query("PRAGMA wal_checkpoint(FULL)")
+        .execute(&mut *conn)
+        .await;
+    sqlx::query(&vacuum_sql)
+        .execute(&mut *conn)
+        .await
+        .map_err(|e| AppError::Anyhow(anyhow::anyhow!("创建一致性数据库快照失败: {e}")))?;
+    drop(conn);
+
+    let bytes = fs::read(&snapshot_path)
+        .await
+        .with_context(|| format!("无法读取数据库快照文件: {}", snapshot_path.display()))?;
+    let _ = fs::remove_file(&snapshot_path).await;
+    Ok(bytes)
+}
+
+#[allow(dead_code)]
+async fn export_consistent_db_snapshot(state: &AppState) -> AppResult<Vec<u8>> {
+    let backups_dir = backup_root_dir()?;
+    fs::create_dir_all(&backups_dir).await?;
+
+    let snapshot_path = backups_dir.join(format!("snapshot-{}.db", uuid::Uuid::new_v4()));
+    let snapshot_literal = quote_sqlite_literal(snapshot_path.to_string_lossy().as_ref());
+    let vacuum_sql = format!("VACUUM INTO '{}'", snapshot_literal);
+
+    let mut conn = state.pool.acquire().await?;
+
+    let _ = sqlx::query("PRAGMA wal_checkpoint(FULL)")
+        .execute(&mut *conn)
+        .await;
+
+    if let Err(err) = sqlx::query(&vacuum_sql).execute(&mut *conn).await {
+        tracing::warn!(
+            error = ?err,
+            "failed to create consistent sqlite snapshot via VACUUM INTO, fallback to raw file read"
+        );
+        let _ = fs::remove_file(&snapshot_path).await;
+        return Ok(fs::read(&state.db_path)
+            .await
+            .with_context(|| format!("无法读取数据库文件: {}", state.db_path.display()))?);
+    }
+
+    drop(conn);
+
+    let bytes = fs::read(&snapshot_path)
+        .await
+        .with_context(|| format!("无法读取数据库快照文件: {}", snapshot_path.display()))?;
+    let _ = fs::remove_file(&snapshot_path).await;
+    Ok(bytes)
+}
+
 #[allow(dead_code)]
 fn build_archive(db_bytes: &[u8], manifest_hash: &str, provider: &str) -> AppResult<Vec<u8>> {
     let cursor = Cursor::new(Vec::new());
@@ -47,7 +120,9 @@ fn build_archive(db_bytes: &[u8], manifest_hash: &str, provider: &str) -> AppRes
     writer.write_all(db_bytes)?;
 
     let manifest = serde_json::json!({
-        "version": 1,
+        "version": BACKUP_MANIFEST_VERSION,
+        "schema_version": CURRENT_SCHEMA_VERSION,
+        "app_version": env!("CARGO_PKG_VERSION"),
         "provider": provider,
         "created_at": Utc::now().to_rfc3339(),
         "manifest_hash": manifest_hash,
@@ -77,7 +152,8 @@ fn extract_archive(bytes: &[u8]) -> AppResult<(Vec<u8>, String)> {
 
     let mut db_bytes = Vec::new();
     {
-        let mut db_file = archive.by_name(BACKUP_DB_ENTRY)
+        let mut db_file = archive
+            .by_name(BACKUP_DB_ENTRY)
             .map_err(|_| AppError::BadRequest("备份包缺少数据库文件".into()))?;
         db_file.read_to_end(&mut db_bytes)?;
     }
@@ -103,7 +179,9 @@ async fn restore_database_file(state: &AppState, db_bytes: &[u8]) -> AppResult<P
     // Write new database to restore file
     if let Err(write_err) = fs::write(&restore_path, db_bytes).await {
         let _ = fs::remove_file(&restore_path).await;
-        return Err(AppError::Anyhow(anyhow::anyhow!("写入恢复数据库文件失败: {write_err}")));
+        return Err(AppError::Anyhow(anyhow::anyhow!(
+            "写入恢复数据库文件失败: {write_err}"
+        )));
     }
 
     // Try to backup current database
@@ -111,7 +189,9 @@ async fn restore_database_file(state: &AppState, db_bytes: &[u8]) -> AppResult<P
         if let Err(copy_err) = fs::copy(&state.db_path, &bak_path).await {
             tracing::warn!(error = ?copy_err, "failed to backup current db during restore");
             let _ = fs::remove_file(&restore_path).await;
-            return Err(AppError::Anyhow(anyhow::anyhow!("备份当前数据库失败: {copy_err}")));
+            return Err(AppError::Anyhow(anyhow::anyhow!(
+                "备份当前数据库失败: {copy_err}"
+            )));
         }
     }
 
@@ -120,28 +200,237 @@ async fn restore_database_file(state: &AppState, db_bytes: &[u8]) -> AppResult<P
     for attempt in 0..5 {
         match fs::rename(&restore_path, &state.db_path).await {
             Ok(_) => {
-                tracing::info!("database file replaced successfully on attempt {}", attempt + 1);
+                tracing::info!(
+                    "database file replaced successfully on attempt {}",
+                    attempt + 1
+                );
                 return Ok(bak_path);
-            },
+            }
             Err(e) => {
                 last_err = Some(e);
                 if attempt < 4 {
-                    tracing::warn!("attempt {} to replace db file failed, retrying...", attempt + 1);
+                    tracing::warn!(
+                        "attempt {} to replace db file failed, retrying...",
+                        attempt + 1
+                    );
                     tokio::time::sleep(tokio::time::Duration::from_millis(200)).await;
                 }
             }
         }
     }
 
-    tracing::warn!(error = ?last_err, "failed to replace db file after retries, keeping restore file");
-    // Keep the restore file for manual recovery after restart
-    Ok(restore_path)
+    tracing::warn!(error = ?last_err, "failed to replace db file, trying logical in-place restore");
+
+    if let Err(logic_err) = restore_database_logically(state, &restore_path).await {
+        tracing::error!(
+            error = ?logic_err,
+            "logical in-place restore failed, keeping restore file for manual recovery"
+        );
+        return Err(AppError::Anyhow(anyhow::anyhow!(
+            "无法自动恢复数据库。文件替换失败且逻辑恢复失败，请停止服务后手动使用 {} 覆盖 {}",
+            restore_path.display(),
+            state.db_path.display()
+        )));
+    }
+
+    // Logical restore succeeded, temporary restore file can be deleted.
+    let _ = fs::remove_file(&restore_path).await;
+    Ok(bak_path)
 }
 
-pub async fn create_backup(state: Arc<AppState>, provider: BackupProvider) -> AppResult<serde_json::Value> {
-    let db_bytes = fs::read(&state.db_path).await
-        .with_context(|| format!("无法读取数据库文件 {}", state.db_path.display()))?;
+fn quote_sqlite_ident(name: &str) -> String {
+    let escaped = name.replace('"', "\"\"");
+    format!("\"{}\"", escaped)
+}
+
+fn is_malformed_sqlite_error(err: &sqlx::Error) -> bool {
+    let text = err.to_string().to_lowercase();
+    text.contains("malformed") || text.contains("database disk image is malformed")
+}
+
+async fn validate_sqlite_image_bytes(state: &AppState, db_bytes: &[u8]) -> AppResult<()> {
+    let tmp_path = backup_root_dir()?.join(format!("validate-{}.db", uuid::Uuid::new_v4()));
+    fs::write(&tmp_path, db_bytes).await?;
+
+    let tmp_literal = quote_sqlite_literal(tmp_path.to_string_lossy().as_ref());
+    let attach_sql = format!("ATTACH DATABASE '{}' AS check_db", tmp_literal);
+    let mut conn = state.pool.acquire().await?;
+
+    let validation_result = async {
+        sqlx::query(&attach_sql).execute(&mut *conn).await?;
+        let check_result: String = sqlx::query_scalar("PRAGMA check_db.integrity_check")
+            .fetch_one(&mut *conn)
+            .await?;
+        sqlx::query("DETACH DATABASE check_db")
+            .execute(&mut *conn)
+            .await?;
+        Ok::<String, sqlx::Error>(check_result)
+    }
+    .await;
+
+    let _ = fs::remove_file(&tmp_path).await;
+
+    let check_result = match validation_result {
+        Ok(v) => v,
+        Err(e) => {
+            return Err(AppError::BadRequest(format!(
+                "备份数据库镜像不可用（完整性检查失败）: {}",
+                e
+            )))
+        }
+    };
+
+    if check_result.to_lowercase() != "ok" {
+        return Err(AppError::BadRequest(format!(
+            "备份数据库镜像损坏，integrity_check={}",
+            check_result
+        )));
+    }
+
+    Ok(())
+}
+
+async fn restore_database_logically(state: &AppState, restore_path: &Path) -> AppResult<()> {
+    let restore_path_str = restore_path
+        .to_str()
+        .ok_or_else(|| AppError::Anyhow(anyhow::anyhow!("restore path is not valid UTF-8")))?;
+
+    let mut conn = state.pool.acquire().await?;
+
+    // NOTE: In SQLite, changing foreign_keys inside a transaction has no effect.
+    // We disable it at connection scope before starting the replacement transaction.
+    sqlx::query("PRAGMA foreign_keys = OFF")
+        .execute(&mut *conn)
+        .await?;
+    sqlx::query("PRAGMA defer_foreign_keys = ON")
+        .execute(&mut *conn)
+        .await?;
+    sqlx::query("ATTACH DATABASE ? AS restore_db")
+        .bind(restore_path_str)
+        .execute(&mut *conn)
+        .await?;
+
+    let restore_result = async {
+        sqlx::query("BEGIN IMMEDIATE").execute(&mut *conn).await?;
+
+        // Prefer pragma_table_list so we can skip virtual/shadow tables safely (e.g. FTS shadow tables).
+        let table_rows = match sqlx::query(
+            "SELECT name
+             FROM pragma_table_list('main')
+             WHERE type = 'table' AND name NOT LIKE 'sqlite_%'",
+        )
+        .fetch_all(&mut *conn)
+        .await
+        {
+            Ok(rows) => rows,
+            Err(err) => {
+                tracing::warn!(
+                    error = ?err,
+                    "pragma_table_list unavailable, fallback to sqlite_master for logical restore"
+                );
+                sqlx::query(
+                    "SELECT name
+                     FROM main.sqlite_master
+                     WHERE type='table'
+                       AND name NOT LIKE 'sqlite_%'
+                       AND sql IS NOT NULL
+                       AND sql NOT LIKE 'CREATE VIRTUAL TABLE%'",
+                )
+                .fetch_all(&mut *conn)
+                .await?
+            }
+        };
+
+        for row in table_rows {
+            let table_name: String = row.try_get("name")?;
+
+            let exists: i64 = match sqlx::query_scalar(
+                "SELECT COUNT(1)
+                 FROM pragma_table_list('restore_db')
+                 WHERE type = 'table' AND name = ?",
+            )
+            .bind(&table_name)
+            .fetch_one(&mut *conn)
+            .await
+            {
+                Ok(v) => v,
+                Err(err) => {
+                    tracing::warn!(
+                        error = ?err,
+                        table = %table_name,
+                        "pragma_table_list(restore_db) unavailable, fallback to sqlite_master"
+                    );
+                    sqlx::query_scalar(
+                        "SELECT COUNT(1)
+                         FROM restore_db.sqlite_master
+                         WHERE type='table'
+                           AND name = ?
+                           AND sql IS NOT NULL
+                           AND sql NOT LIKE 'CREATE VIRTUAL TABLE%'",
+                    )
+                    .bind(&table_name)
+                    .fetch_one(&mut *conn)
+                    .await?
+                }
+            };
+
+            if exists == 0 {
+                continue;
+            }
+
+            let qname = quote_sqlite_ident(&table_name);
+            let delete_sql = format!("DELETE FROM {}", qname);
+            let insert_sql = format!(
+                "INSERT INTO {name} SELECT * FROM restore_db.{name}",
+                name = qname
+            );
+
+            sqlx::query(&delete_sql).execute(&mut *conn).await?;
+            sqlx::query(&insert_sql).execute(&mut *conn).await?;
+        }
+
+        sqlx::query("COMMIT").execute(&mut *conn).await?;
+        Ok::<(), sqlx::Error>(())
+    }
+    .await;
+
+    if restore_result.is_err() {
+        let _ = sqlx::query("ROLLBACK").execute(&mut *conn).await;
+    }
+
+    let _ = sqlx::query("DETACH DATABASE restore_db")
+        .execute(&mut *conn)
+        .await;
+    let _ = sqlx::query("PRAGMA foreign_keys = ON")
+        .execute(&mut *conn)
+        .await;
+
+    if let Err(err) = restore_result {
+        tracing::error!(error = ?err, "logical restore transaction failed");
+        if is_malformed_sqlite_error(&err) {
+            return Err(AppError::Anyhow(anyhow::anyhow!(
+                "备份中的数据库镜像已损坏，无法自动恢复。请重新创建备份后再恢复。"
+            )));
+        }
+        return Err(err.into());
+    }
+    tracing::info!("database restored via logical in-place restore");
+    Ok(())
+}
+
+pub async fn create_backup(
+    state: Arc<AppState>,
+    provider: BackupProvider,
+) -> AppResult<serde_json::Value> {
+    let db_bytes = export_consistent_db_snapshot_strict(&state).await?;
     let manifest_hash = hash_bytes(&db_bytes);
+    tracing::info!(
+        module = "backup",
+        event = "create_backup_snapshot_ready",
+        db_size = db_bytes.len(),
+        manifest_hash = %manifest_hash,
+        provider = provider.as_str()
+    );
 
     let cursor = Cursor::new(Vec::new());
     let mut writer = ZipWriter::new(cursor);
@@ -160,7 +449,9 @@ pub async fn create_backup(state: Arc<AppState>, provider: BackupProvider) -> Ap
         while let Some(entry) = entries.next_entry().await? {
             let path = entry.path();
             if path.is_file() {
-                let file_name = path.file_name().ok_or_else(|| AppError::Anyhow(anyhow::anyhow!("无法获取文件名")))?;
+                let file_name = path
+                    .file_name()
+                    .ok_or_else(|| AppError::Anyhow(anyhow::anyhow!("无法获取文件名")))?;
                 let file_name_str = file_name.to_string_lossy();
                 let file_bytes = fs::read(&path).await?;
 
@@ -173,7 +464,9 @@ pub async fn create_backup(state: Arc<AppState>, provider: BackupProvider) -> Ap
     }
 
     let manifest = serde_json::json!({
-        "version": 1,
+        "version": BACKUP_MANIFEST_VERSION,
+        "schema_version": CURRENT_SCHEMA_VERSION,
+        "app_version": env!("CARGO_PKG_VERSION"),
         "provider": provider.as_str(),
         "created_at": Utc::now().to_rfc3339(),
         "manifest_hash": manifest_hash,
@@ -197,9 +490,12 @@ pub async fn create_backup(state: Arc<AppState>, provider: BackupProvider) -> Ap
 
     let size = archive.len() as i64;
 
-    let backup_id = repository::create_backup(&state.pool, provider.as_str(), size, &manifest_hash).await?;
+    let backup_id =
+        repository::create_backup(&state.pool, provider.as_str(), size, &manifest_hash).await?;
     let backend = local_backend()?;
-    let path = backend.save(&backup_id, BACKUP_ARCHIVE_NAME, &archive).await?;
+    let path = backend
+        .save(&backup_id, BACKUP_ARCHIVE_NAME, &archive)
+        .await?;
 
     if provider == BackupProvider::S3 {
         tracing::warn!(backup_id = %backup_id, "S3 backend requested but no runtime S3 config is wired yet, archive retained locally for compatibility");
@@ -230,7 +526,8 @@ pub async fn list_backups(state: Arc<AppState>) -> AppResult<Vec<BackupListRespo
 }
 
 pub async fn delete_backup(state: Arc<AppState>, id: String) -> AppResult<serde_json::Value> {
-    let backup = repository::get_backup(&state.pool, &id).await?
+    let backup = repository::get_backup(&state.pool, &id)
+        .await?
         .ok_or(AppError::NotFound)?;
 
     let backend = local_backend()?;
@@ -241,11 +538,21 @@ pub async fn delete_backup(state: Arc<AppState>, id: String) -> AppResult<serde_
 }
 
 #[allow(dead_code)]
-pub async fn restore_backup(state: Arc<AppState>, backup_id: String) -> AppResult<Vec<RestoreProgressResponse>> {
-    let backup = repository::get_backup(&state.pool, &backup_id).await?
+pub async fn restore_backup(
+    state: Arc<AppState>,
+    backup_id: String,
+) -> AppResult<Vec<RestoreProgressResponse>> {
+    let backup = repository::get_backup(&state.pool, &backup_id)
+        .await?
         .ok_or(AppError::NotFound)?;
 
-    repository::update_backup_status(&state.pool, &backup.id, BackupStatus::Running.as_str(), None).await?;
+    repository::update_backup_status(
+        &state.pool,
+        &backup.id,
+        BackupStatus::Running.as_str(),
+        None,
+    )
+    .await?;
 
     let backend = local_backend()?;
     let bytes = backend.read(&backup.id, BACKUP_ARCHIVE_NAME).await?;
@@ -263,9 +570,26 @@ pub async fn restore_backup(state: Arc<AppState>, backup_id: String) -> AppResul
         .map_err(|e| AppError::BadRequest(format!("manifest.json 无法解析: {e}")))?;
     let manifest_hash = manifest_value["manifest_hash"].as_str().unwrap_or_default();
     if manifest_hash != expected_hash {
-        repository::update_backup_status(&state.pool, &backup.id, BackupStatus::Failed.as_str(), Some("manifest hash mismatch")).await?;
-        return Err(AppError::BadRequest("备份校验失败，manifest hash 不匹配".into()));
+        repository::update_backup_status(
+            &state.pool,
+            &backup.id,
+            BackupStatus::Failed.as_str(),
+            Some("manifest hash mismatch"),
+        )
+        .await?;
+        return Err(AppError::BadRequest(
+            "备份校验失败，manifest hash 不匹配".into(),
+        ));
     }
+
+    validate_sqlite_image_bytes(&state, &db_bytes).await?;
+    tracing::info!(
+        module = "backup",
+        event = "restore_archive_validated",
+        backup_id = %backup.id,
+        db_size = db_bytes.len(),
+        manifest_hash = %expected_hash
+    );
 
     progress.push(RestoreProgressResponse {
         step: RestoreStep::Extract.as_str().to_string(),
@@ -286,11 +610,20 @@ pub async fn restore_backup(state: Arc<AppState>, backup_id: String) -> AppResul
         message: "当前版本无额外缓存，已跳过缓存清理".into(),
     });
 
-    repository::update_backup_status(&state.pool, &backup.id, BackupStatus::Completed.as_str(), None).await?;
+    repository::update_backup_status(
+        &state.pool,
+        &backup.id,
+        BackupStatus::Completed.as_str(),
+        None,
+    )
+    .await?;
     Ok(progress)
 }
 
-pub async fn restore_backup_from_bytes(state: Arc<AppState>, bytes: Vec<u8>) -> AppResult<Vec<RestoreProgressResponse>> {
+pub async fn restore_backup_from_bytes(
+    state: Arc<AppState>,
+    bytes: Vec<u8>,
+) -> AppResult<Vec<RestoreProgressResponse>> {
     let mut progress = Vec::new();
     progress.push(RestoreProgressResponse {
         step: RestoreStep::Validate.as_str().to_string(),
@@ -304,8 +637,18 @@ pub async fn restore_backup_from_bytes(state: Arc<AppState>, bytes: Vec<u8>) -> 
         .map_err(|e| AppError::BadRequest(format!("manifest.json 无法解析: {e}")))?;
     let manifest_hash = manifest_value["manifest_hash"].as_str().unwrap_or_default();
     if manifest_hash != expected_hash {
-        return Err(AppError::BadRequest("备份校验失败，manifest hash 不匹配".into()));
+        return Err(AppError::BadRequest(
+            "备份校验失败，manifest hash 不匹配".into(),
+        ));
     }
+
+    validate_sqlite_image_bytes(&state, &db_bytes).await?;
+    tracing::info!(
+        module = "backup",
+        event = "restore_upload_validated",
+        db_size = db_bytes.len(),
+        manifest_hash = %expected_hash
+    );
 
     progress.push(RestoreProgressResponse {
         step: RestoreStep::Extract.as_str().to_string(),
@@ -323,11 +666,16 @@ pub async fn restore_backup_from_bytes(state: Arc<AppState>, bytes: Vec<u8>) -> 
 
     let mut media_files = Vec::new();
     for i in 0..archive.len() {
-        let mut file = archive.by_index(i)
+        let mut file = archive
+            .by_index(i)
             .map_err(|e| AppError::BadRequest(format!("无法读取备份文件: {e}")))?;
 
         if file.name().starts_with("media/") && !file.is_dir() {
-            let file_name = file.name().strip_prefix("media/").unwrap_or(file.name()).to_string();
+            let file_name = file
+                .name()
+                .strip_prefix("media/")
+                .unwrap_or(file.name())
+                .to_string();
             let mut file_bytes = Vec::new();
             file.read_to_end(&mut file_bytes)?;
             media_files.push((file_name, file_bytes));
@@ -371,7 +719,10 @@ pub async fn get_schedule(state: Arc<AppState>) -> AppResult<BackupScheduleRespo
     })
 }
 
-pub async fn update_schedule(state: Arc<AppState>, request: BackupScheduleRequest) -> AppResult<BackupScheduleResponse> {
+pub async fn update_schedule(
+    state: Arc<AppState>,
+    request: BackupScheduleRequest,
+) -> AppResult<BackupScheduleResponse> {
     let frequency = BackupScheduleFrequency::from_str(&request.frequency)
         .ok_or_else(|| AppError::BadRequest("frequency 仅支持 daily / weekly / monthly".into()))?;
     let provider = BackupProvider::from_str(&request.provider)
@@ -384,11 +735,12 @@ pub async fn update_schedule(state: Arc<AppState>, request: BackupScheduleReques
     repository::get_or_create_schedule(&state.pool).await?;
 
     let now = Utc::now();
-    let next_run_at = now + Duration::days(match frequency {
-        BackupScheduleFrequency::Daily => 1,
-        BackupScheduleFrequency::Weekly => 7,
-        BackupScheduleFrequency::Monthly => 30,
-    });
+    let next_run_at = now
+        + Duration::days(match frequency {
+            BackupScheduleFrequency::Daily => 1,
+            BackupScheduleFrequency::Weekly => 7,
+            BackupScheduleFrequency::Monthly => 30,
+        });
 
     repository::update_schedule(
         &state.pool,
@@ -399,7 +751,8 @@ pub async fn update_schedule(state: Arc<AppState>, request: BackupScheduleReques
         provider.as_str(),
     )
     .await?;
-    repository::update_schedule_run_time(&state.pool, &now.to_rfc3339(), &next_run_at.to_rfc3339()).await?;
+    repository::update_schedule_run_time(&state.pool, &now.to_rfc3339(), &next_run_at.to_rfc3339())
+        .await?;
 
     get_schedule(state).await
 }

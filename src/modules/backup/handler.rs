@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use axum::{
-    body::Body,
     extract::{Path, State},
     http::header,
     response::IntoResponse,
@@ -16,7 +15,7 @@ use crate::{
 use super::{
     domain::BackupProvider,
     dto::{BackupScheduleRequest, CreateBackupRequest},
-    service,
+    merge, service,
 };
 
 pub async fn create_backup(
@@ -41,15 +40,32 @@ pub async fn list_backups(
 pub async fn restore_backup(
     State(state): State<Arc<AppState>>,
     admin: AdminUser,
-    req: axum::http::Request<Body>,
+    mut multipart: axum::extract::Multipart,
 ) -> Result<Json<ApiResponse<Vec<super::dto::RestoreProgressResponse>>>, AppError> {
     let _ = admin;
-    let (_, body) = req.into_parts();
-    let bytes = axum::body::to_bytes(body, 64 * 1024 * 1024)
-        .await
-        .map_err(|e| AppError::BadRequest(format!("failed to read request body: {e}")))?;
+    let mut file_bytes: Option<Vec<u8>> = None;
+    let mut file_name: Option<String> = None;
 
-    let data = service::restore_backup_from_bytes(state, bytes.to_vec()).await?;
+    while let Some(field) = multipart.next_field().await? {
+        if field.name() == Some("file") {
+            file_name = field.file_name().map(str::to_string);
+            file_bytes = Some(field.bytes().await?.to_vec());
+            break;
+        }
+    }
+
+    let bytes = file_bytes.ok_or_else(|| {
+        tracing::warn!(module = "backup", event = "restore_upload_missing_file_field");
+        AppError::BadRequest("missing backup file field".into())
+    })?;
+    tracing::info!(
+        module = "backup",
+        event = "restore_upload_received",
+        file_name = file_name.as_deref().unwrap_or("-"),
+        size = bytes.len()
+    );
+
+    let data = service::restore_backup_from_bytes(state, bytes).await?;
     Ok(Json(ApiResponse::success(data)))
 }
 
@@ -84,7 +100,9 @@ pub async fn download_backup(
     _admin: AdminUser,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
-    let backup_dir = state.db_path.parent()
+    let backup_dir = state
+        .db_path
+        .parent()
         .ok_or(AppError::NotFound)?
         .join("backups");
     let backup_path = backup_dir.join(&id).join("backup.zip");
@@ -93,11 +111,25 @@ pub async fn download_backup(
         return Err(AppError::NotFound);
     }
 
-    let file: Vec<u8> = tokio::fs::read(&backup_path)
-        .await?;
+    let file: Vec<u8> = tokio::fs::read(&backup_path).await?;
 
     Ok((
-        [(header::CONTENT_TYPE, "application/zip"), (header::CONTENT_DISPOSITION, "attachment; filename=\"backup.zip\"")],
+        [
+            (header::CONTENT_TYPE, "application/zip"),
+            (
+                header::CONTENT_DISPOSITION,
+                "attachment; filename=\"backup.zip\"",
+            ),
+        ],
         file,
     ))
+}
+
+pub async fn merge_restore_backup(
+    State(state): State<Arc<AppState>>,
+    _admin: AdminUser,
+    Path(id): Path<String>,
+) -> Result<Json<ApiResponse<Vec<super::dto::RestoreProgressResponse>>>, AppError> {
+    let data = merge::merge_restore_backup(state, id).await?;
+    Ok(Json(ApiResponse::success(data)))
 }

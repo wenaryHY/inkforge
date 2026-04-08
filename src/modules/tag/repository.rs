@@ -4,13 +4,13 @@ use uuid::Uuid;
 use super::domain::Tag;
 
 pub async fn list_tags(pool: &SqlitePool) -> Result<Vec<Tag>, sqlx::Error> {
-    sqlx::query_as::<_, Tag>("SELECT * FROM tags ORDER BY name ASC")
+    sqlx::query_as::<_, Tag>("SELECT * FROM tags WHERE deleted_at IS NULL ORDER BY name ASC")
         .fetch_all(pool)
         .await
 }
 
 pub async fn get_tag(pool: &SqlitePool, id: &str) -> Result<Option<Tag>, sqlx::Error> {
-    sqlx::query_as::<_, Tag>("SELECT * FROM tags WHERE id = ? LIMIT 1")
+    sqlx::query_as::<_, Tag>("SELECT * FROM tags WHERE id = ? AND deleted_at IS NULL LIMIT 1")
         .bind(id)
         .fetch_optional(pool)
         .await
@@ -24,7 +24,7 @@ pub async fn tag_slug_or_name_exists(
 ) -> Result<bool, sqlx::Error> {
     if let Some(id) = exclude_id {
         sqlx::query_scalar(
-            "SELECT EXISTS(SELECT 1 FROM tags WHERE (slug = ? OR name = ?) AND id != ?)",
+            "SELECT EXISTS(SELECT 1 FROM tags WHERE (slug = ? OR name = ?) AND id != ? AND deleted_at IS NULL)",
         )
         .bind(slug)
         .bind(name)
@@ -32,7 +32,9 @@ pub async fn tag_slug_or_name_exists(
         .fetch_one(pool)
         .await
     } else {
-        sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM tags WHERE slug = ? OR name = ?)")
+        sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM tags WHERE (slug = ? OR name = ?) AND deleted_at IS NULL)",
+        )
             .bind(slug)
             .bind(name)
             .fetch_one(pool)
@@ -59,21 +61,21 @@ pub async fn update_tag(
 ) -> Result<(), sqlx::Error> {
     if let Some(name) = name {
         if let Some(slug) = slug {
-            sqlx::query("UPDATE tags SET name = ?, slug = ? WHERE id = ?")
+            sqlx::query("UPDATE tags SET name = ?, slug = ?, updated_at = datetime('now') WHERE id = ?")
                 .bind(name)
                 .bind(slug)
                 .bind(id)
                 .execute(pool)
                 .await?;
         } else {
-            sqlx::query("UPDATE tags SET name = ? WHERE id = ?")
+            sqlx::query("UPDATE tags SET name = ?, updated_at = datetime('now') WHERE id = ?")
                 .bind(name)
                 .bind(id)
                 .execute(pool)
                 .await?;
         }
     } else if let Some(slug) = slug {
-        sqlx::query("UPDATE tags SET slug = ? WHERE id = ?")
+        sqlx::query("UPDATE tags SET slug = ?, updated_at = datetime('now') WHERE id = ?")
             .bind(slug)
             .bind(id)
             .execute(pool)
@@ -83,7 +85,7 @@ pub async fn update_tag(
 }
 
 pub async fn delete_tag(pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error> {
-    sqlx::query("DELETE FROM tags WHERE id = ?")
+    sqlx::query("UPDATE tags SET deleted_at = datetime('now'), updated_at = datetime('now') WHERE id = ?")
         .bind(id)
         .execute(pool)
         .await?;
@@ -96,7 +98,7 @@ pub async fn list_post_tags(pool: &SqlitePool, post_id: &str) -> Result<Vec<Tag>
         "SELECT t.*
          FROM tags t
          JOIN post_tags pt ON pt.tag_id = t.id
-         WHERE pt.post_id = ?
+         WHERE pt.post_id = ? AND t.deleted_at IS NULL
          ORDER BY t.name ASC",
     )
     .bind(post_id)
@@ -105,7 +107,11 @@ pub async fn list_post_tags(pool: &SqlitePool, post_id: &str) -> Result<Vec<Tag>
 }
 
 #[allow(dead_code)]
-pub async fn replace_post_tags(pool: &SqlitePool, post_id: &str, tag_ids: &[String]) -> Result<(), sqlx::Error> {
+pub async fn replace_post_tags(
+    pool: &SqlitePool,
+    post_id: &str,
+    tag_ids: &[String],
+) -> Result<(), sqlx::Error> {
     sqlx::query("DELETE FROM post_tags WHERE post_id = ?")
         .bind(post_id)
         .execute(pool)

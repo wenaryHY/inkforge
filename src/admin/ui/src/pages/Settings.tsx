@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { apiData, getToken } from '../lib/api';
-import type { Setting, ThemeSummary } from '../types';
+import {
+  apiData,
+  API,
+  createBackup,
+  deleteBackup as deleteBackupApi,
+  getToken,
+  listBackups,
+  mergeRestoreBackup,
+} from '../lib/api';
+import type { BackupListResponse, Setting, ThemeSummary } from '../types';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
@@ -52,12 +60,28 @@ function FormRow({ label, children, hint }: { label: string; children: React.Rea
   );
 }
 
+function formatBytes(size: number): string {
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+}
+
 export default function Settings() {
   const toast = useToast();
   const restoreInputRef = useRef<HTMLInputElement>(null);
   const [themes, setThemes] = useState<ThemeSummary[]>([]);
+  const [backups, setBackups] = useState<BackupListResponse[]>([]);
   const [kv, setKv] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
+  const [creatingBackup, setCreatingBackup] = useState(false);
+  const [downloadingBackupId, setDownloadingBackupId] = useState<string | null>(null);
+  const [mergeRestoringId, setMergeRestoringId] = useState<string | null>(null);
+  const [deletingBackupId, setDeletingBackupId] = useState<string | null>(null);
+
+  const loadBackups = useCallback(async () => {
+    const items = await listBackups();
+    setBackups(items);
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -69,12 +93,83 @@ export default function Settings() {
       const nextKv: Record<string, string> = {};
       settingItems.forEach((item) => { nextKv[item.key] = item.value; });
       setKv(nextKv);
+      await loadBackups();
     } catch (error) { toast(error instanceof Error ? error.message : '加载设置失败', 'error'); }
-  }, [toast]);
+  }, [loadBackups, toast]);
 
   useEffect(() => { void load(); }, [load]);
 
   function update(key: string, value: string) { setKv((prev) => ({ ...prev, [key]: value })); }
+
+  async function downloadBackupById(backupId: string) {
+    try {
+      setDownloadingBackupId(backupId);
+      const token = getToken();
+      const res = await fetch(`${API}/api/admin/backup/${backupId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        throw new Error('下载备份失败');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `inkforge_backup_${backupId}_${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('备份文件已开始下载', 'success');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '下载备份失败', 'error');
+    } finally {
+      setDownloadingBackupId(null);
+    }
+  }
+
+  async function handleCreateBackup() {
+    setCreatingBackup(true);
+    try {
+      await createBackup('local');
+      await loadBackups();
+      toast('已创建新备份', 'success');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '创建备份失败', 'error');
+    } finally {
+      setCreatingBackup(false);
+    }
+  }
+
+  async function handleMergeRestore(backupId: string) {
+    if (!window.confirm('将执行"合并恢复"：保留当前新数据并合并备份历史数据，是否继续？')) {
+      return;
+    }
+    setMergeRestoringId(backupId);
+    try {
+      await mergeRestoreBackup(backupId);
+      toast('合并恢复成功，页面即将刷新', 'success');
+      setTimeout(() => location.reload(), 1200);
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '合并恢复失败', 'error');
+    } finally {
+      setMergeRestoringId(null);
+    }
+  }
+
+  async function handleDeleteBackup(backupId: string) {
+    if (!window.confirm('确定删除这个备份吗？删除后不可恢复。')) {
+      return;
+    }
+    setDeletingBackupId(backupId);
+    try {
+      await deleteBackupApi(backupId);
+      await loadBackups();
+      toast('备份已删除', 'success');
+    } catch (error) {
+      toast(error instanceof Error ? error.message : '删除备份失败', 'error');
+    } finally {
+      setDeletingBackupId(null);
+    }
+  }
 
   async function handleSave() {
     setSaving(true);
@@ -225,100 +320,145 @@ export default function Settings() {
       {/* 数据备份 */}
       <SettingSection
         title="数据备份"
-        description="导出或导入完整的 SQLite 数据库文件，包含文章、评论、用户等全部数据"
+        description="管理数据库备份，支持创建、下载、合并恢复和导入操作"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* 操作按钮行 */}
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <Button
-              onClick={() => {
+            <Button onClick={handleCreateBackup} disabled={creatingBackup} loading={creatingBackup}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+              {creatingBackup ? '创建中…' : '创建备份'}
+            </Button>
+            <Button variant="ghost" onClick={() => restoreInputRef.current?.click()}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              导入备份文件
+            </Button>
+            <input
+              ref={restoreInputRef}
+              type="file"
+              accept=".zip"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                if (!window.confirm(`即将用 "${file.name}" 替换当前数据库，原数据库会备份为 .bak 文件。是否继续？`)) {
+                  return;
+                }
+                const formData = new FormData();
+                formData.append('file', file);
                 const token = getToken();
-                fetch('/api/admin/backup/list', {
+                fetch(`${API}/api/admin/backup/restore`, {
+                  method: 'POST',
                   headers: { Authorization: `Bearer ${token}` },
+                  body: formData,
                 })
                   .then((r) => r.json())
                   .then((json) => {
-                    if (json.code !== 0 || !json.data || json.data.length === 0) {
-                      throw new Error('没有可用的备份');
+                    if (json.code === 0) {
+                      toast('备份导入成功，页面将刷新...', 'success');
+                      setTimeout(() => location.reload(), 1500);
+                    } else {
+                      toast(json.message || '导入失败', 'error');
                     }
-                    const backup = json.data[0];
-                    return fetch(`/api/admin/backup/${backup.id}`, {
-                      headers: { Authorization: `Bearer ${token}` },
-                    });
                   })
-                  .then((r) => {
-                    if (!r.ok) throw new Error('下载失败');
-                    return r.blob();
-                  })
-                  .then((blob) => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `inkforge_backup_${new Date().toISOString().slice(0, 10)}.zip`;
-                    a.click();
-                    URL.revokeObjectURL(url);
-                    toast('备份文件已开始下载', 'success');
-                  })
-                  .catch((e) => toast(e instanceof Error ? e.message : '备份失败', 'error'));
+                  .catch((err) => toast(err instanceof Error ? err.message : '导入失败', 'error'))
+                  .finally(() => {
+                    if (restoreInputRef.current) restoreInputRef.current.value = '';
+                  });
               }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              下载数据库备份
-            </Button>
-            <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
-              备份包含文章、评论、用户、媒体等全部数据
-            </span>
+            />
           </div>
 
-          <div style={{ paddingTop: '4px', borderTop: '1px solid var(--border-light)' }}>
-            <div style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '10px' }}>
-              导入备份
+          {/* 备份列表 */}
+          <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
+            <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '12px' }}>
+              备份历史 ({backups.length})
             </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <input
-                ref={restoreInputRef}
-                type="file"
-                accept=".zip"
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  if (!window.confirm(`即将用 "${file.name}" 替换当前数据库，原数据库会备份为 .bak 文件。是否继续？`)) {
-                    return;
-                  }
-                  const formData = new FormData();
-                  formData.append('file', file);
-                  const token = getToken();
-                  fetch('/api/admin/backup/restore', {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${token}` },
-                    body: formData,
-                  })
-                    .then((r) => r.json())
-                    .then((json) => {
-                      if (json.code === 0) {
-                        toast('备份导入成功，页面将刷新...', 'success');
-                        setTimeout(() => location.reload(), 1500);
-                      } else {
-                        toast(json.message || '导入失败', 'error');
-                      }
-                    })
-                    .catch((e) => toast(e instanceof Error ? e.message : '导入失败', 'error'))
-                    .finally(() => {
-                      if (restoreInputRef.current) restoreInputRef.current.value = '';
-                    });
-                }}
-              />
-              <Button
-                variant="ghost"
-                onClick={() => restoreInputRef.current?.click()}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                选择备份文件导入
-              </Button>
-              <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>
-                仅支持 SQLite 数据库文件（.db / .sqlite / .sqlite3），导入前会自动备份原数据库
-              </span>
-            </div>
+            {backups.length === 0 ? (
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '20px 0', textAlign: 'center' }}>
+                暂无备份记录，点击上方「创建备份」生成第一份
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {backups.map((b) => (
+                  <div
+                    key={b.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border-light)',
+                      background: 'var(--bg-subtle)',
+                      transition: 'border-color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; }}
+                  >
+                    {/* 左侧信息 */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
+                      <div style={{
+                        width: '34px', height: '34px', borderRadius: '8px',
+                        background: b.status === 'completed' ? 'rgba(34,197,94,0.1)' : b.status === 'failed' ? 'rgba(239,68,68,0.1)' : 'rgba(250,204,21,0.1)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '15px', flexShrink: 0,
+                      }}>
+                        {b.status === 'completed' ? '✅' : b.status === 'failed' ? '❌' : '⏳'}
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--if-text)', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ fontFamily: 'monospace', fontSize: '12px', opacity: 0.7 }}>{b.id.slice(0, 8)}</span>
+                          <span style={{
+                            fontSize: '10.5px', fontWeight: 600, padding: '1px 6px', borderRadius: '4px',
+                            background: b.provider === 's3' ? 'rgba(99,102,241,0.1)' : 'rgba(107,114,128,0.1)',
+                            color: b.provider === 's3' ? '#6366f1' : '#6b7280',
+                          }}>{b.provider}</span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                          {new Date(b.created_at).toLocaleString('zh-CN')} · {formatBytes(b.size)}
+                          {b.error_message && <span style={{ color: '#ef4444', marginLeft: '8px' }}>({b.error_message})</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 右侧操作 */}
+                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => downloadBackupById(b.id)}
+                        disabled={downloadingBackupId === b.id}
+                        loading={downloadingBackupId === b.id}
+                        title="下载此备份"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleMergeRestore(b.id)}
+                        disabled={mergeRestoringId === b.id || b.status !== 'completed'}
+                        loading={mergeRestoringId === b.id}
+                        title="合并恢复：保留当前新数据，合并此备份的历史数据"
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></svg>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteBackup(b.id)}
+                        disabled={deletingBackupId === b.id}
+                        loading={deletingBackupId === b.id}
+                        title="删除此备份"
+                        style={{ color: '#ef4444' }}
+                      >
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </SettingSection>
