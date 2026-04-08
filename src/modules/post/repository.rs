@@ -276,7 +276,7 @@ pub async fn list_admin_posts(
             let like = format!("%{}%", keyword);
             sqlx::query_as::<_, AdminPost>(
                 "SELECT * FROM posts
-                 WHERE status = ? AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)
+                 WHERE deleted_at IS NULL AND status = ? AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)
                  ORDER BY pinned DESC, published_at DESC, created_at DESC
                  LIMIT ? OFFSET ?",
             )
@@ -292,7 +292,7 @@ pub async fn list_admin_posts(
         (Some(status), None) => {
             sqlx::query_as::<_, AdminPost>(
                 "SELECT * FROM posts
-                 WHERE status = ?
+                 WHERE deleted_at IS NULL AND status = ?
                  ORDER BY pinned DESC, published_at DESC, created_at DESC
                  LIMIT ? OFFSET ?",
             )
@@ -306,7 +306,7 @@ pub async fn list_admin_posts(
             let like = format!("%{}%", keyword);
             sqlx::query_as::<_, AdminPost>(
                 "SELECT * FROM posts
-                 WHERE title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?
+                 WHERE deleted_at IS NULL AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)
                  ORDER BY pinned DESC, published_at DESC, created_at DESC
                  LIMIT ? OFFSET ?",
             )
@@ -321,6 +321,7 @@ pub async fn list_admin_posts(
         (None, None) => {
             sqlx::query_as::<_, AdminPost>(
                 "SELECT * FROM posts
+                 WHERE deleted_at IS NULL
                  ORDER BY pinned DESC, published_at DESC, created_at DESC
                  LIMIT ? OFFSET ?",
             )
@@ -341,7 +342,7 @@ pub async fn count_admin_posts(
         (Some(status), Some(keyword)) => {
             let like = format!("%{}%", keyword);
             sqlx::query_scalar(
-                "SELECT COUNT(*) FROM posts WHERE status = ? AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)",
+                "SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND status = ? AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)",
             )
             .bind(status)
             .bind(&like)
@@ -351,7 +352,7 @@ pub async fn count_admin_posts(
             .await
         }
         (Some(status), None) => {
-            sqlx::query_scalar("SELECT COUNT(*) FROM posts WHERE status = ?")
+            sqlx::query_scalar("SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND status = ?")
                 .bind(status)
                 .fetch_one(pool)
                 .await
@@ -359,7 +360,7 @@ pub async fn count_admin_posts(
         (None, Some(keyword)) => {
             let like = format!("%{}%", keyword);
             sqlx::query_scalar(
-                "SELECT COUNT(*) FROM posts WHERE title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?",
+                "SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)",
             )
             .bind(&like)
             .bind(&like)
@@ -368,7 +369,7 @@ pub async fn count_admin_posts(
             .await
         }
         (None, None) => {
-            sqlx::query_scalar("SELECT COUNT(*) FROM posts")
+            sqlx::query_scalar("SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL")
                 .fetch_one(pool)
                 .await
         }
