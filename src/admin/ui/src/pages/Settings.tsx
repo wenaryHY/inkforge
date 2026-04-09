@@ -21,24 +21,22 @@ import { useAuth } from '../contexts/AuthContext';
 
 /* 样式常量 */
 const sectionStyle: React.CSSProperties = {
-  background: 'var(--bg-card)',
-  border: '1px solid var(--border-light)',
-  borderRadius: '14px',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+  background: 'var(--md-surface-container-lowest)',
+  borderRadius: 'var(--radius-lg)',
   marginBottom: '20px',
   overflow: 'hidden',
 };
 const secHeadStyle: React.CSSProperties = {
-  padding: '18px 24px', borderBottom: '1px solid var(--border-light)',
+  padding: '18px 24px', background: 'var(--md-surface-container-low)',
 };
 const secTitleStyle: React.CSSProperties = {
-  fontSize: '15px', fontWeight: 700, color: 'var(--if-text)', letterSpacing: '-0.2px',
+  fontSize: '15px', fontWeight: 700, color: 'var(--md-on-surface)', letterSpacing: '-0.2px',
 };
-const secDescStyle: React.CSSProperties = { fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '3px' };
+const secDescStyle: React.CSSProperties = { fontSize: '12.5px', color: 'var(--md-outline)', marginTop: '3px' };
 const secBodyStyle: React.CSSProperties = { padding: '24px', display: 'flex', flexDirection: 'column' as const, gap: '18px' };
 const formRowStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: '160px 1fr', gap: '12px', alignItems: 'start' };
-const labelStyle: React.CSSProperties = { fontSize: '13.5px', fontWeight: 600, color: 'var(--text-secondary)', paddingTop: '10px' };
-const hintStyle: React.CSSProperties = { fontSize: '12px', color: 'var(--text-muted)', opacity: 0.8 };
+const labelStyle: React.CSSProperties = { fontSize: '13.5px', fontWeight: 600, color: 'var(--md-on-surface-variant)', paddingTop: '10px' };
+const hintStyle: React.CSSProperties = { fontSize: '12px', color: 'var(--md-outline)', opacity: 0.8 };
 
 function SettingSection({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -232,8 +230,11 @@ export default function Settings() {
         <FormRow label="站点描述" hint="用于 SEO 和页面 meta 描述，建议不超过 160 字符">
           <Input value={kv.site_description || ''} onChange={(e) => update('site_description', e.target.value)} placeholder="A personal blog powered by InkForge" />
         </FormRow>
-        <FormRow label="站点 URL" hint="博客的完整访问地址，包含协议前缀">
+        <FormRow label="站点 URL" hint="博客的完整访问地址，必须是纯 origin，例如 https://example.com">
           <Input value={kv.site_url || ''} onChange={(e) => update('site_url', e.target.value)} placeholder="https://example.com" />
+        </FormRow>
+        <FormRow label="后台 URL" hint="后台完整入口地址，当前阶段必须以 /admin 结尾，例如 https://example.com/admin">
+          <Input value={kv.admin_url || ''} onChange={(e) => update('admin_url', e.target.value)} placeholder="https://example.com/admin" />
         </FormRow>
       </SettingSection>
 
@@ -289,8 +290,8 @@ export default function Settings() {
         </div>
 
         {/* 已安装主题 */}
-        <div style={{ marginTop: '22px', paddingTop: '18px', borderTop: '1px solid var(--border-light)' }}>
-          <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '16px' }}>
+        <div style={{ marginTop: '22px', paddingTop: '18px', background: 'var(--md-surface-container-low)', borderRadius: 'var(--radius-md)', padding: '18px' }}>
+          <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--md-outline)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '16px' }}>
             已安装的主题
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
@@ -298,43 +299,41 @@ export default function Settings() {
               <div
                 key={theme.manifest.slug}
                 style={{
-                  border: `1.5px solid ${theme.active ? 'rgba(255,107,53,0.4)' : 'var(--border-default)'}`,
-                  borderRadius: '10px',
-                  padding: '18px', transition: 'all 0.2s ease',
-                  background: theme.active ? 'rgba(255,107,53,0.03)' : 'var(--bg-card)',
+                  borderRadius: 'var(--radius-lg)',
+                  padding: '18px', transition: 'transform 0.2s ease',
+                  background: theme.active ? 'var(--md-primary-container)' : 'var(--md-surface-container)',
                   position: 'relative',
-                  boxShadow: theme.active ? '0 2px 12px rgba(255,107,53,0.08)' : undefined,
                 }}
                 onMouseEnter={(e) => {
-                  if (!theme.active) { e.currentTarget.style.borderColor = '#ff6b35'; e.currentTarget.style.boxShadow = '0 1px 6px rgba(0,0,0,0.06)'; }
+                  if (!theme.active) { e.currentTarget.style.transform = 'scale(0.97)'; }
                 }}
                 onMouseLeave={(e) => {
-                  if (!theme.active) { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.boxShadow = 'none'; }
+                  if (!theme.active) { e.currentTarget.style.transform = 'scale(1)'; }
                 }}
               >
                 {theme.active && (
                   <span style={{
                     position: 'absolute', top: '-9px', right: '16px',
-                    background: 'linear-gradient(135deg, #ff6b35, #e55a28)',
-                    color: '#fff', fontSize: '10px', fontWeight: 700,
-                    padding: '3px 10px', borderRadius: '999px', letterSpacing: '0.06em',
-                    textTransform: 'uppercase', boxShadow: '0 2px 8px rgba(255,107,53,0.3)',
+                    background: 'var(--md-primary)',
+                    color: 'var(--md-on-primary)', fontSize: '10px', fontWeight: 700,
+                    padding: '3px 10px', borderRadius: 'var(--radius-full)', letterSpacing: '0.06em',
+                    textTransform: 'uppercase',
                   }}>使用中</span>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                   <div style={{
                     width: '40px', height: '40px', borderRadius: '11px',
-                    background: theme.active ? 'rgba(255,107,53,0.10)' : 'var(--bg-subtle)',
+                    background: theme.active ? 'var(--md-primary-container)' : 'var(--md-surface-container)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '17px',
                   }}>📄</div>
                   <div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: theme.active ? '#ff6b35' : 'var(--if-text)' }}>{theme.manifest.name}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: '1px' }}>v{theme.manifest.version} · {theme.manifest.slug}</div>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: theme.active ? 'var(--md-primary)' : 'var(--md-on-surface)' }}>{theme.manifest.name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--md-outline)', fontFamily: 'monospace', marginTop: '1px' }}>v{theme.manifest.version} · {theme.manifest.slug}</div>
                   </div>
                 </div>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{theme.manifest.description}</p>
-                <div style={{ marginTop: '14px', paddingTop: '13px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>作者：{theme.manifest.author}</span>
+                <p style={{ fontSize: '13px', color: 'var(--md-on-surface-variant)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden' }}>{theme.manifest.description}</p>
+                <div style={{ marginTop: '14px', paddingTop: '13px', background: 'var(--md-surface-container-low)', borderRadius: 'var(--radius-sm)', padding: '8px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '11.5px', color: 'var(--md-outline)' }}>作者：{theme.manifest.author}</span>
                 </div>
               </div>
             ))}
@@ -433,12 +432,12 @@ export default function Settings() {
           </div>
 
           {/* 备份列表 */}
-          <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '16px' }}>
-            <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '12px' }}>
+          <div style={{ paddingTop: '16px' }}>
+            <div style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--md-outline)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', marginBottom: '12px' }}>
               备份历史 ({backups.length})
             </div>
             {backups.length === 0 ? (
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '20px 0', textAlign: 'center' }}>
+              <div style={{ fontSize: '13px', color: 'var(--md-outline)', padding: '20px 0', textAlign: 'center' }}>
                 暂无备份记录，点击上方「创建备份」生成第一份
               </div>
             ) : (
@@ -451,13 +450,12 @@ export default function Settings() {
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       padding: '12px 16px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--border-light)',
-                      background: 'var(--bg-subtle)',
-                      transition: 'border-color 0.15s ease',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--md-surface-container)',
+                      transition: 'background 0.15s ease',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--border-default)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--md-surface-container-high)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--md-surface-container)'; }}
                   >
                     {/* 左侧信息 */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', minWidth: 0 }}>
@@ -469,7 +467,7 @@ export default function Settings() {
                         {b.status === 'completed' ? '✅' : b.status === 'failed' ? '❌' : '⏳'}
                       </div>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--if-text)', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface)', display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <span style={{ fontFamily: 'monospace', fontSize: '12px', opacity: 0.7 }}>{b.id.slice(0, 8)}</span>
                           <span style={{
                             fontSize: '10.5px', fontWeight: 600, padding: '1px 6px', borderRadius: '4px',
@@ -477,7 +475,7 @@ export default function Settings() {
                             color: b.provider === 's3' ? '#6366f1' : '#6b7280',
                           }}>{b.provider}</span>
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--md-outline)', marginTop: '2px' }}>
                           {new Date(b.created_at).toLocaleString('zh-CN')} · {formatBytes(b.size)}
                           {b.error_message && <span style={{ color: '#ef4444', marginLeft: '8px' }}>({b.error_message})</span>}
                         </div>

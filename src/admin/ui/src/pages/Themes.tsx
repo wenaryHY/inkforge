@@ -8,10 +8,9 @@ import { useToast } from '../contexts/ToastContext';
 import { useI18n } from '../i18n';
 
 const sectionStyle: React.CSSProperties = {
-  background: 'var(--bg-card)',
-  border: '1px solid var(--border-light)',
-  borderRadius: '14px',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+  background: 'var(--md-surface-container-lowest)',
+  borderRadius: 'var(--radius-lg)',
+  overflow: 'hidden',
 };
 
 const labelMap = (t: (key: string) => string): Record<string, string> => ({
@@ -73,35 +72,35 @@ export default function Themes() {
       />
 
       <section style={sectionStyle}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-light)' }}>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--if-text)' }}>{t('currentStatus')}</div>
-          <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+        <div style={{ padding: '20px 24px', background: 'var(--md-surface-container-low)' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--md-on-surface)' }}>{t('currentStatus')}</div>
+          <div style={{ fontSize: '12.5px', color: 'var(--md-outline)', marginTop: '4px' }}>
             {t('currentStatusDesc')}
           </div>
         </div>
         <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
           <div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>{t('activeThemeLabel')}</div>
-            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--if-text)' }}>{activeTheme?.manifest.name || t('notSet')}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{activeTheme?.manifest.slug || '-'}</div>
+            <div style={{ fontSize: '12px', color: 'var(--md-outline)', marginBottom: '6px' }}>{t('activeThemeLabel')}</div>
+            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--md-on-surface)' }}>{activeTheme?.manifest.name || t('notSet')}</div>
+            <div style={{ fontSize: '12px', color: 'var(--md-outline)', marginTop: '4px' }}>{activeTheme?.manifest.slug || '-'}</div>
           </div>
           <div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>{t('scannedThemeCount')}</div>
-            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--if-text)' }}>{themes.length}</div>
+            <div style={{ fontSize: '12px', color: 'var(--md-outline)', marginBottom: '6px' }}>{t('scannedThemeCount')}</div>
+            <div style={{ fontSize: '18px', fontWeight: 700, color: 'var(--md-on-surface)' }}>{themes.length}</div>
           </div>
         </div>
       </section>
 
       <section style={sectionStyle}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-light)' }}>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--if-text)' }}>{t('installedThemesTitle')}</div>
-          <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+        <div style={{ padding: '20px 24px', background: 'var(--md-surface-container-low)' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--md-on-surface)' }}>{t('installedThemesTitle')}</div>
+          <div style={{ fontSize: '12.5px', color: 'var(--md-outline)', marginTop: '4px' }}>
             {t('installedThemesDesc')}
           </div>
         </div>
         <div style={{ padding: '24px' }}>
           {themes.length === 0 && !loading ? (
-            <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>{t('noThemes')}</div>
+            <div style={{ padding: '28px', textAlign: 'center', color: 'var(--md-outline)' }}>{t('noThemes')}</div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
               {themes.map((theme) => {
@@ -110,31 +109,32 @@ export default function Themes() {
                   <article
                     key={theme.manifest.slug}
                     style={{
-                      border: `1px solid ${theme.active ? 'rgba(255,107,53,0.35)' : 'var(--border-default)'}`,
-                      borderRadius: '14px',
-                      background: theme.active ? 'rgba(255,107,53,0.04)' : 'var(--bg-card)',
+                      borderRadius: 'var(--radius-lg)',
+                      background: theme.active ? 'var(--md-primary-container)' : 'var(--md-surface-container)',
                       padding: '18px',
                       display: 'flex',
                       flexDirection: 'column',
                       gap: '14px',
-                      boxShadow: theme.active ? '0 6px 18px rgba(255,107,53,0.08)' : 'none',
+                      transition: 'transform 0.2s ease',
                     }}
+                    onMouseEnter={(e) => { if (!theme.active) e.currentTarget.style.transform = 'scale(0.97)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
                   >
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
                       <div>
-                        <div style={{ fontSize: '16px', fontWeight: 700, color: theme.active ? '#ff6b35' : 'var(--if-text)' }}>
+                        <div style={{ fontSize: '16px', fontWeight: 700, color: theme.active ? 'var(--md-primary)' : 'var(--md-on-surface)' }}>
                           {theme.manifest.name}
                         </div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px', fontFamily: 'monospace' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--md-outline)', marginTop: '4px', fontFamily: 'monospace' }}>
                           {theme.manifest.slug} · v{theme.manifest.version}
                         </div>
                       </div>
                       {theme.active && (
                         <span style={{
                           padding: '4px 10px',
-                          borderRadius: '999px',
-                          background: 'rgba(255,107,53,0.12)',
-                          color: '#ff6b35',
+                          borderRadius: 'var(--radius-full)',
+                          background: 'var(--md-primary)',
+                          color: 'var(--md-on-primary)',
                           fontSize: '11px',
                           fontWeight: 700,
                         }}>
@@ -143,14 +143,14 @@ export default function Themes() {
                       )}
                     </div>
 
-                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.65 }}>
+                    <p style={{ margin: 0, fontSize: '13px', color: 'var(--md-on-surface-variant)', lineHeight: 1.65 }}>
                       {theme.manifest.description || t('noDescription')}
                     </p>
 
                     <div style={{ display: 'grid', gap: '8px', fontSize: '12.5px' }}>
-                      <div style={{ color: 'var(--text-muted)' }}>{format('authorLabel', { value: theme.manifest.author || t('unknown') })}</div>
-                      <div style={{ color: 'var(--text-muted)' }}>{format('minVersionLabel', { value: theme.manifest.min_inkforge_version || t('undeclared') })}</div>
-                      <div style={{ color: 'var(--text-muted)' }}>{format('configCountLabel', { count: fields.length })}</div>
+                      <div style={{ color: 'var(--md-outline)' }}>{format('authorLabel', { value: theme.manifest.author || t('unknown') })}</div>
+                      <div style={{ color: 'var(--md-outline)' }}>{format('minVersionLabel', { value: theme.manifest.min_inkforge_version || t('undeclared') })}</div>
+                      <div style={{ color: 'var(--md-outline)' }}>{format('configCountLabel', { count: fields.length })}</div>
                     </div>
 
                     {fields.length > 0 && (
@@ -160,11 +160,10 @@ export default function Themes() {
                             key={key}
                             style={{
                               padding: '5px 8px',
-                              borderRadius: '999px',
-                              background: 'var(--bg-subtle)',
-                              color: 'var(--text-secondary)',
+                              borderRadius: 'var(--radius-full)',
+                              background: 'var(--md-surface-container-high)',
+                              color: 'var(--md-on-surface-variant)',
                               fontSize: '11px',
-                              border: '1px solid var(--border-light)',
                             }}
                           >
                             {key} · {labelMap(t)[field.type] || field.type}
@@ -174,7 +173,7 @@ export default function Themes() {
                     )}
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', marginTop: 'auto' }}>
-                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                      <span style={{ fontSize: '12px', color: 'var(--md-outline)' }}>
                         {theme.active ? t('themeCurrentlyActive') : t('themeSwitchHint')}
                       </span>
                       <div style={{ display: 'flex', gap: '8px' }}>

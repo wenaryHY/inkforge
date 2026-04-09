@@ -90,6 +90,23 @@ export interface Setting {
   value: string;
 }
 
+export type SetupStage = 'not_started' | 'admin_created' | 'configured' | 'completed';
+
+export interface SetupStatusResponse {
+  installed: boolean;
+  stage: SetupStage;
+  site_title: string;
+  site_description: string;
+  site_url: string;
+  admin_url: string;
+  allow_register: boolean;
+}
+
+export interface SetupInitializeResponse {
+  token: string;
+  redirect_to: string;
+}
+
 export interface MediaCategory {
   id: string;
   name: string;

@@ -21,18 +21,16 @@ const TH = {
   textAlign: 'left' as const,
   fontSize: '11.5px',
   fontWeight: 700,
-  color: 'var(--text-muted)',
+  color: 'var(--md-on-surface-variant)',
   textTransform: 'uppercase' as const,
   letterSpacing: '0.06em',
-  background: 'var(--bg-subtle)',
-  borderBottom: '2px solid var(--border-light)',
+  background: 'var(--md-surface-container-low)',
 };
 
 const TD = {
   padding: '15px 16px',
   fontSize: '13.5px',
-  color: 'var(--if-text)',
-  borderBottom: '1px solid var(--border-light)',
+  color: 'var(--md-on-surface)',
   verticalAlign: 'middle' as const,
 };
 
@@ -42,10 +40,11 @@ const iconBtn: React.CSSProperties = {
   justifyContent: 'center',
   width: '32px',
   height: '32px',
-  borderRadius: '8px',
+  borderRadius: 'var(--radius-full)',
   border: 'none',
   cursor: 'pointer',
   transition: 'all 0.15s ease',
+  background: 'var(--md-surface-container-low)',
 };
 
 const INITIAL_FORM = {
@@ -184,11 +183,12 @@ export default function MediaCategories() {
         }
       />
 
-      <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-light)', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', background: 'var(--md-surface-container)', borderRadius: 'var(--radius-full)', padding: '4px' }}>
         <button
           style={{
-            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--primary-600)',
-            borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
+            padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-primary-container)',
+            background: 'var(--md-primary-container)', border: 'none', cursor: 'pointer',
+            borderRadius: 'var(--radius-full)', transition: 'all 0.2s ease',
           }}
         >
           {t('activeMediaCategories')}
@@ -196,22 +196,22 @@ export default function MediaCategories() {
         <button
           onClick={() => navigate('/trash?tab=media_category')}
           style={{
-            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)',
-            borderBottom: '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            borderRadius: 'var(--radius-full)', transition: 'all 0.2s ease',
           }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container-high)'; e.currentTarget.style.color = 'var(--md-on-surface)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--md-on-surface-variant)'; }}
         >
           {t('deletedItems')}
         </button>
       </div>
 
       <Card>
-        <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
+        <div style={{ padding: '18px 22px', display: 'flex', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <div>
-            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--if-text)' }}>{t('mediaCategoryListTitle')}</div>
-            <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--md-on-surface)' }}>{t('mediaCategoryListTitle')}</div>
+            <div style={{ fontSize: '12.5px', color: 'var(--md-outline)', marginTop: '4px' }}>
               {t('mediaCategoryListDesc')}
             </div>
           </div>
@@ -236,7 +236,11 @@ export default function MediaCategories() {
             </thead>
             <tbody>
               {sortedCategories.length > 0 ? sortedCategories.map((item) => (
-                <tr key={item.id}>
+                <tr key={item.id}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--md-surface-container)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                  style={{ transition: 'background 0.12s ease' }}
+                >
                   <td style={{ ...TD, fontWeight: 600 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <span
@@ -247,7 +251,7 @@ export default function MediaCategories() {
                           display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          background: item.color || 'var(--bg-subtle)',
+                          background: item.color || 'var(--md-surface-container)',
                           color: '#fff',
                           flexShrink: 0,
                         }}
@@ -262,34 +266,34 @@ export default function MediaCategories() {
                     </div>
                   </td>
                   <td style={TD}>
-                    <span style={{ background: 'var(--bg-subtle)', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                    <span style={{ background: 'var(--md-surface-container)', padding: '3px 8px', borderRadius: '6px', fontSize: '12px', fontFamily: 'monospace', color: 'var(--md-outline)' }}>
                       {esc(item.slug)}
                     </span>
                   </td>
                   <td style={TD}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ width: '14px', height: '14px', borderRadius: '999px', background: item.color || '#d1d5db', border: '1px solid rgba(0,0,0,0.06)' }} />
-                      <span style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+                      <span style={{ width: '14px', height: '14px', borderRadius: '999px', background: item.color || '#d1d5db' }} />
+                      <span style={{ fontSize: '12.5px', color: 'var(--md-on-surface-variant)' }}>
                         {PREDEFINED_ICONS.find(i => i.id === item.icon)?.name || t('defaultIcon')}
                       </span>
                     </div>
                   </td>
                   <td style={TD}>{item.sort_order}</td>
-                  <td style={{ ...TD, color: 'var(--text-secondary)' }}>{esc(item.description || '—')}</td>
+                  <td style={{ ...TD, color: 'var(--md-on-surface-variant)' }}>{esc(item.description || '—')}</td>
                   <td style={TD}>
                     <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
                       <button
                         type="button"
                         onClick={() => openEdit(item)}
                         title={t('editMediaCategory')}
-                        style={{ ...iconBtn, background: 'transparent', color: '#10b981' }}
+                        style={{ ...iconBtn, color: '#10b981' }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#ecfdf5';
-                          e.currentTarget.style.color = '#059669';
+                          e.currentTarget.style.background = 'var(--md-surface-container)';
+                          e.currentTarget.style.transform = 'scale(0.95)';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = '#10b981';
+                          e.currentTarget.style.background = 'var(--md-surface-container-low)';
+                          e.currentTarget.style.transform = 'scale(1)';
                         }}
                       >
                         <IconEdit2 size={16} />
@@ -298,14 +302,14 @@ export default function MediaCategories() {
                         type="button"
                         onClick={() => setDeleteTarget(item)}
                         title={t('deleteMediaCategory')}
-                        style={{ ...iconBtn, background: 'transparent', color: '#ef4444' }}
+                        style={{ ...iconBtn, color: '#ef4444' }}
                         onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#fef2f2';
-                          e.currentTarget.style.color = '#dc2626';
+                          e.currentTarget.style.background = 'var(--md-surface-container)';
+                          e.currentTarget.style.transform = 'scale(0.95)';
                         }}
                         onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'transparent';
-                          e.currentTarget.style.color = '#ef4444';
+                          e.currentTarget.style.background = 'var(--md-surface-container-low)';
+                          e.currentTarget.style.transform = 'scale(1)';
                         }}
                       >
                         <IconTrash2 size={16} />
@@ -341,7 +345,7 @@ export default function MediaCategories() {
           <Input label={t('mediaCategorySlug')} value={form.slug} onChange={(e) => updateForm('slug', e.target.value)} placeholder={t('mediaCategorySlugPlaceholder')} />
           <Textarea label={t('mediaCategoryDesc')} value={form.description} onChange={(e) => updateForm('description', e.target.value)} placeholder={t('mediaCategoryDescPlaceholder')} minRows={3} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>{t('iconLabel')}</label>
+              <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)' }}>{t('iconLabel')}</label>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {PREDEFINED_ICONS.map(icon => (
                   <button
@@ -352,10 +356,11 @@ export default function MediaCategories() {
                     style={{
                       width: '40px', height: '40px', borderRadius: '8px',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: form.icon === icon.id ? 'var(--primary-50)' : 'var(--bg-subtle)',
-                      color: form.icon === icon.id ? 'var(--primary-600)' : 'var(--text-secondary)',
-                      border: `1.5px solid ${form.icon === icon.id ? 'var(--primary-500)' : 'transparent'}`,
-                      cursor: 'pointer', transition: 'all 0.15s ease'
+                      background: form.icon === icon.id ? 'var(--md-primary-container)' : 'var(--md-surface-container)',
+                      color: form.icon === icon.id ? 'var(--md-primary-dim)' : 'var(--md-on-surface-variant)',
+                      border: 'none',
+                      cursor: 'pointer', transition: 'all 0.15s ease',
+                      transform: form.icon === icon.id ? 'scale(0.95)' : 'scale(1)',
                     }}
                   >
                     {icon.icon}
@@ -367,8 +372,8 @@ export default function MediaCategories() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '16px', alignItems: 'end' }}>
             <Input label={t('colorLabel')} value={form.color} onChange={(e) => updateForm('color', e.target.value)} placeholder="#ff6b35" />
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', height: '40px' }}>
-              <span style={{ fontSize: '12.5px', color: 'var(--text-muted)' }}>{t('previewLabel')}</span>
-              <span style={{ width: '40px', height: '40px', borderRadius: '10px', background: form.color || '#ff6b35', border: '1px solid var(--border-light)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+              <span style={{ fontSize: '12.5px', color: 'var(--md-outline)' }}>{t('previewLabel')}</span>
+              <span style={{ width: '40px', height: '40px', borderRadius: '10px', background: form.color || '#ff6b35', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
                 {form.icon === 'folder-open' ? <IconFolderOpen size={20} /> :
                  form.icon === 'image' ? <IconImage size={20} /> :
                  form.icon === 'file' ? <IconFileText size={20} /> :

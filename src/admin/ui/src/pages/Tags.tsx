@@ -15,17 +15,16 @@ import { IconTag, IconPlus, IconPencil, IconTrash2, IconCheck } from '../compone
 import { useToast } from '../contexts/ToastContext';
 import { useI18n } from '../i18n';
 
-/* ═════════════ 样式常量 ═════════════ */
+/* ═════════════ MD3 样式常量 ═════════════ */
 const tagCardBase: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '8px',
   padding: '8px 14px',
-  borderRadius: '10px',
-  border: '1.5px solid var(--border-default)',
+  borderRadius: 'var(--radius-full)',
   fontSize: '13px',
   fontWeight: 600,
-  background: 'var(--bg-card)',
+  background: 'var(--md-surface-container)',
   transition: 'all 0.16s ease',
   cursor: 'default',
 };
@@ -33,11 +32,12 @@ const tagCardBase: React.CSSProperties = {
 const iconBtn: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
   width: '28px', height: '28px',
-  borderRadius: '6px',
+  borderRadius: 'var(--radius-full)',
   border: 'none',
   cursor: 'pointer',
   transition: 'all 0.15s ease',
   flexShrink: 0,
+  background: 'var(--md-surface-container-low)',
 };
 
 /* ═════════════ 主组件 ═════════════ */
@@ -194,11 +194,12 @@ export default function Tags() {
         }
       />
 
-      <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-light)', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', background: 'var(--md-surface-container)', borderRadius: 'var(--radius-full)', padding: '4px' }}>
         <button
           style={{
-            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--primary-600)',
-            borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
+            padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-primary-container)',
+            background: 'var(--md-primary-container)', border: 'none', cursor: 'pointer',
+            borderRadius: 'var(--radius-full)', transition: 'all 0.2s ease',
           }}
         >
           {t('activeTags')}
@@ -206,12 +207,12 @@ export default function Tags() {
         <button
           onClick={() => navigate('/trash?tab=tag')}
           style={{
-            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)',
-            borderBottom: '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            borderRadius: 'var(--radius-full)', transition: 'all 0.2s ease',
           }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container-high)'; e.currentTarget.style.color = 'var(--md-on-surface)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--md-on-surface-variant)'; }}
         >
           {t('deletedItems')}
         </button>
@@ -224,15 +225,14 @@ export default function Tags() {
             <div style={{
               display: 'flex', alignItems: 'center', gap: '12px',
               marginBottom: '16px', paddingBottom: '16px',
-              borderBottom: '1px solid var(--border-light)',
             }}>
               <button
                 onClick={toggleSelectAll}
                 style={{
                   width: '18px', height: '18px',
                   borderRadius: '4px',
-                  border: `1.5px solid ${selectedIds.size === items.length ? 'var(--primary-500)' : 'var(--border-default)'}`,
-                  background: selectedIds.size === items.length ? 'var(--primary-500)' : 'transparent',
+                  border: `1.5px solid ${selectedIds.size === items.length ? 'var(--md-primary)' : 'var(--md-outline)'}`,
+                  background: selectedIds.size === items.length ? 'var(--md-primary)' : 'transparent',
                   cursor: 'pointer',
                   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   transition: 'all 0.15s ease',
@@ -241,7 +241,7 @@ export default function Tags() {
               >
                 {selectedIds.size === items.length && <IconCheck size={12} color="#fff" />}
               </button>
-              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              <span style={{ fontSize: '12px', color: 'var(--md-outline)' }}>
                 {selectedIds.size > 0 ? format('selectedCount', { count: selectedIds.size }) : t('selectAll')}
               </span>
             </div>
@@ -262,19 +262,18 @@ export default function Tags() {
                     key={tag.id}
                     style={{
                       ...tagCardBase,
-                      borderColor: isSelected ? 'var(--primary-500)' : 'var(--border-default)',
-                      background: isSelected ? 'var(--primary-50)' : 'var(--bg-card)',
+                      background: isSelected ? 'var(--md-primary-container)' : 'var(--md-surface-container)',
                     }}
                     onMouseEnter={(e: React.MouseEvent<HTMLDivElement>) => {
                       if (!isSelected) {
-                        e.currentTarget.style.borderColor = 'var(--primary-400)';
-                        e.currentTarget.style.background = 'var(--primary-50)';
+                        e.currentTarget.style.background = 'var(--md-surface-container-highest)';
+                        e.currentTarget.style.transform = 'scale(0.97)';
                       }
                     }}
                     onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
                       if (!isSelected) {
-                        e.currentTarget.style.borderColor = 'var(--border-default)';
-                        e.currentTarget.style.background = 'var(--bg-card)';
+                        e.currentTarget.style.background = 'var(--md-surface-container)';
+                        e.currentTarget.style.transform = 'scale(1)';
                       }
                     }}
                   >
@@ -284,8 +283,8 @@ export default function Tags() {
                       style={{
                         width: '16px', height: '16px',
                         borderRadius: '4px',
-                        border: `1.5px solid ${isSelected ? 'var(--primary-500)' : 'var(--border-default)'}`,
-                        background: isSelected ? 'var(--primary-500)' : 'transparent',
+                        border: `1.5px solid ${isSelected ? 'var(--md-primary)' : 'var(--md-outline)'}`,
+                        background: isSelected ? 'var(--md-primary)' : 'transparent',
                         cursor: 'pointer',
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                         transition: 'all 0.15s ease',
@@ -296,30 +295,32 @@ export default function Tags() {
                     </button>
 
                     {/* 标签名 */}
-                    <span style={{ color: 'var(--if-text)' }}>{esc(tag.name)}</span>
+                    <span style={{ color: 'var(--md-on-surface)' }}>{esc(tag.name)}</span>
 
                     {/* Slug */}
                     <code style={{
-                      fontSize: '11px', fontFamily: 'monospace', color: 'var(--text-muted)',
-                      background: 'var(--bg-subtle)', padding: '2px 6px', borderRadius: '5px',
+                      fontSize: '11px', fontFamily: 'monospace', color: 'var(--md-outline)',
+                      background: 'var(--md-surface-container-low)', padding: '2px 6px', borderRadius: '5px',
                     }}>{esc(tag.slug || '')}</code>
 
-                    {/* 操作按钮 - 隐藏直到 hover */}
+                    {/* 操作按钮 */}
                     <div style={{ display: 'flex', gap: '2px', marginLeft: '4px' }}>
                       <button
                         onClick={() => openEdit(tag)}
                         title={t('editTag')}
                         style={{
                           ...iconBtn,
-                          background: 'transparent', color: '#6b7280',
+                          color: '#6b7280',
                         }}
                         onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.currentTarget.style.background = '#ecfdf5';
+                          e.currentTarget.style.background = 'var(--md-surface-container)';
                           e.currentTarget.style.color = '#10b981';
+                          e.currentTarget.style.transform = 'scale(0.95)';
                         }}
                         onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.background = 'var(--md-surface-container-low)';
                           e.currentTarget.style.color = '#6b7280';
+                          e.currentTarget.style.transform = 'scale(1)';
                         }}
                       ><IconPencil size={13} /></button>
                       <button
@@ -327,15 +328,17 @@ export default function Tags() {
                         title={t('deleteTag')}
                         style={{
                           ...iconBtn,
-                          background: 'transparent', color: '#6b7280',
+                          color: '#6b7280',
                         }}
                         onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.currentTarget.style.background = '#fef2f2';
+                          e.currentTarget.style.background = 'var(--md-surface-container)';
                           e.currentTarget.style.color = '#ef4444';
+                          e.currentTarget.style.transform = 'scale(0.95)';
                         }}
                         onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.currentTarget.style.background = 'transparent';
+                          e.currentTarget.style.background = 'var(--md-surface-container-low)';
                           e.currentTarget.style.color = '#6b7280';
+                          e.currentTarget.style.transform = 'scale(1)';
                         }}
                       ><IconTrash2 size={13} /></button>
                     </div>

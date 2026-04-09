@@ -52,9 +52,9 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
   return (
     <aside
       style={{
-        width: '224px',
+        width: '288px',
         background: 'var(--sidebar-bg)',
-        color: '#ffffff',
+        color: 'var(--md-on-surface)',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
@@ -63,62 +63,76 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
         overflowX: 'hidden',
         position: 'relative',
         zIndex: 10,
+        borderRight: 'none',
       }}
     >
-      {/* ── 顶部品牌 ── */}
+      {/* ── 顶部品牌区 ── */}
       <div
-        onClick={() => window.open('/', '_blank')}
+        onClick={() => window.location.href = '/'}
         style={{
-          padding: '20px 20px',
-          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          padding: '24px 20px',
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
+          gap: '12px',
           cursor: 'pointer',
           transition: 'background 0.15s ease',
         }}
         onMouseEnter={e => (e.currentTarget.style.background = 'var(--sidebar-hover)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
-        {/* Logo */}
+        {/* Logo — primary 色圆形背景 + 白色图标 */}
         <div style={{
-          width: '36px', height: '36px', borderRadius: 'var(--radius-md)',
-          background: 'var(--primary-500)',
+          width: '40px', height: '40px', borderRadius: 'var(--radius-full)',
+          background: 'var(--md-primary)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" opacity="0.9"/>
+            <path d="M12 2L2 7l10 5 10-5-10-5z" fill="white" opacity="0.95"/>
             <path d="M2 17l10 5 10-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.7"/>
             <path d="M2 12l10 5 10-5" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" opacity="0.5"/>
           </svg>
         </div>
         <div>
-          <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>
+          <div style={{
+            fontSize: '16px',
+            fontWeight: 900,
+            color: 'var(--md-on-surface)',
+            lineHeight: 1.2,
+            fontFamily: "'Manrope', sans-serif",
+            letterSpacing: '-0.3px',
+          }}>
             InkForge
           </div>
-          <div style={{ fontSize: '11px', color: '#666', marginTop: '1px' }}>
-            管理后台
+          <div style={{
+            fontSize: '10px',
+            color: 'var(--md-on-surface-variant)',
+            marginTop: '2px',
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            fontWeight: 500,
+          }}>
+            Admin Panel
           </div>
         </div>
       </div>
 
-      {/* ── 导航（设计指南：Ghost 按钮 + 左侧指示条） ── */}
-      <nav style={{ flex: 1, padding: '8px 10px', overflowY: 'auto' }}>
+      {/* ── 导航 — Pill 风格，无左侧指示条 ── */}
+      <nav style={{ flex: 1, padding: '4px 12px', overflowY: 'auto' }}>
         {navConfig.map(group => (
           <div key={group.sectionKey} style={{ marginBottom: '4px' }}>
             {/* 分组标题 */}
             <div style={{
-              padding: '16px 10px 8px',
+              padding: '16px 12px 8px',
               fontSize: '11px',
               fontWeight: 700,
-              color: 'rgba(255,255,255,0.25)',
+              color: 'var(--md-on-surface-variant)',
               textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              letterSpacing: '0.1em',
             }}>
               {t(group.sectionKey)}
             </div>
-            {/* 菜单项 */}
+            {/* 菜单项 — Pill 形状 */}
             {group.items.map(item => {
               const isActive = activePage === item.key;
               const IconComponent = item.icon;
@@ -130,13 +144,12 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
                     width: '100%',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    padding: '10px 12px',
-                    borderRadius: 'var(--radius-md)',
+                    gap: '12px',
+                    padding: '10px 16px',
+                    borderRadius: 'var(--radius-full)',
                     border: 'none',
-                    /* 激活态：浅色背景 + 左侧指示条（而非整行橙色） */
-                    background: isActive ? 'rgba(255,107,53,0.12)' : 'transparent',
-                    color: isActive ? 'var(--primary-400)' : 'var(--sidebar-text)',
+                    background: isActive ? 'var(--md-primary-container)' : 'transparent',
+                    color: isActive ? 'var(--md-on-primary-container)' : 'var(--sidebar-text)',
                     fontSize: '14px',
                     fontWeight: isActive ? 600 : 400,
                     cursor: 'pointer',
@@ -144,12 +157,9 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
                     textAlign: 'left',
                     marginBottom: '2px',
                     position: 'relative',
-                    /* 左侧指示条 — 暗示当前位置 */
-                    boxShadow: isActive ? 'none' : 'none',
                   }}
                   onMouseEnter={e => {
                     if (!isActive) {
-                      /* Ghost 效果：hover 才显示背景 */
                       e.currentTarget.style.background = 'var(--sidebar-hover)';
                       e.currentTarget.style.color = 'var(--sidebar-text-hover)';
                     }
@@ -161,19 +171,14 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
                     }
                   }}
                 >
-                  {/* 左侧指示条 — 仅激活态显示 */}
-                  {isActive && (
-                    <div style={{
-                      position: 'absolute',
-                      left: '-10px',
-                      top: '8px',
-                      bottom: '8px',
-                      width: '3px',
-                      borderRadius: '0 3px 3px 0',
-                      background: 'var(--sidebar-indicator)',
-                    }} />
-                  )}
-                  <span style={{ width: '20px', textAlign: 'center', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{
+                    width: '20px',
+                    textAlign: 'center',
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
                     <IconComponent />
                   </span>
                   <span>{t(item.labelKey)}</span>
@@ -184,49 +189,69 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
         ))}
       </nav>
 
-      {/* ── 底部用户区 ── */}
-      <div style={{ padding: '12px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-        {/* 语言切换 */}
-        <div style={{ display: 'flex', gap: '4px', padding: '0 12px 8px' }}>
+      {/* ── 底部用户区 — 无 border-top，靠间距分隔 ── */}
+      <div style={{ padding: '16px 12px' }}>
+        {/* 语言切换 — pill 按钮 */}
+        <div style={{
+          display: 'flex',
+          gap: '4px',
+          padding: '0 8px 16px',
+          justifyContent: 'center',
+        }}>
           {(['zh', 'en'] as const).map((l) => (
             <button
               key={l}
               onClick={() => setLang(l)}
               style={{
-                flex: 1,
-                padding: '4px 8px',
-                borderRadius: 'var(--radius-sm)',
+                padding: '6px 16px',
+                borderRadius: 'var(--radius-full)',
                 border: 'none',
-                background: lang === l ? 'rgba(255,107,53,0.2)' : 'transparent',
-                color: lang === l ? 'var(--primary-400)' : 'rgba(255,255,255,0.5)',
-                fontSize: '11px',
+                background: lang === l ? 'var(--md-primary-container)' : 'transparent',
+                color: lang === l ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
+                fontSize: '12px',
                 fontWeight: lang === l ? 600 : 400,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
               }}
             >
-              {l === 'zh' ? '中' : 'En'}
+              {l === 'zh' ? '中文' : 'EN'}
             </button>
           ))}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', marginBottom: '4px' }}>
+        {/* 用户信息 */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '10px 12px',
+          marginBottom: '4px',
+        }}>
           <div style={{
-            width: '32px', height: '32px', borderRadius: 'var(--radius-sm)',
-            background: 'rgba(255,107,53,0.15)',
+            width: '36px', height: '36px', borderRadius: 'var(--radius-full)',
+            background: 'var(--md-primary-container)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexShrink: 0,
-            color: 'var(--primary-400)',
+            color: 'var(--md-on-primary-container)',
           }}>
-            <IconUser size={14} />
+            <IconUser size={16} />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'rgba(255,255,255,0.85)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{
+              fontSize: '13px',
+              fontWeight: 600,
+              color: 'var(--md-on-surface)',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}>
               {user?.display_name || t('admin')}
             </div>
-            <div style={{ fontSize: '11px', color: '#555' }}>{user?.role === 'admin' ? t('admin') : t('member')}</div>
+            <div style={{ fontSize: '11px', color: 'var(--md-on-surface-variant)' }}>
+              {user?.role === 'admin' ? t('admin') : t('member')}
+            </div>
           </div>
         </div>
-        {/* 退出按钮 — 语义色：红色=危险操作 */}
+        {/* 退出按钮 — 文字链接风格 */}
         <button
           onClick={() => void logout()}
           style={{
@@ -235,18 +260,24 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
             alignItems: 'center',
             gap: '8px',
             padding: '8px 12px',
-            borderRadius: 'var(--radius-md)',
+            borderRadius: 'var(--radius-full)',
             border: 'none',
             background: 'transparent',
-            color: 'var(--danger-500)',
+            color: 'var(--md-on-surface-variant)',
             fontSize: '13px',
             fontWeight: 500,
             cursor: 'pointer',
-            transition: 'background 0.15s ease',
+            transition: 'all 0.15s ease',
             textAlign: 'left',
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--danger-50)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+          onMouseEnter={e => {
+            e.currentTarget.style.background = 'var(--sidebar-hover)';
+            e.currentTarget.style.color = 'var(--md-error)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.background = 'transparent';
+            e.currentTarget.style.color = 'var(--md-on-surface-variant)';
+          }}
         >
           <IconLogOut />
           <span>{t('logout')}</span>

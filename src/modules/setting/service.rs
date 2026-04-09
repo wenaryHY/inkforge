@@ -8,12 +8,14 @@ use crate::{
 use super::{
     dto::{SettingItem, UpdateSettingRequest},
     repository,
+    validator::{normalize_admin_url, normalize_bool_string, normalize_site_url},
 };
 
 const ALLOWED_SETTINGS: &[&str] = &[
     "site_title",
     "site_description",
     "site_url",
+    "admin_url",
     "allow_register",
     "allow_comment",
     "comment_require_login",
@@ -36,6 +38,26 @@ pub async fn update_setting(
         return Err(AppError::BadRequest("setting key is not writable".into()));
     }
 
-    repository::upsert(&state.pool, &body.key, &body.value).await?;
+    let value = normalize_setting_value(&body.key, &body.value)?;
+    repository::upsert(&state.pool, &body.key, &value).await?;
+
+    if body.key == "site_url" {
+        *state.site_url.write().await = value.clone();
+    }
+    if body.key == "admin_url" {
+        *state.admin_url.write().await = value.clone();
+    }
+
     Ok(serde_json::json!({ "updated": true }))
+}
+
+fn normalize_setting_value(key: &str, value: &str) -> AppResult<String> {
+    match key {
+        "site_url" => normalize_site_url(value),
+        "admin_url" => normalize_admin_url(value),
+        "allow_register" | "allow_comment" | "comment_require_login" => {
+            normalize_bool_string(value, key)
+        }
+        _ => Ok(value.trim().to_string()),
+    }
 }

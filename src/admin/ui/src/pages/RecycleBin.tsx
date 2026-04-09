@@ -41,18 +41,16 @@ const TH: React.CSSProperties = {
   textAlign: 'left',
   fontSize: '11px',
   fontWeight: 700,
-  color: 'var(--text-muted)',
+  color: 'var(--md-outline)',
   textTransform: 'uppercase',
   letterSpacing: '0.06em',
-  background: 'var(--bg-subtle)',
-  borderBottom: '1px solid var(--border-light)',
+  background: 'var(--md-surface-container)',
 };
 
 const TD: React.CSSProperties = {
   padding: '14px 16px',
   fontSize: '13px',
-  color: 'var(--text-primary)',
-  borderBottom: '1px solid var(--border-light)',
+  color: 'var(--md-on-surface)',
   verticalAlign: 'middle',
 };
 
@@ -73,7 +71,7 @@ function expiresLabel(days: number, format: (key: string, params?: Record<string
   if (days <= 0) return { text: t('expired'), color: '#ef4444' };
   if (days <= 3) return { text: format('daysUntilDelete', { count: days }), color: '#ef4444' };
   if (days <= 7) return { text: format('daysUntilDelete', { count: days }), color: '#f59e0b' };
-  return { text: format('daysUntilDelete', { count: days }), color: 'var(--text-muted)' };
+  return { text: format('daysUntilDelete', { count: days }), color: 'var(--md-outline)' };
 }
 
 /* ═════════════ 预览面板 ═════════════ */
@@ -82,14 +80,15 @@ function PreviewPanel({ item, onClose, t, format }: { item: TrashItem; onClose: 
   return (
     <div style={{
       position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px',
-      background: 'var(--bg-card)', boxShadow: '-8px 0 32px rgba(0,0,0,0.12)',
+      background: 'var(--md-surface-container-lowest)', boxShadow: 'var(--elevation-2)',
       zIndex: 1000, display: 'flex', flexDirection: 'column',
       animation: 'slideInRight 0.25s ease',
     }}>
       {/* 头部 */}
       <div style={{
-        padding: '20px 24px', borderBottom: '1px solid var(--border-light)',
+        padding: '20px 24px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'var(--md-surface-container)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <span style={{
@@ -101,7 +100,7 @@ function PreviewPanel({ item, onClose, t, format }: { item: TrashItem; onClose: 
             {config?.icon}
           </span>
           <div>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--if-text)' }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--md-on-surface)' }}>
               {t('previewTitle')}
             </div>
             <span style={{
@@ -117,34 +116,34 @@ function PreviewPanel({ item, onClose, t, format }: { item: TrashItem; onClose: 
         <button
           onClick={onClose}
           style={{
-            border: 'none', background: 'var(--bg-subtle)', cursor: 'pointer',
+            border: 'none', background: 'var(--md-surface-container-high)', cursor: 'pointer',
             width: '28px', height: '28px', borderRadius: '8px',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'var(--text-muted)', fontSize: '16px',
+            color: 'var(--md-on-surface-variant)', fontSize: '16px',
             transition: 'all 0.15s ease',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'var(--border-light)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-subtle)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container-highest)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'var(--md-surface-container-high)'; }}
         >✕</button>
       </div>
       {/* 内容 */}
       <div style={{ flex: 1, overflow: 'auto', padding: '24px' }}>
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--md-outline)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
             {item.item_type === 'post' ? t('previewPostTitle') : item.item_type === 'comment' ? t('previewContent') : t('previewName')}
           </div>
-          <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--if-text)', lineHeight: 1.5 }}>
+          <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--md-on-surface)', lineHeight: 1.5 }}>
             {item.name}
           </div>
         </div>
         {item.subtitle && (
           <div style={{ marginBottom: '20px' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--md-outline)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
               {item.item_type === 'media' ? t('mimeTypeLabel') : t('slugText')}
             </div>
             <div style={{
-              fontSize: '13px', color: 'var(--text-secondary)',
-              fontFamily: 'monospace', background: 'var(--bg-subtle)',
+              fontSize: '13px', color: 'var(--md-on-surface-variant)',
+              fontFamily: 'monospace', background: 'var(--md-surface-container)',
               padding: '8px 12px', borderRadius: '8px',
             }}>
               {item.subtitle}
@@ -152,15 +151,15 @@ function PreviewPanel({ item, onClose, t, format }: { item: TrashItem; onClose: 
           </div>
         )}
         <div style={{ marginBottom: '20px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--md-outline)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
             {t('deletedAtLabel')}
           </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+          <div style={{ fontSize: '13px', color: 'var(--md-on-surface-variant)' }}>
             {formatDeletedAt(item.deleted_at)}
           </div>
         </div>
         <div>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--md-outline)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '6px' }}>
             {t('cleanupCountdown')}
           </div>
           {(() => {
@@ -320,12 +319,11 @@ export default function RecycleBin() {
         }
       />
 
-      {/* Tab 筛选 */}
+      {/* Tab 筛选 - Pill shape */}
       <div style={{
         display: 'flex', gap: '4px', marginBottom: '16px',
-        background: 'var(--bg-card)', padding: '4px',
+        background: 'var(--md-surface-container)', padding: '4px',
         borderRadius: 'var(--radius-md)',
-        border: '1px solid var(--border-light)',
         overflowX: 'auto',
       }}>
         {TABS.map(tab => {
@@ -336,17 +334,17 @@ export default function RecycleBin() {
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               style={{
-                padding: '8px 16px', borderRadius: '8px',
+                padding: '8px 16px', borderRadius: '999px',
                 border: 'none', cursor: 'pointer',
                 fontSize: '13px', fontWeight: isActive ? 600 : 400,
-                background: isActive ? 'var(--primary-500)' : 'transparent',
-                color: isActive ? '#fff' : 'var(--text-secondary)',
+                background: isActive ? 'var(--md-primary-container)' : 'transparent',
+                color: isActive ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
                 transition: 'all 0.18s ease',
                 display: 'flex', alignItems: 'center', gap: '6px',
                 whiteSpace: 'nowrap',
               }}
               onMouseEnter={e => {
-                if (!isActive) e.currentTarget.style.background = 'var(--bg-subtle)';
+                if (!isActive) e.currentTarget.style.background = 'var(--md-surface-container-high)';
               }}
               onMouseLeave={e => {
                 if (!isActive) e.currentTarget.style.background = 'transparent';
@@ -357,8 +355,8 @@ export default function RecycleBin() {
                 <span style={{
                   fontSize: '11px', fontWeight: 700,
                   padding: '1px 6px', borderRadius: '999px',
-                  background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--bg-subtle)',
-                  color: isActive ? '#fff' : 'var(--text-muted)',
+                  background: isActive ? 'var(--md-primary)' : 'var(--md-surface-container-high)',
+                  color: isActive ? 'var(--md-on-primary)' : 'var(--md-on-surface-variant)',
                   minWidth: '18px', textAlign: 'center',
                 }}>
                   {count}
@@ -374,12 +372,11 @@ export default function RecycleBin() {
         {selectedIds.size > 0 && (
           <div style={{
             padding: '12px 16px',
-            background: 'var(--primary-50)',
-            borderBottom: '1px solid var(--border-light)',
+            background: 'var(--md-primary-container)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             animation: 'slideDown 0.2s ease',
           }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary-600)' }}>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--md-on-primary-container)' }}>
               {format('selectedItemsCount', { count: selectedIds.size })}
             </span>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -402,14 +399,14 @@ export default function RecycleBin() {
                     onClick={toggleSelectAll}
                     style={{
                       width: '18px', height: '18px', borderRadius: '4px',
-                      border: `1.5px solid ${selectedIds.size === filteredItems.length && filteredItems.length > 0 ? 'var(--primary-500)' : 'var(--border-default)'}`,
-                      background: selectedIds.size === filteredItems.length && filteredItems.length > 0 ? 'var(--primary-500)' : 'transparent',
+                      border: `1.5px solid ${selectedIds.size === filteredItems.length && filteredItems.length > 0 ? 'var(--md-primary)' : 'var(--md-outline-variant)'}`,
+                      background: selectedIds.size === filteredItems.length && filteredItems.length > 0 ? 'var(--md-primary)' : 'transparent',
                       cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       transition: 'all 0.15s ease',
                     }}
                   >
                     {selectedIds.size === filteredItems.length && filteredItems.length > 0 && (
-                      <IconCheck size={12} color="#fff" />
+                      <IconCheck size={12} color="var(--md-on-primary)" />
                     )}
                   </button>
                 </th>
@@ -432,23 +429,23 @@ export default function RecycleBin() {
                     style={{
                       cursor: 'pointer',
                       transition: 'background 0.12s ease',
-                      background: isSelected ? 'var(--primary-50)' : 'transparent',
+                      background: isSelected ? 'var(--md-primary-container)' : 'transparent',
                     }}
-                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-subtle)'; }}
-                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = isSelected ? 'var(--primary-50)' : 'transparent'; }}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--md-surface-container)'; }}
+                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
                   >
                     <td style={{ ...TD, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                       <button
                         onClick={() => toggleSelect(item.id)}
                         style={{
                           width: '18px', height: '18px', borderRadius: '4px',
-                          border: `1.5px solid ${isSelected ? 'var(--primary-500)' : 'var(--border-default)'}`,
-                          background: isSelected ? 'var(--primary-500)' : 'transparent',
+                          border: `1.5px solid ${isSelected ? 'var(--md-primary)' : 'var(--md-outline-variant)'}`,
+                          background: isSelected ? 'var(--md-primary)' : 'transparent',
                           cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           transition: 'all 0.15s ease',
                         }}
                       >
-                        {isSelected && <IconCheck size={12} color="#fff" />}
+                        {isSelected && <IconCheck size={12} color="var(--md-on-primary)" />}
                       </button>
                     </td>
                     <td style={TD}>
@@ -463,15 +460,15 @@ export default function RecycleBin() {
                     </td>
                     <td style={{ ...TD, fontWeight: 600 }}>
                       <div>
-                        <div style={{ fontSize: '13.5px', color: 'var(--if-text)' }}>{item.name}</div>
+                        <div style={{ fontSize: '13.5px', color: 'var(--md-on-surface)' }}>{item.name}</div>
                         {item.subtitle && (
-                          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginTop: '2px', fontFamily: 'monospace' }}>
+                          <div style={{ fontSize: '11.5px', color: 'var(--md-outline)', marginTop: '2px', fontFamily: 'monospace' }}>
                             {item.subtitle}
                           </div>
                         )}
                       </div>
                     </td>
-                    <td style={{ ...TD, fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-muted)' }}>
+                    <td style={{ ...TD, fontFamily: 'monospace', fontSize: '12px', color: 'var(--md-on-surface-variant)' }}>
                       {formatDeletedAt(item.deleted_at)}
                     </td>
                     <td style={TD}>
@@ -493,7 +490,7 @@ export default function RecycleBin() {
                           title={t('restoreItem')}
                           style={iconBtn('#10b981')}
                           onClick={() => setRestoreTarget(item)}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#d1fae5'; e.currentTarget.style.color = '#059669'; }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container)'; e.currentTarget.style.color = '#059669'; }}
                           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10b981'; }}
                         >
                           <IconRefreshCw size={15} />
@@ -503,7 +500,7 @@ export default function RecycleBin() {
                           title={t('purgeItem')}
                           style={iconBtn('#ef4444')}
                           onClick={() => setPurgeTarget(item)}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-error-container)'; e.currentTarget.style.color = 'var(--md-on-error-container)'; }}
                           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ef4444'; }}
                         >
                           <IconTrash2 size={15} />

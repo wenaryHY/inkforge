@@ -1,9 +1,14 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use sqlx::SqlitePool;
-use tokio::sync::broadcast;
+use tokio::sync::{broadcast, RwLock};
 
-use crate::{bootstrap::config::AppConfig, ws::ServerEvent};
+use crate::{
+    bootstrap::config::AppConfig,
+    modules::setup::domain::SetupStage,
+    ws::ServerEvent,
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -16,6 +21,13 @@ pub struct AppState {
     pub db_path: PathBuf,
     /// Broadcast sender for WebSocket real-time notifications (容量 256)
     pub event_tx: broadcast::Sender<ServerEvent>,
+    /// Cached site_url from DB, updated on setting change.
+    /// Used by CORS, SEO, and theme rendering without hitting DB every request.
+    pub site_url: Arc<RwLock<String>>,
+    /// Cached admin_url from DB for redirects and theme entry links.
+    pub admin_url: Arc<RwLock<String>>,
+    /// Cached setup stage used by entry routing and auth guards.
+    pub setup_stage: Arc<RwLock<SetupStage>>,
 }
 
 impl AppState {
@@ -23,6 +35,9 @@ impl AppState {
         config: AppConfig,
         pool: SqlitePool,
         event_tx: broadcast::Sender<ServerEvent>,
+        site_url: String,
+        admin_url: String,
+        setup_stage: SetupStage,
     ) -> anyhow::Result<Self> {
         let db_path = parse_sqlite_url(&config.database.url)?;
         Ok(Self {
@@ -33,27 +48,24 @@ impl AppState {
             pool,
             config,
             event_tx,
+            site_url: Arc::new(RwLock::new(site_url)),
+            admin_url: Arc::new(RwLock::new(admin_url)),
+            setup_stage: Arc::new(RwLock::new(setup_stage)),
         })
     }
 }
 
 /// 从 sqlite:// URL 中提取文件路径（支持相对和绝对路径）
 fn parse_sqlite_url(url: &str) -> anyhow::Result<PathBuf> {
-    // sqlite://relative/path/file.db?mode=... → relative/path/file.db
-    // sqlite:///absolute/path/file.db → /absolute/path/file.db
     let url = url.trim_start_matches("sqlite:");
     let path = if url.starts_with(":////") {
-        // Absolute Unix path: sqlite:///absolute/path → /absolute/path
         &url[4..]
     } else if url.starts_with("://") {
-        // Relative or Windows absolute: sqlite://relative/path or sqlite://C:/path
         &url[3..]
     } else {
         url
     };
-    // Remove query string
     let path = path.split('?').next().unwrap_or(path);
-    // Normalize path: remove leading slashes for relative paths
     let path = path.trim_start_matches('/');
     let path = PathBuf::from(path);
     if path.is_absolute() {

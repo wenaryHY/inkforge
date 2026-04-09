@@ -12,6 +12,7 @@ import {
   LayoutDashboard, BarChart3, Users, Shield,
   Image, File, Archive, MoreHorizontal,
   Copy, RefreshCw, Zap, Star, Clock, Edit, Edit2, Palette,
+  ArrowLeft,
   type LucideProps
 } from 'lucide-react';
 
@@ -53,6 +54,7 @@ export const IconAlertCircle = icon(AlertCircle);
 export const IconSearch = icon(Search, { size: 16 });
 export const IconFilter = icon(Filter, { size: 16 });
 export const IconChevronLeft = icon(ChevronLeft, { size: 16 });
+export const IconArrowLeft = icon(ArrowLeft, { size: 18 });
 export const IconChevronRight = icon(ChevronRight, { size: 16 });
 export const IconX = icon(X, { size: 18 });
 export const IconLoader2 = icon(Loader2);

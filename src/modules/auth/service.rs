@@ -105,6 +105,7 @@ pub async fn register(state: Arc<AppState>, body: RegisterRequest) -> AppResult<
 }
 
 pub async fn login(state: Arc<AppState>, body: LoginRequest) -> AppResult<TokenPayload> {
+    ensure_setup_completed(&state).await?;
     tracing::debug!(
         module = "auth",
         event = "login_lookup",
@@ -163,4 +164,11 @@ pub async fn login(state: Arc<AppState>, body: LoginRequest) -> AppResult<TokenP
         user.role,
     )?;
     Ok(TokenPayload { token })
+}
+
+async fn ensure_setup_completed(state: &Arc<AppState>) -> AppResult<()> {
+    if (*state.setup_stage.read().await).is_completed() {
+        return Ok(());
+    }
+    Err(AppError::Conflict("setup not completed".into()))
 }

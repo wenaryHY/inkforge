@@ -194,7 +194,7 @@ pub async fn render_home(
     let site_url = crate::modules::setting::repository::get_string(
         &state.pool,
         "site_url",
-        "http://localhost:3000",
+        "",
     )
     .await
     .unwrap_or_default();
@@ -277,7 +277,7 @@ pub async fn render_post(
     let site_url = crate::modules::setting::repository::get_string(
         &state.pool,
         "site_url",
-        "http://localhost:3000",
+        "",
     )
     .await
     .unwrap_or_default();

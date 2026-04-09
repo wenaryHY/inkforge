@@ -11,9 +11,9 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://127.0.0.1:3000',
-      '/ws': { target: 'ws://127.0.0.1:3000', ws: true },
-      '/uploads': 'http://127.0.0.1:3000',
+      '/api': 'http://127.0.0.1:2000',
+      '/ws': { target: 'ws://127.0.0.1:2000', ws: true },
+      '/uploads': 'http://127.0.0.1:2000',
     }
   }
 })

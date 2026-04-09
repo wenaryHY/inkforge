@@ -1,7 +1,7 @@
 /**
- * MediaPicker - 从媒体库选择文件并插入编辑器的弹窗组件
- * 通过 window.inkforgeInsertMarkdown(text) 插入到当前编辑器
- */
+* MediaPicker - 从媒体库选择文件并插入编辑器的弹窗组件
+* 通过 window.inkforgeInsertMarkdown(text) 插入到当前编辑器
+*/
 import { useCallback, useEffect, useState } from 'react';
 import { apiData, API_PREFIX } from '../lib/api';
 import type { MediaItem, PaginatedResponse } from '../types';
@@ -60,55 +60,53 @@ export function MediaPicker({ open, onClose }: Props) {
     <Modal open={open} onClose={onClose} title="选择媒体文件" width="860px">
       <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
         <div style={{ position: 'relative', flex: '1', minWidth: '160px' }}>
-          <IconSearch size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
+          <IconSearch size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--md-outline)', pointerEvents: 'none' }} />
           <input type="text" placeholder="搜索文件名..." value={keyword}
             onChange={e => { setKeyword(e.target.value); setPage(1); }}
-            style={{ width: '100%', paddingLeft: '32px', paddingRight: '10px', height: '36px', borderRadius: '8px', border: '1px solid var(--border-default)', fontSize: '13px', outline: 'none', background: 'var(--bg-card)', color: 'var(--if-text)' }}
-            onFocus={e => e.currentTarget.style.borderColor = 'var(--primary-500)'}
-            onBlur={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
+            style={{ width: '100%', paddingLeft: '32px', paddingRight: '10px', height: '36px', borderRadius: 'var(--radius-md)', border: 'none', fontSize: '13px', outline: 'none', background: 'var(--md-surface-container-low)', color: 'var(--md-on-surface)' }}
+            onFocus={e => { e.currentTarget.style.outline = '2px solid var(--md-primary)'; e.currentTarget.style.outlineOffset = '-2px'; }}
+            onBlur={e => { e.currentTarget.style.outline = 'none'; }}
           />
         </div>
         <select value={kind} onChange={e => { setKind(e.target.value); setPage(1); }}
-          style={{ height: '36px', borderRadius: '8px', border: '1px solid var(--border-default)', padding: '0 8px', fontSize: '13px', background: 'var(--bg-card)', color: 'var(--if-text)', cursor: 'pointer', outline: 'none' }}>
+          style={{ height: '36px', borderRadius: 'var(--radius-md)', border: 'none', padding: '0 8px', fontSize: '13px', background: 'var(--md-surface-container-low)', color: 'var(--md-on-surface)', cursor: 'pointer', outline: 'none' }}>
           <option value="">全部类型</option>
           <option value="image">图片</option>
           <option value="audio">音频</option>
         </select>
         <select value={category} onChange={e => { setCategory(e.target.value); setPage(1); }}
-          style={{ height: '36px', borderRadius: '8px', border: '1px solid var(--border-default)', padding: '0 8px', fontSize: '13px', background: 'var(--bg-card)', color: 'var(--if-text)', cursor: 'pointer', outline: 'none' }}>
+          style={{ height: '36px', borderRadius: 'var(--radius-md)', border: 'none', padding: '0 8px', fontSize: '13px', background: 'var(--md-surface-container-low)', color: 'var(--md-on-surface)', cursor: 'pointer', outline: 'none' }}>
           <option value="">全部分类</option>
           {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)', fontSize: '13.5px' }}>加载中...</div>
+        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--md-outline)', fontSize: '13.5px' }}>加载中...</div>
       ) : items.length > 0 ? (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px', maxHeight: '420px', overflowY: 'auto' }}>
             {items.map(item => (
               <div key={item.id} onClick={() => insert(item)}
                 title={`${item.original_name}\n点击插入编辑器`}
-                style={{ borderRadius: '10px', border: '1.5px solid var(--border-light)', padding: '10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', transition: 'all 0.15s ease', background: 'var(--bg-subtle)' }}
+                style={{ borderRadius: 'var(--radius-md)', border: 'none', padding: '10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', transition: 'background 0.15s ease', background: 'var(--md-surface-container-low)' }}
                 onMouseEnter={e => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--primary-500)';
-                  (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,107,53,0.04)';
+                  (e.currentTarget as HTMLDivElement).style.background = 'var(--md-surface-container)';
                 }}
                 onMouseLeave={e => {
-                  (e.currentTarget as HTMLDivElement).style.borderColor = 'var(--border-light)';
-                  (e.currentTarget as HTMLDivElement).style.background = 'var(--bg-subtle)';
+                  (e.currentTarget as HTMLDivElement).style.background = 'var(--md-surface-container-low)';
                 }}
               >
                 {item.kind === 'image' ? (
                   <img src={item.public_url} alt={item.original_name}
-                    style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-light)' }}
+                    style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: 'none' }}
                   />
                 ) : (
-                  <div style={{ width: '80px', height: '80px', borderRadius: '8px', background: 'var(--bg-card)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--border-light)' }}>
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1.6"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                  <div style={{ width: '80px', height: '80px', borderRadius: 'var(--radius-sm)', background: 'var(--md-surface-container-lowest)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none' }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--md-outline)" strokeWidth="1.6"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
                   </div>
                 )}
-                <span style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: 'center', wordBreak: 'break-all', lineHeight: 1.3, maxWidth: '100%', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>
+                <span style={{ fontSize: '11px', color: 'var(--md-on-surface-variant)', textAlign: 'center', wordBreak: 'break-all', lineHeight: 1.3, maxWidth: '100%', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>
                   {item.original_name}
                 </span>
               </div>
@@ -117,19 +115,19 @@ export function MediaPicker({ open, onClose }: Props) {
           {pages > 1 && (
             <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '16px', flexWrap: 'wrap' }}>
               <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-                style={{ padding: '5px 14px', borderRadius: '7px', border: '1px solid var(--border-default)', background: 'var(--bg-card)', color: page <= 1 ? 'var(--text-muted)' : 'var(--if-text)', fontSize: '12.5px', cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>
+                style={{ padding: '5px 14px', borderRadius: '20px', border: 'none', background: 'var(--md-surface-container-low)', color: page <= 1 ? 'var(--md-outline)' : 'var(--md-on-surface)', fontSize: '12.5px', cursor: page <= 1 ? 'not-allowed' : 'pointer' }}>
                 上一页
               </button>
-              <span style={{ padding: '5px 10px', fontSize: '12.5px', color: 'var(--text-muted)' }}>{page} / {pages}</span>
+              <span style={{ padding: '5px 10px', fontSize: '12.5px', color: 'var(--md-outline)' }}>{page} / {pages}</span>
               <button disabled={page >= pages} onClick={() => setPage(p => p + 1)}
-                style={{ padding: '5px 14px', borderRadius: '7px', border: '1px solid var(--border-default)', background: 'var(--bg-card)', color: page >= pages ? 'var(--text-muted)' : 'var(--if-text)', fontSize: '12.5px', cursor: page >= pages ? 'not-allowed' : 'pointer' }}>
+                style={{ padding: '5px 14px', borderRadius: '20px', border: 'none', background: 'var(--md-surface-container-low)', color: page >= pages ? 'var(--md-outline)' : 'var(--md-on-surface)', fontSize: '12.5px', cursor: page >= pages ? 'not-allowed' : 'pointer' }}>
                 下一页
               </button>
             </div>
           )}
         </>
       ) : (
-        <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)', fontSize: '13.5px' }}>
+        <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--md-outline)', fontSize: '13.5px' }}>
           <IconFolder size={32} style={{ marginBottom: '8px', opacity: 0.4 }} />
           <div>暂无媒体文件，请先上传</div>
         </div>

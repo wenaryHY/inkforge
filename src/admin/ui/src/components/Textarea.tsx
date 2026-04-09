@@ -6,18 +6,19 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   minRows?: number;
 }
 
+/* ── MD3 Textarea：无边框，背景色层级区分，focus ring ── */
 const s = {
   wrap:  { display: 'flex', flexDirection: 'column' as const, gap: '6px' },
-  label: { fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '0.01em' },
+  label: { fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)', letterSpacing: '0.01em' },
   area: {
     width: '100%',
     padding: '12px 14px',
-    border: '1.5px solid var(--border-default)',
+    border: 'none',
     borderRadius: 'var(--radius-md)',
     fontSize: '14px',
     lineHeight: 1.65,
-    color: 'var(--text-primary)',
-    background: 'var(--bg-card)',
+    color: 'var(--md-on-surface)',
+    background: 'var(--md-surface-container-low)',
     outline: 'none',
     resize: 'vertical' as const,
     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -40,16 +41,16 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             ...s.area,
             minHeight: minRows ? `${minRows * 1.75}rem` : undefined,
             ...style,
-            ...(error ? { borderColor: 'var(--danger-500)' } : {}),
+            ...(error ? { background: 'rgba(239,68,68,0.08)', color: 'var(--danger-600)' } : {}),
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--border-focus)';
-            e.currentTarget.style.boxShadow = '0 0 0 3px var(--primary-100)';
+            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(249,115,22,0.2)';
+            e.currentTarget.style.background = 'var(--md-surface-container-lowest)';
             props.onFocus?.(e);
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = error ? 'var(--danger-500)' : 'var(--border-default)';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.background = error ? 'rgba(239,68,68,0.08)' : 'var(--md-surface-container-low)';
             props.onBlur?.(e);
           }}
         />

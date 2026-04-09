@@ -299,7 +299,8 @@ a{color:var(--accent);text-decoration:none}
   <!-- Footer -->
   <footer class="site-footer">
     <span class="footer-copy">© {{ site_title }}</span>
-    <span class="footer-powered">Powered by <a href="/admin">InkForge</a></span>
+    <span class="footer-powered">Powered by <a href="{{ admin_url or '/admin' }}">InkForge</a></span>
+
   </footer>
 </div>
 </body>

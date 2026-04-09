@@ -1,24 +1,185 @@
 @import "tailwindcss";
 
 /* ═══════════════════════════════════════════════════════════════
-   InkForge 管理后台 — 设计令牌体系 v2
-   基于 UI/UX 设计核心概念完全指南
+   InkForge 管理后台 — 设计令牌体系 v3
+   基于 Material Design 3 (MD3) Tonal Layering
+   保留品牌色 Orange (#f97316)，其余完全遵循 MD3 色彩体系
    ═══════════════════════════════════════════════════════════════ */
 
-:root {
-  /* ── 主色色阶（从 #ff6b35 派生 10 级） ── */
-  --primary-50:  #fff7f5;
-  --primary-100: #ffede6;
-  --primary-200: #ffd5c5;
-  --primary-300: #ffb69a;
-  --primary-400: #ff8f66;
-  --primary-500: #ff6b35;   /* 品牌色 */
-  --primary-600: #e5561f;
-  --primary-700: #c03d18;
-  --primary-800: #9c3218;
-  --primary-900: #802c18;
+/* ── 本地字体 ── */
+@font-face {
+  font-family: 'Manrope';
+  src: url('/admin/assets/fonts/manrope-latin-ext-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('/admin/assets/fonts/manrope-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('/admin/assets/fonts/manrope-latin-ext-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('/admin/assets/fonts/manrope-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('/admin/assets/fonts/manrope-latin-ext-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('/admin/assets/fonts/manrope-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('/admin/assets/fonts/manrope-latin-ext-800-normal.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('/admin/assets/fonts/manrope-latin-800-normal.woff2') format('woff2');
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
-  /* ── 语义色阶（success / warning / danger / info） ── */
+@font-face {
+  font-family: 'Inter';
+  src: url('/admin/assets/fonts/inter-latin-ext-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/admin/assets/fonts/inter-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/admin/assets/fonts/inter-latin-ext-500-normal.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/admin/assets/fonts/inter-latin-500-normal.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/admin/assets/fonts/inter-latin-ext-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0100-02AF, U+0304, U+0308, U+0329, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('/admin/assets/fonts/inter-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  /* ══════════════════════════════════════
+     MD3 色彩令牌 — 保留品牌色 Orange
+     ══════════════════════════════════════ */
+
+  /* ── 主色 (Primary) — Orange 品牌色 ── */
+  --md-primary:              #f97316;
+  --md-primary-dim:          #c2410c;
+  --md-on-primary:           #ffffff;
+  --md-primary-container:    #fed7aa;
+  --md-on-primary-container: #7c2d12;
+
+  /* ── 次色 (Secondary) — 冷灰蓝 ── */
+  --md-secondary:              #556071;
+  --md-secondary-dim:          #3e4a59;
+  --md-on-secondary:           #ffffff;
+  --md-secondary-container:    #d8e3f8;
+  --md-on-secondary-container: #485264;
+
+  /* ── 三色 (Tertiary) — 紫色 ── */
+  --md-tertiary:              #645983;
+  --md-tertiary-dim:          #4c4269;
+  --md-on-tertiary:           #ffffff;
+  --md-tertiary-container:    #d9cafb;
+  --md-on-tertiary-container: #4c4169;
+
+  /* ── 错误色 (Error) ── */
+  --md-error:              #a83836;
+  --md-error-dim:          #67040d;
+  --md-on-error:           #ffffff;
+  --md-error-container:    #fa746f;
+  --md-on-error-container: #6e0a12;
+
+  /* ── 表面色 (Surface) — MD3 Tonal Layering ── */
+  --md-background:               #f9f9fe;
+  --md-on-background:            #2e333a;
+  --md-surface:                  #f9f9fe;
+  --md-on-surface:               #2e333a;
+  --md-surface-variant:          #dfe2ec;
+  --md-on-surface-variant:       #5b5f68;
+  --md-surface-dim:              #d7dae4;
+  --md-surface-bright:           #f9f9fe;
+  --md-surface-container-lowest: #ffffff;
+  --md-surface-container-low:    #f2f3fa;
+  --md-surface-container:        #ecedf5;
+  --md-surface-container-high:   #e6e8f0;
+  --md-surface-container-highest:#dfe2ec;
+  --md-inverse-surface:          #0c0e12;
+  --md-inverse-on-surface:       #9c9da1;
+  --md-inverse-primary:          #a5c2f1;
+  --md-surface-tint:             #43608a;
+
+  /* ── 轮廓色 (Outline) ── */
+  --md-outline:         #777b84;
+  --md-outline-variant: #aeb2bb;
+
+  /* ══════════════════════════════════════
+     语义色 — 兼容旧代码
+     ══════════════════════════════════════ */
   --success-50:  #ecfdf5;  --success-100: #d1fae5;
   --success-500: #10b981;  --success-600: #059669;
   --success-700: #047857;
@@ -35,26 +196,29 @@
   --info-500: #3b82f6;     --info-600: #2563eb;
   --info-700: #1d4ed8;
 
-  /* ── 背景色（层级递进） ── */
-  --bg-base:     #f5f6f8;
-  --bg-card:     #ffffff;
-  --bg-elevated: #ffffff;
-  --bg-subtle:   #f0f1f3;
-  --bg-hover:    #fafafa;
+  /* ══════════════════════════════════════
+     圆角 — MD3 大圆角体系
+     ══════════════════════════════════════ */
+  --radius-sm:   0.5rem;    /* 8px */
+  --radius-md:   1rem;      /* 16px - MD3 DEFAULT */
+  --radius-lg:   2rem;      /* 32px - MD3 lg */
+  --radius-xl:   3rem;      /* 48px - MD3 xl */
+  --radius-full: 9999px;    /* Pill/Capsule */
 
-  /* ── 文字色（三级层级：primary / secondary / muted） ── */
-  --text-primary:   #1a1a2e;
-  --text-secondary: #5a5a6e;
-  --text-muted:     #9494a6;
-  --text-inverse:   #ffffff;
-  --text-link:      var(--primary-600);
+  /* ══════════════════════════════════════
+     阴影 — Cloud Shadow (极克制)
+     ╹ MD3 原则：靠 Tonal Layering 区分层级，阴影仅用于
+       悬浮元素 (FAB, Dock, 弹窗)
+     ╹ 卡片/列表靠 surface-container 色差区分，不用阴影
+     ══════════════════════════════════════ */
+  --elevation-0: none;
+  --elevation-1: 0 20px 40px rgba(46,51,58,0.04);
+  --elevation-2: 0 20px 60px rgba(46,51,58,0.08);
+  --elevation-3: 0 24px 80px rgba(46,51,58,0.12);
 
-  /* ── 边框色 ── */
-  --border-default: #e2e3e8;
-  --border-light:   #efeff4;
-  --border-focus:   var(--primary-500);
-
-  /* ── 间距系统（8px 基准网格） ── */
+  /* ══════════════════════════════════════
+     间距系统
+     ══════════════════════════════════════ */
   --space-1:  4px;
   --space-2:  8px;
   --space-3:  12px;
@@ -65,31 +229,43 @@
   --space-10: 40px;
   --space-12: 48px;
 
-  /* ── 圆角 ── */
-  --radius-sm:  6px;
-  --radius-md:  10px;
-  --radius-lg:  14px;
-  --radius-xl:  18px;
-  --radius-full: 999px;
+  /* ══════════════════════════════════════
+     侧边栏
+     ══════════════════════════════════════ */
+  --sidebar-bg:           #f2f3fa;
+  --sidebar-hover:        rgba(67,96,138,0.06);
+  --sidebar-text:         #5b5f68;
+  --sidebar-text-hover:   #2e333a;
+  --sidebar-indicator:    var(--md-primary);
 
-  /* ── Elevation（阴影应隐形，不喧宾夺主） ── */
-  --elevation-1: 0 1px 2px rgba(0,0,0,0.04);
-  --elevation-2: 0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
-  --elevation-3: 0 12px 32px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
-
-  /* ── 侧边栏 ── */
-  --sidebar-bg:       #18181b;
-  --sidebar-hover:    rgba(255,255,255,0.06);
-  --sidebar-text:     #888;
-  --sidebar-text-hover: #ddd;
-  --sidebar-indicator: var(--primary-500);
-
-  /* ── 过渡 ── */
+  /* ══════════════════════════════════════
+     过渡
+     ══════════════════════════════════════ */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
   --transition-fast: 0.15s var(--ease-default);
   --transition-normal: 0.2s var(--ease-default);
-  --transition-smooth: 0.25s var(--ease-out);
+  --transition-smooth: 0.3s var(--ease-emphasized);
+
+  /* ══════════════════════════════════════
+     兼容旧变量名 → 映射到新值
+     ══════════════════════════════════════ */
+  --bg-base:     var(--md-background);
+  --bg-card:     var(--md-surface-container-lowest);
+  --bg-elevated: var(--md-surface-container-lowest);
+  --bg-subtle:   var(--md-surface-container);
+  --bg-hover:    var(--md-surface-container-high);
+
+  --text-primary:   var(--md-on-surface);
+  --text-secondary: var(--md-on-surface-variant);
+  --text-muted:     var(--md-outline);
+  --text-inverse:   #ffffff;
+  --text-link:      var(--md-primary);
+
+  --border-default: var(--md-outline-variant);
+  --border-light:   var(--md-surface-container-highest);
+  --border-focus:   var(--md-primary);
 }
 
 /* ═══════════════════════════════════════
@@ -102,39 +278,42 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC',
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC',
                'Microsoft YaHei', 'PingFang SC', sans-serif;
-  background: var(--bg-base);
-  color: var(--text-primary);
+  background: var(--md-background);
+  color: var(--md-on-surface);
   line-height: 1.6;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── 链接（语义色：蓝色=可点击/信任） ── */
+h1, h2, h3, .font-headline {
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
 a {
-  color: var(--text-link);
+  color: var(--md-primary);
   text-decoration: none;
   cursor: pointer;
 }
 a:hover {
-  color: var(--primary-700);
+  color: var(--md-primary-dim);
 }
 
 /* ═══════════════════════════════════════
-   Scrollbar（轻量化）
+   Scrollbar
    ═══════════════════════════════════════ */
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 3px; opacity: 0.4; }
-::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+::-webkit-scrollbar-thumb { background: var(--md-outline-variant); border-radius: 3px; opacity: 0.4; }
+::-webkit-scrollbar-thumb:hover { background: var(--md-outline); }
 
 /* ═══════════════════════════════════════
-   Focus Ring
+   Focus Ring — MD3 style
    ═══════════════════════════════════════ */
 *:focus-visible {
-  outline: 2px solid var(--border-focus);
+  outline: 2px solid var(--md-primary);
   outline-offset: 2px;
 }
 
@@ -152,18 +331,10 @@ a:hover {
 @keyframes pulse     { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
 
 .if-fade-in    { animation: fadeIn 0.2s ease-out both; }
-.if-scale-in   { animation: scaleIn 0.25s var(--ease-out) both; }
+.if-scale-in   { animation: scaleIn 0.3s var(--ease-emphasized) both; }
 .if-slide-up   { animation: slideUp 0.25s ease-out both; }
 .if-slide-down { animation: slideDown 0.25s ease-out both; }
 .if-toast-in   { animation: toastIn 0.35s var(--ease-out) forwards; }
 .if-toast-out  { animation: toastOut 0.25s ease-in forwards; }
-.if-shimmer    { animation: shimmer 1.8s ease-in-out infinite; background-size: 200% 200%; background-image: linear-gradient(90deg, #f0f0f0 25%, #e8e8e8 50%, #f0f0f0 75%); }
+.if-shimmer    { animation: shimmer 1.8s ease-in-out infinite; background-size: 200% 200%; background-image: linear-gradient(90deg, var(--md-surface-container) 25%, var(--md-surface-container-high) 50%, var(--md-surface-container) 75%); }
 .if-pulse      { animation: pulse 2s ease-in-out infinite; }
-
-/* ═══════════════════════════════════════
-   Tailwind 兼容别名（保留旧类名不报错）
-   ═══════════════════════════════════════ */
-.bg-border          { background-color: var(--border-default); }
-.bg-primary-dark    { background-color: var(--primary-700); }
-.hover\:bg-primary-dark:hover { background-color: var(--primary-700); }
-.hover\:bg-sidebar-hover:hover { background-color: var(--sidebar-hover); }

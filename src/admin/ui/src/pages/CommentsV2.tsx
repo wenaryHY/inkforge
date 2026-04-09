@@ -29,18 +29,16 @@ const TH = {
   textAlign: 'left' as const,
   fontSize: '11.5px',
   fontWeight: 700,
-  color: 'var(--text-muted)',
+  color: 'var(--md-on-surface-variant)',
   textTransform: 'uppercase' as const,
   letterSpacing: '0.06em',
-  background: 'var(--bg-subtle)',
-  borderBottom: '2px solid var(--border-light)',
+  background: 'var(--md-surface-container-low)',
 };
 
 const TD = {
   padding: '14px 16px',
   fontSize: '13px',
-  color: 'var(--if-text)',
-  borderBottom: '1px solid var(--border-light)',
+  color: 'var(--md-on-surface)',
   verticalAlign: 'middle' as const,
 };
 
@@ -50,10 +48,11 @@ const iconBtn: React.CSSProperties = {
   justifyContent: 'center',
   width: '32px',
   height: '32px',
-  borderRadius: '8px',
+  borderRadius: 'var(--radius-full)',
   border: 'none',
   cursor: 'pointer',
   transition: 'all 0.15s ease',
+  background: 'var(--md-surface-container-low)',
 };
 
 export default function CommentsV2() {
@@ -234,11 +233,12 @@ export default function CommentsV2() {
         }
       />
 
-      <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-light)', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', background: 'var(--md-surface-container)', borderRadius: 'var(--radius-full)', padding: '4px' }}>
         <button
           style={{
-            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--primary-600)',
-            borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
+            padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-primary-container)',
+            background: 'var(--md-primary-container)', border: 'none', cursor: 'pointer',
+            borderRadius: 'var(--radius-full)', transition: 'all 0.2s ease',
           }}
         >
           {t('activeComments')}
@@ -246,12 +246,12 @@ export default function CommentsV2() {
         <button
           onClick={() => navigate('/trash?tab=comment')}
           style={{
-            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)',
-            borderBottom: '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            borderRadius: 'var(--radius-full)', transition: 'all 0.2s ease',
           }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container-high)'; e.currentTarget.style.color = 'var(--md-on-surface)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--md-on-surface-variant)'; }}
         >
           {t('deletedItems')}
         </button>
@@ -269,8 +269,8 @@ export default function CommentsV2() {
                       width: '18px',
                       height: '18px',
                       borderRadius: '4px',
-                      border: `1.5px solid ${selectedIds.size === items.length && items.length > 0 ? 'var(--primary-500)' : 'var(--border-default)'}`,
-                      background: selectedIds.size === items.length && items.length > 0 ? 'var(--primary-500)' : 'transparent',
+                      border: `1.5px solid ${selectedIds.size === items.length && items.length > 0 ? 'var(--md-primary)' : 'var(--md-outline)'}`,
+                      background: selectedIds.size === items.length && items.length > 0 ? 'var(--md-primary)' : 'transparent',
                       cursor: 'pointer',
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -297,7 +297,7 @@ export default function CommentsV2() {
                       key={cmt.id}
                       style={{
                         transition: 'background 0.12s ease',
-                        background: isSelected ? 'var(--primary-50)' : 'transparent',
+                        background: isSelected ? 'var(--md-primary-container)' : 'transparent',
                       }}
                     >
                       <td style={{ ...TD, textAlign: 'center' }}>
@@ -307,8 +307,8 @@ export default function CommentsV2() {
                             width: '18px',
                             height: '18px',
                             borderRadius: '4px',
-                            border: `1.5px solid ${isSelected ? 'var(--primary-500)' : 'var(--border-default)'}`,
-                            background: isSelected ? 'var(--primary-500)' : 'transparent',
+                            border: `1.5px solid ${isSelected ? 'var(--md-primary)' : 'var(--md-outline)'}`,
+                            background: isSelected ? 'var(--md-primary)' : 'transparent',
                             cursor: 'pointer',
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -322,7 +322,7 @@ export default function CommentsV2() {
                       <td style={{ ...TD, width: '130px' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                           <span style={{ fontWeight: 600 }}>{esc(cmt.display_name)}</span>
-                          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>@{esc(cmt.username)}</span>
+                          <span style={{ fontSize: '12px', color: 'var(--md-outline)' }}>@{esc(cmt.username)}</span>
                         </div>
                       </td>
 
@@ -334,7 +334,7 @@ export default function CommentsV2() {
                             WebkitBoxOrient: 'vertical' as const,
                             overflow: 'hidden',
                             lineHeight: 1.55,
-                            color: 'var(--text-secondary)',
+                            color: 'var(--md-on-surface-variant)',
                           }}
                         >
                           {esc(cmt.content)}
@@ -350,7 +350,7 @@ export default function CommentsV2() {
                             title={cmt.post_title}
                             style={{
                               fontSize: '12px',
-                              color: 'var(--primary-500)',
+                              color: 'var(--md-primary)',
                               textDecoration: 'none',
                               display: 'inline-flex',
                               alignItems: 'center',
@@ -364,7 +364,7 @@ export default function CommentsV2() {
                             {esc(cmt.post_title)}
                           </a>
                         ) : (
-                          <span style={{ fontSize: '12px', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
+                          <span style={{ fontSize: '12px', color: 'var(--md-outline)', textDecoration: 'line-through' }}>
                             {t('deletedPost')}
                           </span>
                         )}
@@ -374,7 +374,7 @@ export default function CommentsV2() {
                         <StatusBadge status={cmt.status} />
                       </td>
 
-                      <td style={{ ...TD, fontFamily: 'monospace', fontSize: '12px', whiteSpace: 'nowrap', color: 'var(--text-muted)' }}>
+                      <td style={{ ...TD, fontFamily: 'monospace', fontSize: '12px', whiteSpace: 'nowrap', color: 'var(--md-outline)' }}>
                         {cmt.created_at?.slice(0, 16).replace('T', ' ') || '-'}
                       </td>
 
@@ -384,15 +384,19 @@ export default function CommentsV2() {
                             <>
                               <button
                                 title={t('approveAction')}
-                                style={{ ...iconBtn, background: 'transparent', color: '#10b981' }}
+                                style={{ ...iconBtn, color: '#10b981' }}
                                 onClick={() => handleApprove(cmt.id)}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container)'; e.currentTarget.style.transform = 'scale(0.95)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'var(--md-surface-container-low)'; e.currentTarget.style.transform = 'scale(1)'; }}
                               >
                                 <IconCheckCircle size={16} />
                               </button>
                               <button
                                 title={t('rejectAction')}
-                                style={{ ...iconBtn, background: 'transparent', color: '#f59e0b' }}
+                                style={{ ...iconBtn, color: '#f59e0b' }}
                                 onClick={() => handleReject(cmt.id)}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container)'; e.currentTarget.style.transform = 'scale(0.95)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'var(--md-surface-container-low)'; e.currentTarget.style.transform = 'scale(1)'; }}
                               >
                                 <IconBan size={16} />
                               </button>
@@ -401,8 +405,10 @@ export default function CommentsV2() {
 
                           <button
                             title={t('moveToTrash')}
-                            style={{ ...iconBtn, background: 'transparent', color: '#ef4444' }}
+                            style={{ ...iconBtn, color: '#ef4444' }}
                             onClick={() => setDeleteTarget(cmt)}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container)'; e.currentTarget.style.transform = 'scale(0.95)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'var(--md-surface-container-low)'; e.currentTarget.style.transform = 'scale(1)'; }}
                           >
                             <IconTrash2 size={16} />
                           </button>

@@ -26,7 +26,6 @@ export function Modal({ open, onClose, title, children, actions, width = '560px'
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
         position: 'fixed', inset: 0,
-        /* 遮罩/覆盖层：渐变 + 模糊 */
         background: 'rgba(0,0,0,0.35)',
         backdropFilter: 'blur(4px)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -37,10 +36,10 @@ export function Modal({ open, onClose, title, children, actions, width = '560px'
       <div
         className="if-scale-in"
         style={{
-          background: 'var(--bg-elevated)',
+          background: 'var(--md-surface-container-lowest)',
           borderRadius: 'var(--radius-xl)',
-          /* 弹出框/模态框：较强阴影（区别于卡片的弱阴影） */
-          boxShadow: 'var(--elevation-3), 0 0 0 1px rgba(0,0,0,0.03)',
+          /* MD3：Modal 保留极轻阴影（唯一使用 elevation 的场景） */
+          boxShadow: 'var(--elevation-1)',
           width: width === '90%' ? '92%' : width,
           maxWidth: width === '90%' ? '900px' : undefined,
           maxHeight: '85vh',
@@ -48,14 +47,13 @@ export function Modal({ open, onClose, title, children, actions, width = '560px'
           display: 'flex', flexDirection: 'column',
         }}
       >
-        {/* Header */}
+        {/* Header — 无底部边框，靠间距分隔 */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '20px 24px',
-          borderBottom: '1px solid var(--border-light)',
           flexShrink: 0,
         }}>
-          <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.2px' }}>
+          <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--md-on-surface)', letterSpacing: '-0.2px' }}>
             {title}
           </h3>
           <button
@@ -63,17 +61,17 @@ export function Modal({ open, onClose, title, children, actions, width = '560px'
             style={{
               width: '32px', height: '32px',
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-              borderRadius: 'var(--radius-sm)', border: 'none', background: 'transparent',
-              color: 'var(--text-muted)', cursor: 'pointer',
+              borderRadius: 'var(--radius-full)', border: 'none', background: 'transparent',
+              color: 'var(--md-outline)', cursor: 'pointer',
               transition: 'all 0.15s ease',
             }}
             onMouseEnter={e => {
-              e.currentTarget.style.background = 'var(--bg-subtle)';
-              e.currentTarget.style.color = 'var(--text-primary)';
+              e.currentTarget.style.background = 'var(--md-surface-container)';
+              e.currentTarget.style.color = 'var(--md-on-surface)';
             }}
             onMouseLeave={e => {
               e.currentTarget.style.background = 'transparent';
-              e.currentTarget.style.color = 'var(--text-muted)';
+              e.currentTarget.style.color = 'var(--md-outline)';
             }}
           >
             <IconX />
@@ -83,13 +81,12 @@ export function Modal({ open, onClose, title, children, actions, width = '560px'
         <div style={{ padding: '24px' }}>
           {children}
         </div>
-        {/* Footer */}
+        {/* Footer — 无顶部边框，靠背景色差异分隔 */}
         {actions && (
           <div style={{
             display: 'flex', justifyContent: 'flex-end', gap: '8px',
             padding: '16px 24px',
-            borderTop: '1px solid var(--border-light)',
-            background: 'var(--bg-subtle)',
+            background: 'var(--md-surface-container-low)',
             flexShrink: 0,
             borderRadius: '0 0 var(--radius-xl) var(--radius-xl)',
           }}>

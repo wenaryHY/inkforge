@@ -49,13 +49,12 @@ export function TimePicker({ label, hint, hour, minute, onChange }: TimePickerPr
   }, [open, hour, minute]);
 
   const hours = Array.from({ length: 24 }, (_, i) => i);
-  // Options for minutes, step by 5 or 1 (we provide all 60 but maybe step 5 is better? The user didn't specify, let's do all 60)
   const minutes = Array.from({ length: 60 }, (_, i) => i);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }} ref={containerRef}>
       {label && (
-        <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+        <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)' }}>
           {label}
         </label>
       )}
@@ -67,10 +66,10 @@ export function TimePicker({ label, hint, hour, minute, onChange }: TimePickerPr
             width: '100%',
             height: '42px',
             padding: '0 12px',
-            borderRadius: '10px',
-            border: `1.5px solid ${open ? 'var(--primary-500)' : 'var(--border-default)'}`,
-            background: 'var(--bg-card)',
-            color: 'var(--text-primary)',
+            borderRadius: 'var(--radius-md)',
+            border: 'none',
+            background: 'var(--md-surface-container-low)',
+            color: 'var(--md-on-surface)',
             fontSize: '14px',
             display: 'flex',
             alignItems: 'center',
@@ -78,7 +77,8 @@ export function TimePicker({ label, hint, hour, minute, onChange }: TimePickerPr
             gap: '8px',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
-            boxShadow: open ? '0 0 0 3px rgba(255, 107, 53, 0.1)' : 'none',
+            outline: open ? '2px solid var(--md-primary)' : 'none',
+            outlineOffset: open ? '-2px' : '0',
           }}
         >
           <IconClock size={16} />
@@ -93,10 +93,10 @@ export function TimePicker({ label, hint, hour, minute, onChange }: TimePickerPr
               left: 0,
               width: '240px',
               height: '240px',
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-light)',
-              borderRadius: '12px',
-              boxShadow: '0 10px 32px rgba(0,0,0,0.1)',
+              background: 'var(--md-surface-container-lowest)',
+              border: 'none',
+              borderRadius: 'var(--radius-lg)',
+              boxShadow: 'var(--elevation-2)',
               zIndex: 100,
               display: 'flex',
               overflow: 'hidden',
@@ -104,8 +104,8 @@ export function TimePicker({ label, hint, hour, minute, onChange }: TimePickerPr
             }}
           >
             {/* Hour Column */}
-            <div style={{ flex: 1, borderRight: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '8px 0', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', borderBottom: '1px solid var(--border-light)', background: 'var(--bg-subtle)' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '8px 0', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--md-outline)', borderBottom: 'none', background: 'var(--md-surface-container-low)' }}>
                 小时
               </div>
               <div ref={hourRef} style={{ flex: 1, overflowY: 'auto', padding: '8px 0', scrollBehavior: 'smooth' }} className="hide-scrollbar">
@@ -119,12 +119,12 @@ export function TimePicker({ label, hint, hour, minute, onChange }: TimePickerPr
                       textAlign: 'center',
                       fontSize: '14px',
                       fontWeight: h === hour ? 700 : 400,
-                      color: h === hour ? 'var(--primary-600)' : 'var(--text-secondary)',
-                      background: h === hour ? 'var(--primary-50)' : 'transparent',
+                      color: h === hour ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
+                      background: h === hour ? 'var(--md-primary-container)' : 'transparent',
                       cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      transition: 'background 0.15s',
                     }}
-                    onMouseEnter={(e) => { if (h !== hour) e.currentTarget.style.background = 'var(--bg-subtle)'; }}
+                    onMouseEnter={(e) => { if (h !== hour) e.currentTarget.style.background = 'var(--md-surface-container)'; }}
                     onMouseLeave={(e) => { if (h !== hour) e.currentTarget.style.background = 'transparent'; }}
                   >
                     {h.toString().padStart(2, '0')}
@@ -133,9 +133,9 @@ export function TimePicker({ label, hint, hour, minute, onChange }: TimePickerPr
               </div>
             </div>
 
-            {/* Minute Column */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ padding: '8px 0', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', borderBottom: '1px solid var(--border-light)', background: 'var(--bg-subtle)' }}>
+            {/* Minute Column - use tonal background for visual separation instead of border */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--md-surface-container)' }}>
+              <div style={{ padding: '8px 0', textAlign: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--md-outline)', borderBottom: 'none', background: 'var(--md-surface-container-low)' }}>
                 分钟
               </div>
               <div ref={minuteRef} style={{ flex: 1, overflowY: 'auto', padding: '8px 0', scrollBehavior: 'smooth' }} className="hide-scrollbar">
@@ -149,12 +149,12 @@ export function TimePicker({ label, hint, hour, minute, onChange }: TimePickerPr
                       textAlign: 'center',
                       fontSize: '14px',
                       fontWeight: m === minute ? 700 : 400,
-                      color: m === minute ? 'var(--primary-600)' : 'var(--text-secondary)',
-                      background: m === minute ? 'var(--primary-50)' : 'transparent',
+                      color: m === minute ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
+                      background: m === minute ? 'var(--md-primary-container)' : 'transparent',
                       cursor: 'pointer',
-                      transition: 'all 0.15s',
+                      transition: 'background 0.15s',
                     }}
-                    onMouseEnter={(e) => { if (m !== minute) e.currentTarget.style.background = 'var(--bg-subtle)'; }}
+                    onMouseEnter={(e) => { if (m !== minute) e.currentTarget.style.background = 'var(--md-surface-container)'; }}
                     onMouseLeave={(e) => { if (m !== minute) e.currentTarget.style.background = 'transparent'; }}
                   >
                     {m.toString().padStart(2, '0')}
@@ -164,12 +164,12 @@ export function TimePicker({ label, hint, hour, minute, onChange }: TimePickerPr
             </div>
             
             {/* Selection overlay (just visual) */}
-            <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '36px', marginTop: '-18px', borderTop: '1px solid rgba(0,0,0,0.05)', borderBottom: '1px solid rgba(0,0,0,0.05)', pointerEvents: 'none', background: 'rgba(0,0,0,0.02)' }} />
+            <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: '36px', marginTop: '-18px', borderTop: 'none', borderBottom: 'none', pointerEvents: 'none', background: 'rgba(0,0,0,0.02)' }} />
           </div>
         )}
       </div>
       {hint && (
-        <span style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.4 }}>
+        <span style={{ fontSize: '12px', color: 'var(--md-outline)', lineHeight: 1.4 }}>
           {hint}
         </span>
       )}

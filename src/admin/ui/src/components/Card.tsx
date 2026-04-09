@@ -7,13 +7,13 @@ interface CardProps {
   style?: React.CSSProperties;
 }
 
-/* ── 设计指南：卡片阴影应弱化，不应成为视觉焦点 ── */
+/* ── MD3 Tonal Layering：卡片靠背景色层级区分，无阴影无边框 ── */
 const s = {
   card: {
-    background: 'var(--bg-card)',
-    border: '1px solid var(--border-light)',
+    background: 'var(--md-surface-container-low)',
+    border: 'none',
     borderRadius: 'var(--radius-lg)',
-    boxShadow: 'var(--elevation-1)',
+    boxShadow: 'none',
     overflow: 'hidden' as const,
   },
   header: {
@@ -21,7 +21,6 @@ const s = {
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '18px 24px',
-    borderBottom: '1px solid var(--border-light)',
   },
   body: {},
 };

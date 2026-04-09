@@ -55,7 +55,7 @@ impl AppConfig {
             .add_source(config::File::with_name("config/local").required(false))
             .add_source(config::Environment::with_prefix("INKFORGE").separator("__"))
             .set_default("server.host", "0.0.0.0")?
-            .set_default("server.port", 3000)?
+            .set_default("server.port", 2000)?
             .set_default("database.url", "sqlite://inkforge.db?mode=rwc")?
             .set_default("auth.secret", "change-me-in-production-please")?
             .set_default("auth.expires_in_seconds", 60 * 60 * 24 * 7)?

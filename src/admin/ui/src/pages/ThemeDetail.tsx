@@ -10,10 +10,9 @@ import { useToast } from '../contexts/ToastContext';
 import { useI18n } from '../i18n';
 
 const sectionStyle: React.CSSProperties = {
-  background: 'var(--bg-card)',
-  border: '1px solid var(--border-light)',
-  borderRadius: '14px',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03)',
+  background: 'var(--md-surface-container-lowest)',
+  borderRadius: 'var(--radius-lg)',
+  overflow: 'hidden',
 };
 
 export default function ThemeDetail() {
@@ -78,7 +77,7 @@ export default function ThemeDetail() {
   }
 
   if (!detail) {
-    return <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>{t('themeNotFound')}</div>;
+    return <div style={{ padding: '20px', textAlign: 'center', color: 'var(--md-outline)' }}>{t('themeNotFound')}</div>;
   }
 
   const { manifest, schema } = detail;
@@ -105,34 +104,34 @@ export default function ThemeDetail() {
       />
 
       <section style={sectionStyle}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-light)' }}>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--if-text)' }}>{t('themeInfo')}</div>
+        <div style={{ padding: '20px 24px', background: 'var(--md-surface-container-low)' }}>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--md-on-surface)' }}>{t('themeInfo')}</div>
         </div>
         <div style={{ padding: '20px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
           <div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>{t('identifierLabel')}</div>
-            <div style={{ fontSize: '14px', fontFamily: 'monospace', color: 'var(--if-text)' }}>{manifest.slug}</div>
+            <div style={{ fontSize: '12px', color: 'var(--md-outline)', marginBottom: '6px' }}>{t('identifierLabel')}</div>
+            <div style={{ fontSize: '14px', fontFamily: 'monospace', color: 'var(--md-on-surface)' }}>{manifest.slug}</div>
           </div>
           <div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>{t('versionLabel')}</div>
-            <div style={{ fontSize: '14px', color: 'var(--if-text)' }}>v{manifest.version}</div>
+            <div style={{ fontSize: '12px', color: 'var(--md-outline)', marginBottom: '6px' }}>{t('versionLabel')}</div>
+            <div style={{ fontSize: '14px', color: 'var(--md-on-surface)' }}>v{manifest.version}</div>
           </div>
           <div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>{t('authorText')}</div>
-            <div style={{ fontSize: '14px', color: 'var(--if-text)' }}>{manifest.author || t('unknown')}</div>
+            <div style={{ fontSize: '12px', color: 'var(--md-outline)', marginBottom: '6px' }}>{t('authorText')}</div>
+            <div style={{ fontSize: '14px', color: 'var(--md-on-surface)' }}>{manifest.author || t('unknown')}</div>
           </div>
           <div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>{t('minVersionText')}</div>
-            <div style={{ fontSize: '14px', color: 'var(--if-text)' }}>{manifest.min_inkforge_version || t('undeclared')}</div>
+            <div style={{ fontSize: '12px', color: 'var(--md-outline)', marginBottom: '6px' }}>{t('minVersionText')}</div>
+            <div style={{ fontSize: '14px', color: 'var(--md-on-surface)' }}>{manifest.min_inkforge_version || t('undeclared')}</div>
           </div>
         </div>
       </section>
 
       {Object.keys(schema).length > 0 && (
         <section style={sectionStyle}>
-          <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-light)' }}>
-            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--if-text)' }}>{t('themeConfig')}</div>
-            <div style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginTop: '4px' }}>
+          <div style={{ padding: '20px 24px', background: 'var(--md-surface-container-low)' }}>
+            <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--md-on-surface)' }}>{t('themeConfig')}</div>
+            <div style={{ fontSize: '12.5px', color: 'var(--md-outline)', marginTop: '4px' }}>
               {t('themeConfigDesc')}
             </div>
           </div>
@@ -185,7 +184,7 @@ function ThemeConfigFieldInput({ field, value, onChange, t, format }: ThemeConfi
   if (field.type === 'color') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-        <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)' }}>
+        <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)' }}>
           {field.label}
         </label>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -196,12 +195,13 @@ function ThemeConfigFieldInput({ field, value, onChange, t, format }: ThemeConfi
             style={{
               width: '60px',
               height: '40px',
-              border: '1.5px solid var(--border-default)',
+              border: 'none',
               borderRadius: 'var(--radius-md)',
               cursor: 'pointer',
+              background: 'var(--md-surface-container)',
             }}
           />
-          <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>
+          <span style={{ fontSize: '13px', color: 'var(--md-on-surface-variant)', fontFamily: 'monospace' }}>
             {(value as string) || field.default || '#000000'}
           </span>
         </div>

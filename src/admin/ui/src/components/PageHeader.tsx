@@ -13,13 +13,13 @@ export function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
       marginBottom: '24px',
     }}>
       <div>
-        {/* 设计指南：后台界面标题字号不超过 24px */}
         <h1 style={{
-          fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)',
+          fontFamily: 'Manrope',
+          fontSize: '24px', fontWeight: 800, color: 'var(--md-on-surface)',
           letterSpacing: '-0.3px', lineHeight: 1.2,
         }}>{title}</h1>
         {subtitle && (
-          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '4px' }}>
+          <p style={{ fontSize: '13px', color: 'var(--md-outline)', marginTop: '4px' }}>
             {subtitle}
           </p>
         )}

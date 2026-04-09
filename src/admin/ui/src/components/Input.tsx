@@ -5,7 +5,7 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
 }
 
-/* ── 设计指南：输入框状态 — 默认/聚焦/错误/禁用 ── */
+/* ── MD3 Input：无边框，背景色层级区分，focus ring ── */
 const s = {
   wrap: {
     display: 'flex',
@@ -15,18 +15,18 @@ const s = {
   label: {
     fontSize: '13px',
     fontWeight: 600,
-    color: 'var(--text-secondary)',
+    color: 'var(--md-on-surface-variant)',
     letterSpacing: '0.01em',
   },
   input: {
     width: '100%',
     height: '40px',
     padding: '0 14px',
-    border: '1.5px solid var(--border-default)',
+    border: 'none',
     borderRadius: 'var(--radius-md)',
     fontSize: '14px',
-    color: 'var(--text-primary)',
-    background: 'var(--bg-card)',
+    color: 'var(--md-on-surface)',
+    background: 'var(--md-surface-container-low)',
     outline: 'none',
     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
     boxSizing: 'border-box' as const,
@@ -51,21 +51,21 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           style={{
             ...s.input,
             ...style,
-            /* 错误状态：红色边框 */
-            ...(error ? { borderColor: 'var(--danger-500)' } : {}),
-            /* 禁用状态：灰色文字暗示不可用 */
+            /* 错误状态：红色系背景 */
+            ...(error ? { background: 'rgba(239,68,68,0.08)', color: 'var(--danger-600)' } : {}),
+            /* 禁用状态 */
             ...(disabled ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
           }}
           onFocus={(e) => {
             if (disabled) return;
-            /* 聚焦状态：主色边框 + 光晕 */
-            e.currentTarget.style.borderColor = 'var(--border-focus)';
-            e.currentTarget.style.boxShadow = '0 0 0 3px var(--primary-100)';
+            /* 聚焦：ring + 背景变亮 */
+            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(249,115,22,0.2)';
+            e.currentTarget.style.background = 'var(--md-surface-container-lowest)';
             props.onFocus?.(e);
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = error ? 'var(--danger-500)' : 'var(--border-default)';
             e.currentTarget.style.boxShadow = 'none';
+            e.currentTarget.style.background = error ? 'rgba(239,68,68,0.08)' : 'var(--md-surface-container-low)';
             props.onBlur?.(e);
           }}
         />

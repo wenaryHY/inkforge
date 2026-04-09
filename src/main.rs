@@ -44,10 +44,19 @@ async fn main() -> anyhow::Result<()> {
     // 创建 WebSocket broadcast channel，容量 256
     let (event_tx, _rx) = broadcast::channel::<ws::ServerEvent>(256);
 
-    let state = Arc::new(AppState::new(config.clone(), pool, event_tx)?);
+    let setup_runtime = modules::setup::service::bootstrap_runtime(&pool).await?;
+
+    let state = Arc::new(AppState::new(
+        config.clone(),
+        pool,
+        event_tx,
+        setup_runtime.site_url,
+        setup_runtime.admin_url,
+        setup_runtime.stage,
+    )?);
     modules::backup::scheduler::start_backup_scheduler(state.clone()).await?;
     modules::trash::scheduler::start_trash_scheduler(state.clone()).await?;
-    let app = build_router(state);
+    let app = build_router(state).await;
 
     let addr = SocketAddr::new(config.server.host.parse()?, config.server.port);
     tracing::info!("InkForge listening on http://{}", addr);

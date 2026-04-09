@@ -43,6 +43,21 @@ pub async fn build_template_engine(state: Arc<AppState>) -> AppResult<Environmen
             .unwrap_or_default();
     env.add_global("site_description", Value::from(site_description));
 
+    let site_url =
+        crate::modules::setting::repository::get_string(&state.pool, "site_url", "")
+            .await
+            .unwrap_or_default();
+    env.add_global("site_url", Value::from(site_url));
+
+    let admin_url = crate::modules::setting::repository::get_string(
+        &state.pool,
+        "admin_url",
+        "/admin",
+    )
+    .await
+    .unwrap_or_else(|_| "/admin".to_string());
+    env.add_global("admin_url", Value::from(admin_url));
+
     // Theme config (HashMap<String, serde_json::Value>)
     let theme_config = repository::get_config(&state.pool, &active_theme)
         .await

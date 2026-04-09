@@ -1,8 +1,6 @@
 import type { ApiResponse, PaginatedResponse } from '../types';
 
-export const API = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? 'http://localhost:3000'
-  : `${window.location.protocol}//${window.location.host}`;
+export const API = `${window.location.protocol}//${window.location.host}`;
 
 /** API version prefix — all API calls use v1 */
 export const API_PREFIX = '/api/v1';

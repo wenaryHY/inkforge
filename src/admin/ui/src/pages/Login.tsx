@@ -27,7 +27,6 @@ export default function Login() {
     try {
       const result = await login(loginValue, loginPassword);
       if (result.success) {
-        // 延迟刷新确保 token 已写入 localStorage
         setTimeout(() => window.location.reload(), 100);
       } else {
         toast(result.message || '登录失败', 'error');
@@ -50,7 +49,6 @@ export default function Login() {
       });
       if (result.success) {
         toast('注册成功，将自动跳转登录', 'success');
-        // 延迟刷新确保 token 已写入 localStorage
         setTimeout(() => window.location.reload(), 100);
       } else {
         toast(result.message || '注册失败', 'error');
@@ -60,18 +58,18 @@ export default function Login() {
     }
   }
 
-  /* ── 设计指南：输入框高度 48px，聚焦橙色边框+柔和光晕 ── */
+  /* ── MD3 输入框：无 border，surface-container-low 背景，focus 用 outline ── */
   const inputStyle: React.CSSProperties = {
     width: '100%',
     height: '48px',
     padding: '0 16px',
-    border: '1.5px solid var(--border-default)',
+    border: 'none',
     borderRadius: 'var(--radius-md)',
     fontSize: '14px',
-    color: 'var(--text-primary)',
-    background: 'var(--bg-card)',
+    color: 'var(--md-on-surface)',
+    background: 'var(--md-surface-container-low)',
     outline: 'none',
-    transition: 'all 0.2s ease',
+    transition: 'background 0.2s ease, outline 0.15s ease',
     boxSizing: 'border-box' as const,
   };
 
@@ -82,64 +80,61 @@ export default function Login() {
   };
 
   const focusIn = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.currentTarget.style.borderColor = 'var(--primary-500)';
-    e.currentTarget.style.boxShadow = '0 0 0 3px var(--primary-100)';
+    e.currentTarget.style.outline = '2px solid var(--md-primary)';
+    e.currentTarget.style.outlineOffset = '2px';
   };
   const focusOut = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.currentTarget.style.borderColor = 'var(--border-default)';
-    e.currentTarget.style.boxShadow = 'none';
+    e.currentTarget.style.outline = 'none';
   };
 
-  /* ── 设计指南：按钮 hover 上浮 + active 按压微交互 ── */
+  /* ── MD3 实心按钮：pill 形，hover scale(0.97)，no border/shadow ── */
   const primaryBtnStyle = (loading: boolean, small = false): React.CSSProperties => ({
     width: '100%',
     height: small ? '44px' : '48px',
-    background: loading ? 'var(--primary-300)' : 'var(--primary-500)',
-    color: '#ffffff',
+    background: loading ? 'var(--md-primary)' : 'var(--md-primary)',
+    color: 'var(--md-on-primary)',
     border: 'none',
-    borderRadius: 'var(--radius-md)',
+    borderRadius: 'var(--radius-full)',
     fontSize: small ? '14px' : '15px',
     fontWeight: 700,
     cursor: loading ? 'not-allowed' : 'pointer',
     opacity: loading ? 0.7 : 1,
-    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s ease',
     letterSpacing: '0.02em',
   });
 
   const btnHover = (e: React.MouseEvent<HTMLButtonElement>, loading: boolean) => {
     if (loading) return;
-    e.currentTarget.style.background = 'var(--primary-600)';
-    e.currentTarget.style.transform = 'translateY(-2px)';
-    e.currentTarget.style.boxShadow = '0 4px 12px rgba(255,107,53,0.25)';
+    e.currentTarget.style.background = 'var(--md-primary-dim)';
+    e.currentTarget.style.transform = 'scale(0.97)';
   };
   const btnLeave = (e: React.MouseEvent<HTMLButtonElement>, loading: boolean) => {
     if (loading) return;
-    e.currentTarget.style.background = 'var(--primary-500)';
-    e.currentTarget.style.transform = 'translateY(0)';
-    e.currentTarget.style.boxShadow = 'none';
+    e.currentTarget.style.background = 'var(--md-primary)';
+    e.currentTarget.style.transform = 'scale(1)';
   };
   const btnDown = (e: React.MouseEvent<HTMLButtonElement>, loading: boolean) => {
     if (loading) return;
-    e.currentTarget.style.transform = 'scale(0.98)';
+    e.currentTarget.style.transform = 'scale(0.95)';
   };
   const btnUp = (e: React.MouseEvent<HTMLButtonElement>, loading: boolean) => {
     if (loading) return;
-    e.currentTarget.style.transform = 'translateY(-2px)';
+    e.currentTarget.style.transform = 'scale(0.97)';
   };
 
   return (
     <div
       style={{
         minHeight: '100vh',
-        background: 'var(--bg-base)',
+        background: 'var(--md-background)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif",
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', 'Microsoft YaHei', 'PingFang SC', sans-serif",
         padding: '24px',
       }}
     >
-      {/* 设计指南：背景装饰 — 极淡的渐变圆，营造氛围但不喧宾夺主 */}
+      {/* 背景装饰 — 极淡渐变圆，营造氛围 */}
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
         pointerEvents: 'none', overflow: 'hidden',
@@ -148,23 +143,22 @@ export default function Login() {
           position: 'absolute', top: '-120px', right: '-80px',
           width: '480px', height: '480px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,107,53,0.06) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(249,115,22,0.06) 0%, transparent 70%)',
         }} />
         <div style={{
           position: 'absolute', bottom: '-100px', left: '-60px',
           width: '360px', height: '360px',
           borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(78,205,196,0.04) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(67,96,138,0.04) 0%, transparent 70%)',
         }} />
       </div>
 
-      {/* 语言切换 — 右上角 */}
+      {/* 语言切换 — MD3 pill 形，primary-container 活跃态 */}
       <div style={{
         position: 'fixed', top: '20px', right: '20px',
         display: 'flex', gap: '4px',
-        background: 'var(--bg-card)', padding: '4px',
-        borderRadius: 'var(--radius-md)',
-        boxShadow: 'var(--elevation-1)',
+        background: 'var(--md-surface-container)', padding: '4px',
+        borderRadius: 'var(--radius-full)',
         zIndex: 100,
       }}>
         {(['zh', 'en'] as const).map((l) => (
@@ -172,15 +166,15 @@ export default function Login() {
             key={l}
             onClick={() => setLang(l)}
             style={{
-              padding: '6px 12px',
-              borderRadius: 'var(--radius-sm)',
+              padding: '6px 14px',
+              borderRadius: 'var(--radius-full)',
               border: 'none',
-              background: lang === l ? 'var(--primary-500)' : 'transparent',
-              color: lang === l ? '#fff' : 'var(--text-secondary)',
+              background: lang === l ? 'var(--md-primary-container)' : 'transparent',
+              color: lang === l ? 'var(--md-on-primary-container)' : 'var(--md-on-surface-variant)',
               fontSize: '13px',
               fontWeight: lang === l ? 600 : 400,
               cursor: 'pointer',
-              transition: 'all 0.15s ease',
+              transition: 'background 0.15s ease, color 0.15s ease',
             }}
           >
             {l === 'zh' ? '中文' : 'English'}
@@ -188,10 +182,10 @@ export default function Login() {
         ))}
       </div>
 
-      {/* 登录卡片 — elevation-2（独立卡片，略强于列表卡片） */}
+      {/* 登录卡片 — MD3: no border, surface-container-lowest, elevation-2 */}
       <div
         style={{
-          background: 'var(--bg-card)',
+          background: 'var(--md-surface-container-lowest)',
           borderRadius: 'var(--radius-xl)',
           boxShadow: 'var(--elevation-2)',
           width: '420px',
@@ -201,15 +195,15 @@ export default function Login() {
           overflow: 'hidden',
         }}
       >
-        {/* 设计指南：遮罩/覆盖层 — 线性渐变品牌区 */}
+        {/* 渐变品牌区 — 使用 MD3 primary 变量 */}
         <div style={{
-          background: 'linear-gradient(135deg, var(--primary-500) 0%, var(--primary-400) 60%, var(--primary-300) 100%)',
+          background: 'linear-gradient(135deg, var(--md-primary) 0%, var(--md-primary) 60%, var(--md-primary-container) 100%)',
           padding: '40px 32px 36px',
           textAlign: 'center',
           position: 'relative',
           overflow: 'hidden',
         }}>
-          {/* 装饰 — 营造深度但克制 */}
+          {/* 装饰圆 */}
           <div style={{ position: 'absolute', top: '-40px', right: '-30px', width: '140px', height: '140px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
           <div style={{ position: 'absolute', bottom: '-25px', left: '20px', width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
 
@@ -227,23 +221,22 @@ export default function Login() {
               <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" opacity="0.6"/>
             </svg>
           </div>
-          {/* 设计指南：标题字母间距收紧 2%~3%，行高 110%~120% */}
-          <h1 style={{ color: '#ffffff', fontSize: '22px', fontWeight: 800, margin: 0, letterSpacing: '-0.5px', lineHeight: 1.15 }}>{t('title')}</h1>
+          {/* 标题 — Manrope 字体 */}
+          <h1 style={{ color: '#ffffff', fontSize: '22px', fontWeight: 800, margin: 0, letterSpacing: '-0.5px', lineHeight: 1.15, fontFamily: "'Manrope', sans-serif" }}>{t('title')}</h1>
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', marginTop: '6px', fontWeight: 500 }}>{t('subtitle')}</p>
         </div>
 
-        {/* 设计指南：Tab 切换 — 容器框暗示关联性，被框住的 tab 暗示选中 */}
+        {/* Tab 切换 — MD3: surface-container 背景, surface-container-lowest 活跃 pill, no border/shadow */}
         <div style={{
           display: 'flex', margin: '24px 28px 0',
-          background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', padding: '4px', position: 'relative',
+          background: 'var(--md-surface-container)', borderRadius: 'var(--radius-full)', padding: '4px', position: 'relative',
         }}>
-          {/* 滑块指示器 — 暗示当前选中的 tab */}
+          {/* 滑块指示器 — 无阴影，tonal 区分 */}
           <div style={{
             position: 'absolute', top: '4px', left: '4px',
             width: 'calc(50% - 4px)', height: 'calc(100% - 8px)',
-            borderRadius: 'var(--radius-sm)',
-            background: 'var(--bg-card)',
-            boxShadow: 'var(--elevation-1)',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--md-surface-container-lowest)',
             transform: tab === 'login' ? 'translateX(0)' : 'translateX(100%)',
             transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
           }} />
@@ -255,7 +248,7 @@ export default function Login() {
                 flex: 1, padding: '10px', textAlign: 'center',
                 fontSize: '14px', fontWeight: 600,
                 border: 'none', background: 'transparent', cursor: 'pointer',
-                color: tab === tabKey ? 'var(--primary-500)' : 'var(--text-muted)',
+                color: tab === tabKey ? 'var(--md-primary)' : 'var(--md-outline)',
                 transition: 'color 0.2s', position: 'relative', zIndex: 1,
               }}
             >
@@ -264,7 +257,7 @@ export default function Login() {
           ))}
         </div>
 
-        {/* 表单区域 — 间距 8px 网格 */}
+        {/* 表单区域 */}
         <div style={{ padding: '24px 28px 0' }}>
           {tab === 'login' && (
             <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -272,7 +265,6 @@ export default function Login() {
                 placeholder={t('usernameOrEmail')} required style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
               <input type="password" value={loginPassword} onChange={e => setLoginPassword(e.target.value)}
                 placeholder={t('password')} required style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
-              {/* 设计指南：实心按钮 + hover 上浮 + active 按压反馈 */}
               <button
                 type="submit"
                 disabled={loginLoading}
@@ -312,20 +304,20 @@ export default function Login() {
           )}
         </div>
 
-        {/* 设计指南：语义色 — 蓝色=可点击链接 */}
+        {/* 底部链接 */}
         <div style={{ textAlign: 'center', paddingTop: '20px', paddingBottom: '28px' }}>
           <a href="/"
             style={{
               fontSize: '13px',
-              color: 'var(--text-muted)',
+              color: 'var(--md-outline)',
               textDecoration: 'none',
               display: 'inline-flex',
               alignItems: 'center',
               gap: '4px',
               transition: 'color 0.15s ease',
             }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--primary-500)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--md-primary)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--md-outline)'}
           >
             ← {t('backToHome')}
           </a>

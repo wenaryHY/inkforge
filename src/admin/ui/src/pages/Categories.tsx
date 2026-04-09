@@ -16,21 +16,21 @@ import { IconFolderOpen, IconPlus, IconPencil, IconTrash2, IconCheck } from '../
 import { useToast } from '../contexts/ToastContext';
 import { useI18n } from '../i18n';
 
-/* 样式 */
+/* MD3 样式 */
 const TH = {
   padding: '14px 16px', textAlign: 'left' as const, fontSize: '11.5px',
-  fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' as const,
-  letterSpacing: '0.06em', background: 'var(--bg-subtle)',
-  borderBottom: '2px solid var(--border-light)',
+  fontWeight: 700, color: 'var(--md-on-surface-variant)', textTransform: 'uppercase' as const,
+  letterSpacing: '0.06em', background: 'var(--md-surface-container-low)',
 };
 const TD = {
-  padding: '15px 16px', fontSize: '13.5px', color: 'var(--if-text)',
-  borderBottom: '1px solid var(--border-light)', verticalAlign: 'middle',
+  padding: '15px 16px', fontSize: '13.5px', color: 'var(--md-on-surface)',
+  verticalAlign: 'middle',
 };
 const iconBtn: React.CSSProperties = {
   display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-  width: '32px', height: '32px', borderRadius: '8px',
+  width: '32px', height: '32px', borderRadius: 'var(--radius-full)',
   border: 'none', cursor: 'pointer', transition: 'all 0.15s ease',
+  background: 'var(--md-surface-container-low)',
 };
 
 export default function Categories() {
@@ -142,11 +142,12 @@ export default function Categories() {
         }
       />
 
-      <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-light)', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', background: 'var(--md-surface-container)', borderRadius: 'var(--radius-full)', padding: '4px' }}>
         <button
           style={{
-            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--primary-600)',
-            borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
+            padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-primary-container)',
+            background: 'var(--md-primary-container)', border: 'none', cursor: 'pointer',
+            borderRadius: 'var(--radius-full)', transition: 'all 0.2s ease',
           }}
         >
           {t('activeCategories')}
@@ -154,12 +155,12 @@ export default function Categories() {
         <button
           onClick={() => navigate('/trash?tab=category')}
           style={{
-            padding: '10px 4px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)',
-            borderBottom: '2px solid transparent', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)',
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            borderRadius: 'var(--radius-full)', transition: 'all 0.2s ease',
           }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+          onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container-high)'; e.currentTarget.style.color = 'var(--md-on-surface)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--md-on-surface-variant)'; }}
         >
           {t('deletedItems')}
         </button>
@@ -175,8 +176,8 @@ export default function Categories() {
                     onClick={toggleSelectAll}
                     style={{
                       width: '18px', height: '18px', borderRadius: '4px',
-                      border: `1.5px solid ${selectedIds.size === items.length && items.length > 0 ? 'var(--primary-500)' : 'var(--border-default)'}`,
-                      background: selectedIds.size === items.length && items.length > 0 ? 'var(--primary-500)' : 'transparent',
+                      border: `1.5px solid ${selectedIds.size === items.length && items.length > 0 ? 'var(--md-primary)' : 'var(--md-outline)'}`,
+                      background: selectedIds.size === items.length && items.length > 0 ? 'var(--md-primary)' : 'transparent',
                       cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                       transition: 'all 0.15s ease',
                     }}
@@ -195,17 +196,17 @@ export default function Categories() {
                 const isSelected = selectedIds.has(cat.id);
                 return (
                   <tr key={cat.id}
-                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--primary-50)'; }}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--md-surface-container)'; }}
                     onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
-                    style={{ transition: 'background 0.12s ease', background: isSelected ? 'var(--primary-50)' : 'transparent' }}
+                    style={{ transition: 'background 0.12s ease', background: isSelected ? 'var(--md-primary-container)' : 'transparent' }}
                   >
                     <td style={{ ...TD, textAlign: 'center' }}>
                       <button
                         onClick={() => toggleSelect(cat.id)}
                         style={{
                           width: '18px', height: '18px', borderRadius: '4px',
-                          border: `1.5px solid ${isSelected ? 'var(--primary-500)' : 'var(--border-default)'}`,
-                          background: isSelected ? 'var(--primary-500)' : 'transparent',
+                          border: `1.5px solid ${isSelected ? 'var(--md-primary)' : 'var(--md-outline)'}`,
+                          background: isSelected ? 'var(--md-primary)' : 'transparent',
                           cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           transition: 'all 0.15s ease',
                         }}
@@ -216,26 +217,26 @@ export default function Categories() {
                     <td style={{ ...TD, fontWeight: 600 }}>{esc(cat.name)}</td>
                     <td style={TD}>
                       <span style={{
-                        background: 'var(--bg-subtle)', padding: '3px 8px', borderRadius: '6px',
-                        fontSize: '12px', fontFamily: 'monospace', color: 'var(--text-muted)',
+                        background: 'var(--md-surface-container)', padding: '3px 8px', borderRadius: '6px',
+                        fontSize: '12px', fontFamily: 'monospace', color: 'var(--md-outline)',
                       }}>{esc(cat.slug)}</span>
                     </td>
-                    <td style={{ ...TD, color: 'var(--text-secondary)' }}>{esc(cat.description || '-')}</td>
+                    <td style={{ ...TD, color: 'var(--md-on-surface-variant)' }}>{esc(cat.description || '-')}</td>
                     <td style={TD}>
                       <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', alignItems: 'center' }}>
                         <button
                           onClick={() => openEditor(cat)}
                           title={t('editCategory')}
-                          style={{ ...iconBtn, background: 'transparent', color: '#10b981' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#ecfdf5'; e.currentTarget.style.color = '#059669'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10b981'; }}
+                          style={{ ...iconBtn, color: '#10b981' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container)'; e.currentTarget.style.transform = 'scale(0.95)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'var(--md-surface-container-low)'; e.currentTarget.style.transform = 'scale(1)'; }}
                         ><IconPencil size={16} /></button>
                         <button
                           onClick={() => setDeleteTarget({ id: cat.id, name: cat.name })}
                           title={t('deleteCategory')}
-                          style={{ ...iconBtn, background: 'transparent', color: '#ef4444' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; e.currentTarget.style.color = '#dc2626'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#ef4444'; }}
+                          style={{ ...iconBtn, color: '#ef4444' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container)'; e.currentTarget.style.transform = 'scale(0.95)'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'var(--md-surface-container-low)'; e.currentTarget.style.transform = 'scale(1)'; }}
                         ><IconTrash2 size={16} /></button>
                       </div>
                     </td>
