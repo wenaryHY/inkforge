@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiData, API, paginationPages } from '../lib/api';
+import { apiData, API, API_PREFIX, paginationPages, getToken } from '../lib/api';
 import { esc } from '../lib/utils';
 import type { AdminPost, Category, PaginatedResponse, Tag } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -23,6 +23,13 @@ import { useToast } from '../contexts/ToastContext';
 import { useI18n } from '../i18n';
 
 interface DeleteTarget { id: string; title: string; }
+type ContentTypeTab = 'post' | 'page';
+type PageEditMode = 'editor' | 'custom_html';
+
+/** Render mode choice dialog state */
+interface RenderModeChoice {
+  resolve: (mode: 'editor' | 'custom_html') => void;
+}
 
 /* ═════════════ 样式常量 ═════════════ */
 const T = {
@@ -115,6 +122,15 @@ export default function Posts() {
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
 
+  // 内容类型 Tab：文章 / 页面
+  const [contentTypeTab, setContentTypeTab] = useState<ContentTypeTab>('post');
+  // 页面编辑模式：编辑器 / 自定义HTML上传
+  const [pageEditMode, setPageEditMode] = useState<PageEditMode>('editor');
+  const [customHtmlFile, setCustomHtmlFile] = useState<File | null>(null);
+
+  // 渲染模式选择弹窗（双内容保存时弹出）
+  const [renderModeChoice, setRenderModeChoice] = useState<RenderModeChoice | null>(null);
+
   // 批量操作状态
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [batchDeleteTarget, setBatchDeleteTarget] = useState(false);
@@ -125,7 +141,8 @@ export default function Posts() {
   const fetchPosts = useCallback(async (nextPage: number) => {
     setLoading(true);
     try {
-      const payload = await apiData<PaginatedResponse<AdminPost>>(`/api/admin/posts?page=${nextPage}&page_size=10`);
+      const params = new URLSearchParams({ page: String(nextPage), page_size: '10', content_type: contentTypeTab });
+      const payload = await apiData<PaginatedResponse<AdminPost>>(`${API_PREFIX}/admin/posts?${params.toString()}`);
       setPosts(payload.items || []);
       setTotal(payload.pagination.total || 0);
       setPages(paginationPages(payload));
@@ -134,14 +151,14 @@ export default function Posts() {
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, [toast, contentTypeTab]);
 
   const fetchMeta = useCallback(async () => {
     try {
       const [categoryData, tagData, commentData] = await Promise.all([
-        apiData<Category[]>('/api/categories'),
-        apiData<Tag[]>('/api/tags'),
-        apiData<PaginatedResponse<unknown>>('/api/admin/comments?page=1&page_size=1'),
+        apiData<Category[]>(`${API_PREFIX}/categories`),
+        apiData<Tag[]>(`${API_PREFIX}/tags`),
+        apiData<PaginatedResponse<unknown>>(`${API_PREFIX}/admin/comments?page=1&page_size=1`),
       ]);
       setCategories(categoryData || []);
       setTags(tagData || []);
@@ -154,6 +171,9 @@ export default function Posts() {
   useEffect(() => { void fetchPosts(page); }, [page, fetchPosts]);
   useEffect(() => { void fetchMeta(); }, [fetchMeta]);
 
+  // Tab 切换时重置分页和选择
+  useEffect(() => { setPage(1); setSelectedIds(new Set()); }, [contentTypeTab]);
+
   // 选中状态变化时清空批量选择
   useEffect(() => { setSelectedIds(new Set()); }, [page]);
 
@@ -165,24 +185,106 @@ export default function Posts() {
     setStatus(post?.status === 'published' ? 'published' : 'draft');
     setCategoryId(post?.category_id || '');
     setSelectedTagIds(post?.tags?.map((tag) => tag.id) || []);
+    // 页面模式：根据 page_render_mode 设置初始编辑模式
+    setPageEditMode(post?.page_render_mode === 'custom_html' ? 'custom_html' : 'editor');
+    setCustomHtmlFile(null);
+    setRenderModeChoice(null);
     setEditorOpen(true);
   }
 
-  async function handleSave() {
+  async function handleSave(chosenRenderMode?: 'editor' | 'custom_html') {
     if (!title.trim()) { toast(t('titleRequired'), 'error'); return; }
     setSaving(true);
     try {
-      const body = {
-        title: title.trim(), excerpt: excerpt.trim() || null,
-        content_md: content, status, visibility: 'public',
-        category_id: categoryId || null, tag_ids: selectedTagIds,
-        allow_comment: true, pinned: false,
-      };
-      if (editingPost?.id) {
-        await apiData(`/api/admin/posts/${editingPost.id}`, { method: 'PATCH', body: JSON.stringify(body) });
-      } else {
-        await apiData('/api/admin/posts', { method: 'POST', body: JSON.stringify(body) });
+      // 确定 content_type：编辑时用原有值，新建时用当前 tab
+      const contentType = editingPost?.content_type || contentTypeTab;
+      const isPage = contentType === 'page';
+
+      // 判断是否有自定义HTML内容（已上传的或新上传的）
+      const hasCustomHtml = !!(editingPost?.custom_html_path || customHtmlFile);
+      // 判断是否有MD内容
+      const hasMdContent = !!content.trim();
+
+      // 确定渲染模式
+      let renderMode: 'editor' | 'custom_html' = 'editor';
+      if (isPage) {
+        if (hasCustomHtml && hasMdContent) {
+          // 双方都有内容 → 需要用户选择
+          if (chosenRenderMode) {
+            renderMode = chosenRenderMode;
+          } else {
+            // 弹出选择弹窗
+            setSaving(false);
+            const mode = await new Promise<'editor' | 'custom_html'>((resolve) => {
+              setRenderModeChoice({ resolve });
+            });
+            setRenderModeChoice(null);
+            setSaving(true);
+            renderMode = mode;
+          }
+        } else if (hasCustomHtml) {
+          renderMode = 'custom_html';
+        } else {
+          renderMode = 'editor';
+        }
       }
+
+      const body: Record<string, unknown> = {
+        title: title.trim(),
+        excerpt: excerpt.trim() || null,
+        content_md: content,
+        status,
+        visibility: 'public',
+        category_id: categoryId || null,
+        content_type: contentType,
+        allow_comment: contentType === 'post',
+        pinned: false,
+        page_render_mode: renderMode,
+      };
+
+      // 只有文章才有标签
+      if (contentType === 'post') {
+        body.tag_ids = selectedTagIds;
+      }
+
+      // 编辑时保留现有的 custom_html_path
+      if (editingPost?.custom_html_path && !customHtmlFile) {
+        body.custom_html_path = editingPost.custom_html_path;
+      }
+
+      if (editingPost?.id) {
+        await apiData(`${API_PREFIX}/admin/posts/${editingPost.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      } else {
+        await apiData(`${API_PREFIX}/admin/posts`, { method: 'POST', body: JSON.stringify(body) });
+      }
+
+      // 如果有新上传的自定义HTML文件，执行上传
+      if (isPage && customHtmlFile) {
+        const slug = editingPost?.slug || title.trim().toLowerCase().replace(/[^a-z0-9\u4e00-\u9fff]+/g, '-').replace(/^-|-$/g, '');
+        const fd = new FormData();
+        fd.append('file', customHtmlFile);
+        fd.append('slug', slug);
+        const uploadRes = await fetch(`${API}${API_PREFIX}/admin/pages/upload`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${getToken()}` },
+          body: fd,
+        }).then(r => r.json());
+
+        if (uploadRes.code !== 0) throw new Error(uploadRes.message || '上传失败');
+
+        // 上传成功后 PATCH 回 custom_html_path
+        const postId = editingPost?.id;
+        if (postId) {
+          await apiData(`${API_PREFIX}/admin/posts/${postId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              custom_html_path: uploadRes.data.custom_html_path,
+              page_render_mode: renderMode,
+            }),
+          });
+        }
+      }
+
       toast(t('saveSuccess'), 'success');
       setEditorOpen(false);
       setPage(1);
@@ -197,7 +299,7 @@ export default function Posts() {
   async function confirmDelete() {
     if (!deleteTarget) return;
     try {
-      await apiData(`/api/admin/posts/${deleteTarget.id}`, { method: 'DELETE' });
+      await apiData(`${API_PREFIX}/admin/posts/${deleteTarget.id}`, { method: 'DELETE' });
       toast(t('deleteSuccess'), 'success');
       await fetchPosts(page);
     } catch (error) {
@@ -217,7 +319,7 @@ export default function Posts() {
     try {
       await Promise.all(
         [...selectedIds].map(id =>
-          apiData(`/api/admin/posts/${id}`, { method: 'DELETE' })
+          apiData(`${API_PREFIX}/admin/posts/${id}`, { method: 'DELETE' })
         )
       );
       toast(format('batchDeletePostsSuccess', { count: selectedIds.size }), 'success');
@@ -267,8 +369,49 @@ export default function Posts() {
       <PageHeader
         title={t('postsTitle')}
         subtitle={format('postsCount', { count: total })}
-        actions={<Button onClick={() => openEditor()}><IconPlus /> {t('newPost')}</Button>}
+        actions={<Button onClick={() => openEditor()}><IconPlus /> {contentTypeTab === 'post' ? t('newPost') : t('newPage', '新建页面')}</Button>}
       />
+
+      {/* 内容类型 Tab */}
+      <div style={{
+        display: 'flex', gap: '4px', marginBottom: '16px',
+        background: 'var(--bg-card)', padding: '4px',
+        borderRadius: 'var(--radius-md)',
+        border: '1px solid var(--border-light)',
+      }}>
+        <button
+          onClick={() => setContentTypeTab('post')}
+          style={{
+            padding: '8px 20px', borderRadius: '8px',
+            border: 'none', cursor: 'pointer',
+            fontSize: '13px', fontWeight: contentTypeTab === 'post' ? 600 : 400,
+            background: contentTypeTab === 'post' ? 'var(--primary-500)' : 'transparent',
+            color: contentTypeTab === 'post' ? '#fff' : 'var(--text-secondary)',
+            transition: 'all 0.18s ease',
+            display: 'flex', alignItems: 'center', gap: '6px',
+          }}
+          onMouseEnter={e => { if (contentTypeTab !== 'post') e.currentTarget.style.background = 'var(--bg-subtle)'; }}
+          onMouseLeave={e => { if (contentTypeTab !== 'post') e.currentTarget.style.background = 'transparent'; }}
+        >
+          <IconFileText size={14} /> 文章
+        </button>
+        <button
+          onClick={() => setContentTypeTab('page')}
+          style={{
+            padding: '8px 20px', borderRadius: '8px',
+            border: 'none', cursor: 'pointer',
+            fontSize: '13px', fontWeight: contentTypeTab === 'page' ? 600 : 400,
+            background: contentTypeTab === 'page' ? 'var(--primary-500)' : 'transparent',
+            color: contentTypeTab === 'page' ? '#fff' : 'var(--text-secondary)',
+            transition: 'all 0.18s ease',
+            display: 'flex', alignItems: 'center', gap: '6px',
+          }}
+          onMouseEnter={e => { if (contentTypeTab !== 'page') e.currentTarget.style.background = 'var(--bg-subtle)'; }}
+          onMouseLeave={e => { if (contentTypeTab !== 'page') e.currentTarget.style.background = 'transparent'; }}
+        >
+          <IconPencil size={14} /> 页面
+        </button>
+      </div>
 
       <div style={{ display: 'flex', gap: '24px', borderBottom: '1px solid var(--border-light)', marginBottom: '20px' }}>
         <button
@@ -277,7 +420,7 @@ export default function Posts() {
             borderBottom: '2px solid var(--primary-500)', background: 'none', borderTop: 'none', borderLeft: 'none', borderRight: 'none', cursor: 'pointer'
           }}
         >
-          {t('activePosts')}
+          {contentTypeTab === 'post' ? t('activePosts') : '活跃页面'}
         </button>
         <button
           onClick={() => navigate('/trash?tab=post')}
@@ -404,7 +547,11 @@ export default function Posts() {
                         <button type="button"
                           title={t('viewOnHomepage')}
                           style={T.iconBtn('#10b981')}
-                          onClick={() => window.open(`${API}/posts/${post.slug}`, '_blank')}
+                          onClick={() => {
+                            const isCustomHtmlPage = post.content_type === 'page' && post.page_render_mode === 'custom_html';
+                            const url = isCustomHtmlPage ? `${API}/pages/${post.slug}` : `${API}/posts/${post.slug}`;
+                            window.open(url, '_blank');
+                          }}
                           onMouseEnter={e => { e.currentTarget.style.background = '#d1fae5'; e.currentTarget.style.color = '#059669'; }}
                           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#10b981'; }}
                         ><IconEye size={16} /></button>
@@ -472,27 +619,163 @@ export default function Posts() {
       <Modal
         open={editorOpen}
         onClose={() => setEditorOpen(false)}
-        title={editingPost ? t('editPostTitle') : t('createPostTitle')}
+        title={editingPost ? t('editPostTitle') : (contentTypeTab === 'page' ? '编辑页面' : t('createPostTitle'))}
         width="90%"
         actions={
           <>
             <Button variant="ghost" onClick={() => setEditorOpen(false)}>{t('cancel')}</Button>
-            <Button onClick={handleSave} disabled={saving} loading={saving}>{t('save')}</Button>
+            <Button onClick={() => handleSave()} disabled={saving} loading={saving}>{t('save')}</Button>
           </>
         }
       >
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '24px' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
             <Input label={t('titleLabel')} placeholder={t('titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} />
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>{t('postContentLabel')}</div>
-              <div style={{ height: '420px', display: 'flex', flexDirection: 'column' }}>
-                <MarkdownEditor value={content} onChange={setContent} />
+
+            {/* Markdown 编辑器 or 自定义HTML上传 */}
+            {pageEditMode === 'editor' ? (
+              <>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>{t('postContentLabel')}</div>
+                  <div style={{ height: '420px', display: 'flex', flexDirection: 'column' }}>
+                    <MarkdownEditor value={content} onChange={setContent} />
+                  </div>
+                </div>
+                <Input label={t('excerptLabel')} placeholder={t('excerptPlaceholder')} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} />
+              </>
+            ) : (
+              <div style={{
+                border: '2px dashed var(--border-default)', borderRadius: '14px',
+                padding: '40px 24px', textAlign: 'center',
+              }}>
+                <div style={{
+                  width: '52px', height: '52px', margin: '0 auto 14px',
+                  borderRadius: '14px', background: 'var(--bg-subtle)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <IconPlus size={24} style={{ color: 'var(--text-muted)' }} />
+                </div>
+                <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--if-text)', marginBottom: '6px' }}>
+                  上传自定义 HTML
+                </p>
+                <p style={{ fontSize: '12.5px', color: 'var(--text-muted)', marginBottom: '6px' }}>
+                  上传单个 HTML 文件或包含 HTML/CSS/JS 的 ZIP 包
+                </p>
+                <p style={{ fontSize: '11.5px', color: 'var(--text-muted)', marginBottom: '16px', lineHeight: 1.5 }}>
+                  ZIP 包中必须包含 index.html，发布后前台将通过 /pages/&#123;slug&#125; 访问
+                </p>
+                <input
+                  type="file"
+                  accept=".html,.htm,.zip"
+                  style={{ display: 'none' }}
+                  id="custom-html-upload"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) setCustomHtmlFile(f);
+                  }}
+                />
+                <Button
+                  variant="ghost"
+                  onClick={() => document.getElementById('custom-html-upload')?.click()}
+                >
+                  选择文件
+                </Button>
+                {customHtmlFile && (
+                  <div style={{
+                    marginTop: '12px', padding: '8px 14px', borderRadius: '8px',
+                    background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.2)',
+                    fontSize: '12.5px', color: '#16a34a', fontWeight: 600,
+                  }}>
+                    已选择: {customHtmlFile.name} ({Math.ceil(customHtmlFile.size / 1024)} KB)
+                  </div>
+                )}
+                {editingPost?.custom_html_path && !customHtmlFile && (
+                  <div style={{
+                    marginTop: '12px', padding: '8px 14px', borderRadius: '8px',
+                    background: 'var(--bg-subtle)', border: '1px solid var(--border-light)',
+                    fontSize: '12px', color: 'var(--text-secondary)',
+                  }}>
+                    当前自定义页面路径: {editingPost.custom_html_path}
+                    <br />重新上传将覆盖现有文件
+                  </div>
+                )}
               </div>
-            </div>
-            <Input label={t('excerptLabel')} placeholder={t('excerptPlaceholder')} value={excerpt} onChange={(e) => setExcerpt(e.target.value)} />
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            {/* 页面显示内容切换 — 仅页面类型显示 */}
+            {(editingPost?.content_type === 'page' || (!editingPost && contentTypeTab === 'page')) && (
+              <div style={{
+                background: 'linear-gradient(180deg, rgba(59,130,246,0.06), rgba(59,130,246,0.02))',
+                borderRadius: '14px', padding: '20px',
+                border: '1px solid rgba(59,130,246,0.15)',
+              }}>
+                <div style={{
+                  fontSize: '11.5px', fontWeight: 800, color: '#3b82f6',
+                  textTransform: 'uppercase', letterSpacing: '0.07em',
+                  marginBottom: '14px',
+                  paddingBottom: '12px', borderBottom: '1px solid rgba(59,130,246,0.12)',
+                  display: 'flex', alignItems: 'center', gap: '6px',
+                }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <line x1="9" y1="3" x2="9" y2="21"/>
+                  </svg>
+                  页面显示内容
+                </div>
+                <div style={{
+                  display: 'flex', gap: '4px',
+                  background: 'var(--bg-subtle)', padding: '4px', borderRadius: '8px',
+                  border: '1px solid var(--border-light)',
+                }}>
+                  <button
+                    onClick={() => setPageEditMode('editor')}
+                    style={{
+                      flex: 1, padding: '7px 12px', borderRadius: '6px',
+                      border: 'none', cursor: 'pointer',
+                      fontSize: '12.5px', fontWeight: pageEditMode === 'editor' ? 600 : 400,
+                      background: pageEditMode === 'editor' ? 'var(--bg-card)' : 'transparent',
+                      color: pageEditMode === 'editor' ? 'var(--if-text)' : 'var(--text-muted)',
+                      boxShadow: pageEditMode === 'editor' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    Markdown 编辑器
+                  </button>
+                  <button
+                    onClick={() => setPageEditMode('custom_html')}
+                    style={{
+                      flex: 1, padding: '7px 12px', borderRadius: '6px',
+                      border: 'none', cursor: 'pointer',
+                      fontSize: '12.5px', fontWeight: pageEditMode === 'custom_html' ? 600 : 400,
+                      background: pageEditMode === 'custom_html' ? 'var(--bg-card)' : 'transparent',
+                      color: pageEditMode === 'custom_html' ? 'var(--if-text)' : 'var(--text-muted)',
+                      boxShadow: pageEditMode === 'custom_html' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    自定义 HTML
+                  </button>
+                </div>
+                {/* 当前渲染模式提示 */}
+                {editingPost?.page_render_mode && (
+                  <div style={{
+                    marginTop: '10px', padding: '6px 10px', borderRadius: '6px',
+                    background: editingPost.page_render_mode === 'custom_html'
+                      ? 'rgba(59,130,246,0.06)' : 'rgba(249,115,22,0.06)',
+                    border: `1px solid ${editingPost.page_render_mode === 'custom_html' ? 'rgba(59,130,246,0.15)' : 'rgba(249,115,22,0.15)'}`,
+                    fontSize: '11.5px', color: 'var(--text-secondary)',
+                    display: 'flex', alignItems: 'center', gap: '5px',
+                  }}>
+                    <span style={{
+                      width: '6px', height: '6px', borderRadius: '50%',
+                      background: editingPost.page_render_mode === 'custom_html' ? '#3b82f6' : 'var(--primary-500)',
+                    }} />
+                    当前前台显示：{editingPost.page_render_mode === 'custom_html' ? '自定义 HTML' : 'Markdown 编辑器'}
+                  </div>
+                )}
+              </div>
+            )}
             <div style={{
               background: 'linear-gradient(180deg, rgba(240,241,243,0.9), #f0f1f3)',
               borderRadius: '14px', padding: '20px',
@@ -509,6 +792,7 @@ export default function Posts() {
                 <option value="published">{t('publishedOption')}</option>
               </Select>
             </div>
+            {/* 分类和标签 — 页面只显示分类，文章显示分类+标签 */}
             <div style={{
               background: 'linear-gradient(180deg, rgba(240,241,243,0.9), #f0f1f3)',
               borderRadius: '14px', padding: '20px',
@@ -524,23 +808,93 @@ export default function Posts() {
                 <option value="">{t('noCategory')}</option>
                 {categories.map((cat) => (<option key={cat.id} value={cat.id}>{esc(cat.name)}</option>))}
               </Select>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginTop: '14px' }}>
-                {tags.length > 0 ? tags.map((tag) => (
-                  <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)} style={{
-                    border: selectedTagIds.includes(tag.id)
-                      ? `1.5px solid var(--primary-500)`
-                      : '1.5px solid var(--border-default)',
-                    padding: '6px 14px', borderRadius: '999px',
-                    fontSize: '12px', fontWeight: 600, cursor: 'pointer',
-                    background: selectedTagIds.includes(tag.id) ? 'var(--primary-500)' : 'var(--bg-card)',
-                    color: selectedTagIds.includes(tag.id) ? '#fff' : 'var(--text-secondary)',
-                    boxShadow: selectedTagIds.includes(tag.id) ? '0 2px 10px rgba(255,107,53,0.25)' : undefined,
-                    transition: 'all 0.18s ease',
-                  }}>{esc(tag.name)}</button>
-                )) : <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('noTagsAvailable')}</span>}
-              </div>
+              {/* 只有文章模式才显示标签 */}
+              {(editingPost?.content_type === 'post' || (!editingPost && contentTypeTab === 'post')) && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginTop: '14px' }}>
+                  {tags.length > 0 ? tags.map((tag) => (
+                    <button key={tag.id} type="button" onClick={() => toggleTag(tag.id)} style={{
+                      border: selectedTagIds.includes(tag.id)
+                        ? `1.5px solid var(--primary-500)`
+                        : '1.5px solid var(--border-default)',
+                      padding: '6px 14px', borderRadius: '999px',
+                      fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                      background: selectedTagIds.includes(tag.id) ? 'var(--primary-500)' : 'var(--bg-card)',
+                      color: selectedTagIds.includes(tag.id) ? '#fff' : 'var(--text-secondary)',
+                      boxShadow: selectedTagIds.includes(tag.id) ? '0 2px 10px rgba(255,107,53,0.25)' : undefined,
+                      transition: 'all 0.18s ease',
+                    }}>{esc(tag.name)}</button>
+                  )) : <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{t('noTagsAvailable')}</span>}
+                </div>
+              )}
             </div>
           </div>
+        </div>
+      </Modal>
+
+      {/* 渲染模式选择弹窗 —— 页面同时有 MD 内容和自定义 HTML 时弹出 */}
+      <Modal
+        open={!!renderModeChoice}
+        onClose={() => { renderModeChoice?.resolve('editor'); }}
+        title="选择页面显示方式"
+        width="480px"
+        actions={
+          <>
+            <Button variant="ghost" onClick={() => { renderModeChoice?.resolve('editor'); }}>取消</Button>
+          </>
+        }
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+            此页面同时有 Markdown 内容和自定义 HTML 内容，请选择前台访问者看到的版本：
+          </p>
+          <button
+            onClick={() => { renderModeChoice?.resolve('editor'); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              padding: '16px 18px', borderRadius: '12px',
+              border: '1.5px solid var(--border-default)',
+              background: 'var(--bg-card)', cursor: 'pointer',
+              transition: 'all 0.15s ease', textAlign: 'left',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary-500)'; e.currentTarget.style.background = 'var(--primary-50)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
+          >
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(249,115,22,0.1)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <IconFileText size={20} style={{ color: 'var(--primary-500)' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--if-text)' }}>使用 Markdown 编辑器</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>通过主题模板渲染，样式统一</div>
+            </div>
+          </button>
+          <button
+            onClick={() => { renderModeChoice?.resolve('custom_html'); }}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '12px',
+              padding: '16px 18px', borderRadius: '12px',
+              border: '1.5px solid var(--border-default)',
+              background: 'var(--bg-card)', cursor: 'pointer',
+              transition: 'all 0.15s ease', textAlign: 'left',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--primary-500)'; e.currentTarget.style.background = 'var(--primary-50)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)'; e.currentTarget.style.background = 'var(--bg-card)'; }}
+          >
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '10px',
+              background: 'rgba(59,130,246,0.1)', display: 'flex',
+              alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <IconPencil size={20} style={{ color: '#3b82f6' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--if-text)' }}>使用自定义 HTML</div>
+              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>完全自定义，独立于主题样式</div>
+            </div>
+          </button>
         </div>
       </Modal>
 

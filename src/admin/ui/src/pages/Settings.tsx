@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   apiData,
   API,
+  API_PREFIX,
   createBackup,
   deleteBackup as deleteBackupApi,
   getToken,
@@ -91,8 +92,8 @@ export default function Settings() {
   const load = useCallback(async () => {
     try {
       const [settingItems, themeItems] = await Promise.all([
-        apiData<Setting[]>('/api/admin/settings'),
-        apiData<ThemeSummary[]>('/api/admin/themes'),
+        apiData<Setting[]>(`${API_PREFIX}/admin/settings`),
+        apiData<ThemeSummary[]>(`${API_PREFIX}/admin/themes`),
       ]);
       setThemes(themeItems);
       const nextKv: Record<string, string> = {};
@@ -110,7 +111,7 @@ export default function Settings() {
     try {
       setDownloadingBackupId(backupId);
       const token = getToken();
-      const res = await fetch(`${API}/api/admin/backup/${backupId}`, {
+      const res = await fetch(`${API}${API_PREFIX}/admin/backup/${backupId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) {
@@ -190,8 +191,8 @@ export default function Settings() {
         ['comment_max_length', kv.comment_max_length || '2000'],
         ['theme_default_mode', kv.theme_default_mode || 'system'],
       ];
-      for (const [key, value] of items) await apiData('/api/admin/settings', { method: 'PATCH', body: JSON.stringify({ key, value }) });
-      if (kv.active_theme) await apiData(`/api/admin/themes/${kv.active_theme}/activate`, { method: 'POST' });
+      for (const [key, value] of items) await apiData(`${API_PREFIX}/admin/settings`, { method: 'PATCH', body: JSON.stringify({ key, value }) });
+      if (kv.active_theme) await apiData(`${API_PREFIX}/admin/themes/${kv.active_theme}/activate`, { method: 'POST' });
       toast('设置已保存', 'success');
       await load();
     } catch (error) { toast(error instanceof Error ? error.message : '保存设置失败', 'error'); }
@@ -205,7 +206,7 @@ export default function Settings() {
     setLang(newLang);
     if (user) {
       try {
-        await apiData('/api/me/profile', {
+        await apiData(`${API_PREFIX}/me/profile`, {
           method: 'PATCH',
           body: JSON.stringify({
             display_name: user.display_name,
@@ -409,7 +410,7 @@ export default function Settings() {
                 const formData = new FormData();
                 formData.append('file', file);
                 const token = getToken();
-                fetch(`${API}/api/admin/backup/restore`, {
+                fetch(`${API}${API_PREFIX}/admin/backup/restore`, {
                   method: 'POST',
                   headers: { Authorization: `Bearer ${token}` },
                   body: formData,

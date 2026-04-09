@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { Button } from '../components/Button';
-import { apiData } from '../lib/api';
+import { apiData, API_PREFIX } from '../lib/api';
 import type { ThemeConfigField, ThemeSummary } from '../types';
 import { useToast } from '../contexts/ToastContext';
 import { useI18n } from '../i18n';
@@ -32,7 +32,7 @@ export default function Themes() {
   const loadThemes = useCallback(async () => {
     try {
       setLoading(true);
-      const items = await apiData<ThemeSummary[]>('/api/admin/themes');
+      const items = await apiData<ThemeSummary[]>(`${API_PREFIX}/admin/themes`);
       setThemes(items);
     } catch (error) {
       toast(error instanceof Error ? error.message : t('loadThemesFailed'), 'error');
@@ -50,7 +50,7 @@ export default function Themes() {
   async function handleActivate(slug: string) {
     try {
       setActivatingSlug(slug);
-      await apiData(`/api/admin/themes/${slug}/activate`, { method: 'POST' });
+      await apiData(`${API_PREFIX}/admin/themes/${slug}/activate`, { method: 'POST' });
       toast(t('switchThemeSuccess'), 'success');
       await loadThemes();
     } catch (error) {

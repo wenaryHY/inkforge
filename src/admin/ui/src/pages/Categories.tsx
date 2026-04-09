@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiData } from '../lib/api';
+import { apiData, API_PREFIX } from '../lib/api';
 import { esc } from '../lib/utils';
 import type { Category } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -53,7 +53,7 @@ export default function Categories() {
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);
-    try { setItems(await apiData<Category[]>('/api/categories')); }
+    try { setItems(await apiData<Category[]>(`${API_PREFIX}/categories`)); }
     catch (error) { toast(error instanceof Error ? error.message : t('loadCategoriesFailed'), 'error'); }
     finally { setLoading(false); }
   }, [toast]);
@@ -75,8 +75,8 @@ export default function Categories() {
     setSaving(true);
     try {
       const body = { name: name.trim(), slug: slug || undefined, description: desc || null };
-      if (editing?.id) await apiData(`/api/admin/categories/${editing.id}`, { method: 'PATCH', body: JSON.stringify(body) });
-      else await apiData('/api/admin/categories', { method: 'POST', body: JSON.stringify(body) });
+      if (editing?.id) await apiData(`${API_PREFIX}/admin/categories/${editing.id}`, { method: 'PATCH', body: JSON.stringify(body) });
+      else await apiData(`${API_PREFIX}/admin/categories`, { method: 'POST', body: JSON.stringify(body) });
       toast(t('saveSuccess'), 'success'); closeEditor(); await fetchCategories();
     } catch (error) { toast(error instanceof Error ? error.message : t('saveFailed'), 'error'); }
     finally { setSaving(false); }
@@ -85,7 +85,7 @@ export default function Categories() {
   async function confirmDelete() {
     if (!deleteTarget) return;
     try {
-      await apiData(`/api/admin/categories/${deleteTarget.id}`, { method: 'DELETE' });
+      await apiData(`${API_PREFIX}/admin/categories/${deleteTarget.id}`, { method: 'DELETE' });
       toast(t('deleteSuccess'), 'success');
       setSelectedIds(prev => { const next = new Set(prev); next.delete(deleteTarget.id); return next; });
       await fetchCategories();
@@ -100,7 +100,7 @@ export default function Categories() {
   async function confirmBatchDelete() {
     try {
       await Promise.all([...selectedIds].map(id =>
-        apiData(`/api/admin/categories/${id}`, { method: 'DELETE' })
+        apiData(`${API_PREFIX}/admin/categories/${id}`, { method: 'DELETE' })
       ));
       toast(format('batchDeleteCategoriesSuccess', { count: selectedIds.size }), 'success');
       setSelectedIds(new Set());

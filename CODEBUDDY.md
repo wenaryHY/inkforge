@@ -1,7 +1,7 @@
 # InkForge - CodeBuddy Code 协作规范
 
 > 本文档定义 AI 参与 InkForge 项目开发时必须遵循的规范。
-> 每次会话开始前必须读取本文档以及 memories/SKILL.md 和 memories/PROJECT_STATUS.md。
+> 每次会话开始前必须读取本文档以及 memories/SKILL.md、memories/PROJECT_STATUS.md 和 memories/RUNTIME_RULES.md。
 
 ---
 
@@ -12,6 +12,7 @@
 1. **本文档** (CODEBUDDY.md) - 项目特定规范
 2. **memories/SKILL.md** - 通用开发技能规范
 3. **memories/PROJECT_STATUS.md** - 项目现状与路线图
+4. **memories/RUNTIME_RULES.md** - 运行期提问、风险分级与执行协议
 
 ---
 
@@ -96,6 +97,8 @@ repository.rs → 数据库操作
 - 未来扩展性考虑
 
 **结束审问的唯一标准**：AI 明确表示"已无任何假设"
+
+**运行期执行细则**：每次会话同时遵循 `memories/RUNTIME_RULES.md` 中的提问触发器、风险分级与状态同步要求。
 
 ### 3.3 代码质量标准
 

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiData, paginationPages } from '../lib/api';
+import { apiData, paginationPages, API_PREFIX } from '../lib/api';
 import { esc } from '../lib/utils';
 import type { Comment, PaginatedResponse } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -80,7 +80,7 @@ export default function CommentsV2() {
         });
 
         const payload = await apiData<PaginatedResponse<Comment>>(
-          `/api/admin/comments?${params.toString()}`
+          `${API_PREFIX}/admin/comments?${params.toString()}`
         );
         setItems(payload.items || []);
         setTotal(payload.pagination.total || 0);
@@ -104,7 +104,7 @@ export default function CommentsV2() {
 
   async function handleApprove(id: string) {
     try {
-      await apiData(`/api/admin/comments/${id}/approve`, { method: 'POST' });
+      await apiData(`${API_PREFIX}/admin/comments/${id}/approve`, { method: 'POST' });
       toast(t('approvedSuccess'), 'success');
       await fetchComments(page);
     } catch (error) {
@@ -114,7 +114,7 @@ export default function CommentsV2() {
 
   async function handleReject(id: string) {
     try {
-      await apiData(`/api/admin/comments/${id}/reject`, { method: 'POST' });
+      await apiData(`${API_PREFIX}/admin/comments/${id}/reject`, { method: 'POST' });
       toast(t('rejectedSuccess'), 'success');
       await fetchComments(page);
     } catch (error) {
@@ -125,7 +125,7 @@ export default function CommentsV2() {
   async function confirmDelete() {
     if (!deleteTarget) return;
     try {
-      await apiData(`/api/admin/comments/${deleteTarget.id}`, { method: 'DELETE' });
+      await apiData(`${API_PREFIX}/admin/comments/${deleteTarget.id}`, { method: 'DELETE' });
       toast(t('movedToTrashSuccess'), 'success');
       setSelectedIds((prev) => {
         const next = new Set(prev);
@@ -152,7 +152,7 @@ export default function CommentsV2() {
 
     try {
       await Promise.all(
-        pendingIds.map((id) => apiData(`/api/admin/comments/${id}/approve`, { method: 'POST' }))
+        pendingIds.map((id) => apiData(`${API_PREFIX}/admin/comments/${id}/approve`, { method: 'POST' }))
       );
       toast(format('batchApproveSuccess', { count: pendingIds.length }), 'success');
       setSelectedIds(new Set());
@@ -174,7 +174,7 @@ export default function CommentsV2() {
 
     try {
       await Promise.all(
-        pendingIds.map((id) => apiData(`/api/admin/comments/${id}/reject`, { method: 'POST' }))
+        pendingIds.map((id) => apiData(`${API_PREFIX}/admin/comments/${id}/reject`, { method: 'POST' }))
       );
       toast(format('batchRejectSuccess', { count: pendingIds.length }), 'success');
       setSelectedIds(new Set());
@@ -344,7 +344,7 @@ export default function CommentsV2() {
                       <td style={{ ...TD, maxWidth: '160px' }}>
                         {cmt.post_title ? (
                           <a
-                            href={`/posts/${cmt.post_slug || ''}`}
+                            href={`/${cmt.post_content_type === 'page' ? 'pages' : 'posts'}/${cmt.post_slug || ''}`}
                             target="_blank"
                             rel="noreferrer"
                             title={cmt.post_title}
@@ -440,7 +440,7 @@ export default function CommentsV2() {
         onClose={() => setBatchDeleteOpen(false)}
         onConfirm={async () => {
           try {
-            await Promise.all([...selectedIds].map((id) => apiData(`/api/admin/comments/${id}`, { method: 'DELETE' })));
+            await Promise.all([...selectedIds].map((id) => apiData(`${API_PREFIX}/admin/comments/${id}`, { method: 'DELETE' })));
             toast(`${t('movedToTrashSuccess')} ${selectedIds.size} ${t('items')}`, 'success');
             setSelectedIds(new Set());
             await fetchComments(page);

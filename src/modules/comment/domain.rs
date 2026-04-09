@@ -29,4 +29,5 @@ pub struct AdminCommentItem {
     pub updated_at: String,
     pub post_title: String,
     pub post_slug: String,
+    pub post_content_type: String,
 }

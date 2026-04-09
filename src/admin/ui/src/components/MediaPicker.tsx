@@ -3,7 +3,7 @@
  * 通过 window.inkforgeInsertMarkdown(text) 插入到当前编辑器
  */
 import { useCallback, useEffect, useState } from 'react';
-import { apiData } from '../lib/api';
+import { apiData, API_PREFIX } from '../lib/api';
 import type { MediaItem, PaginatedResponse } from '../types';
 import { Modal } from './Modal';
 import { IconSearch, IconFolder } from './Icons';
@@ -32,7 +32,7 @@ export function MediaPicker({ open, onClose }: Props) {
       if (k) query.set('kind', k);
       if (cat) query.set('category', cat);
       if (kw.trim()) query.set('keyword', kw.trim());
-      const r = await apiData<PaginatedResponse<MediaItem>>(`/api/admin/media?${query.toString()}`);
+      const r = await apiData<PaginatedResponse<MediaItem>>(`${API_PREFIX}/admin/media?${query.toString()}`);
       setItems(r.items || []);
       setPages(paginationPages(r));
     } finally {

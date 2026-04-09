@@ -35,7 +35,8 @@ pub async fn generate_sitemap_xml(state: &AppState) -> Result<String, String> {
     ));
 
     for post in posts {
-        let post_url = format!("{site_url}/posts/{}", post.slug);
+        let path_prefix = if post.content_type == "page" { "pages" } else { "posts" };
+        let post_url = format!("{site_url}/{path_prefix}/{}", post.slug);
         let lastmod = post
             .updated_at
             .split('T')

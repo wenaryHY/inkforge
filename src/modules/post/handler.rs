@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
 use axum::{
-    extract::{Path, Query, State},
+    extract::{Multipart, Path, Query, State},
+    response::IntoResponse,
     Json,
 };
 
 use crate::{
     shared::{
         auth::AdminUser,
-        error::AppResult,
+        error::{AppError, AppResult},
         response::{ApiResponse, PaginatedResponse},
     },
     state::AppState,
@@ -96,4 +97,101 @@ pub async fn delete_post(
     Ok(Json(ApiResponse::success(
         service::delete_post(state, &id).await?,
     )))
+}
+
+/// POST /api/v1/admin/pages/upload — Upload custom HTML/ZIP for a page
+pub async fn upload_custom_page(
+    State(state): State<Arc<AppState>>,
+    _admin: AdminUser,
+    mut multipart: Multipart,
+) -> AppResult<Json<ApiResponse<serde_json::Value>>> {
+    let mut slug: Option<String> = None;
+    let mut file_data: Option<(String, Option<String>, Vec<u8>)> = None;
+
+    while let Some(field) = multipart.next_field().await.map_err(|e| {
+        AppError::Multipart(format!("multipart field error: {}", e))
+    })? {
+        match field.name() {
+            Some("slug") => {
+                slug = Some(field.text().await.map_err(|e| {
+                    AppError::BadRequest(format!("failed to read slug: {}", e))
+                })?);
+            }
+            Some("file") => {
+                let filename = field.file_name().unwrap_or("untitled").to_string();
+                let ct = field.content_type().map(|s| s.to_string());
+                let data = field.bytes().await.map_err(|e| {
+                    AppError::BadRequest(format!("failed to read file: {}", e))
+                })?.to_vec();
+                file_data = Some((filename, ct, data));
+            }
+            _ => {}
+        }
+    }
+
+    let slug = slug
+        .filter(|s| !s.trim().is_empty())
+        .ok_or(AppError::BadRequest("slug field is required".into()))?;
+    let (filename, ct, data) = file_data
+        .ok_or(AppError::BadRequest("file field is required".into()))?;
+
+    let path = service::upload_custom_page(state, &slug, filename, ct, data).await?;
+    Ok(Json(ApiResponse::success(serde_json::json!({
+        "custom_html_path": path
+    }))))
+}
+
+/// GET /pages/:slug — Render page based on page_render_mode
+/// - "custom_html" → serve custom HTML/ZIP directly
+/// - "editor" → render via theme template (like a post, but using page template)
+pub async fn render_custom_page(
+    State(state): State<Arc<AppState>>,
+    Path(slug): Path<String>,
+) -> AppResult<axum::response::Response> {
+    let page = super::repository::get_page_by_slug(&state.pool, &slug)
+        .await?
+        .ok_or(AppError::NotFound)?;
+
+    if page.content_type != "page" || page.status != "published" || page.visibility != "public" {
+        return Err(AppError::NotFound);
+    }
+
+    match page.page_render_mode.as_str() {
+        "custom_html" => {
+            // Serve custom HTML file
+            let custom_html_path = page.custom_html_path.ok_or(AppError::NotFound)?;
+            let index_path = state.upload_dir.join(&custom_html_path).join("index.html");
+            if !index_path.exists() {
+                return Err(AppError::NotFound);
+            }
+            let content = tokio::fs::read_to_string(&index_path).await?;
+            Ok(axum::response::Html(content).into_response())
+        }
+        _ => {
+            // "editor" mode — render via theme template using content_html
+            let env = crate::modules::theme::engine::build_template_engine(state.clone()).await?;
+            let tmpl = env
+                .get_template("post.html")
+                .map_err(|e| AppError::Anyhow(anyhow::anyhow!("template error: {}", e)))?;
+
+            let site_title = crate::modules::setting::repository::get_string(
+                &state.pool, "site_title", "InkForge",
+            )
+            .await
+            .unwrap_or_default();
+
+            let html = tmpl
+                .render(minijinja::context! {
+                    site_title => site_title,
+                    post => minijinja::context! {
+                        title => page.title,
+                        content_html => page.content_html,
+                        slug => slug,
+                    },
+                })
+                .map_err(|e| AppError::Anyhow(anyhow::anyhow!("render error: {}", e)))?;
+
+            Ok(axum::response::Html(html).into_response())
+        }
+    }
 }

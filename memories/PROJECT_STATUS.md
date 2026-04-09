@@ -1,6 +1,6 @@
 # InkForge 项目现状（唯一真相来源）
 
-**最后更新**: 2026-04-08
+**最后更新**: 2026-04-09
 **版本**: v0.3.0
 **状态**: 开发中
 
@@ -132,7 +132,7 @@ inkforge/
 
 ## 长期路线图
 
-参见 [v0.3-architecture-vision.md](./v0.3-architecture-vision.md)
+参见 [v0.3-architecture-vision.md](./v0.3-architecture-vision.md) 与 [executable-roadmap.md](./executable-roadmap.md)
 
 核心方向：**Headless Rust Core + Web-Based Theme Engine + Tauri 桌面应用**
 
@@ -147,6 +147,11 @@ inkforge/
 2. 主题生态与市场
 3. 性能优化
 4. 安全加固
+
+### 治理与执行文档（2026-04-09）
+- `executable-roadmap.md` - 面向落地的分阶段执行路线图
+- `phase-task-checklist.md` - 各 Phase 的可勾选任务清单
+- `RUNTIME_RULES.md` - 每次会话的提问、风险分级与执行协议
 
 ---
 

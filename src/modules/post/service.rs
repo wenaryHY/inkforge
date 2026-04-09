@@ -48,6 +48,24 @@ fn normalize_visibility(value: Option<&str>) -> AppResult<String> {
     Ok(visibility.to_string())
 }
 
+fn normalize_content_type(value: Option<&str>) -> AppResult<String> {
+    let ct = value.unwrap_or("post");
+    if !matches!(ct, "post" | "page") {
+        return Err(AppError::BadRequest("invalid content_type, must be 'post' or 'page'".into()));
+    }
+    Ok(ct.to_string())
+}
+
+fn normalize_page_render_mode(value: Option<&str>, is_page: bool) -> String {
+    if !is_page {
+        return "editor".to_string();
+    }
+    match value.unwrap_or("editor") {
+        "custom_html" => "custom_html".to_string(),
+        _ => "editor".to_string(),
+    }
+}
+
 async fn attach_admin_post(state: &AppState, post: AdminPost) -> AppResult<AdminPostResponse> {
     let tags = repository::list_post_tags(&state.pool, &post.id).await?;
     Ok(AdminPostResponse { post, tags })
@@ -113,6 +131,7 @@ pub async fn list_admin_posts(
         &state.pool,
         query.status.as_deref(),
         query.keyword.as_deref(),
+        query.content_type.as_deref(),
         page_size,
         offset,
     )
@@ -121,6 +140,7 @@ pub async fn list_admin_posts(
         &state.pool,
         query.status.as_deref(),
         query.keyword.as_deref(),
+        query.content_type.as_deref(),
     )
     .await?;
 
@@ -148,6 +168,17 @@ pub async fn create_post(
         return Err(AppError::BadRequest("title is required".into()));
     }
 
+    let content_type = normalize_content_type(body.content_type.as_deref())?;
+    let is_page = content_type == "page";
+    let page_render_mode = normalize_page_render_mode(body.page_render_mode.as_deref(), is_page);
+
+    // Both content_md and custom_html_path are preserved independently.
+    // page_render_mode determines which one is used for front-end rendering.
+    let content_md = body
+        .content_md
+        .filter(|s| !s.is_empty())
+        .unwrap_or_default();
+
     let slug = body
         .slug
         .filter(|value| !value.trim().is_empty())
@@ -158,26 +189,32 @@ pub async fn create_post(
 
     let status = normalize_status(body.status.as_deref())?;
     let visibility = normalize_visibility(body.visibility.as_deref())?;
-    let content_html = markdown_to_html(&body.content_md);
+    let content_html = markdown_to_html(&content_md);
     let id = repository::insert_post(
         &state.pool,
         &auth.id,
         body.title.trim(),
         &slug,
         body.excerpt.as_deref(),
-        &body.content_md,
+        &content_md,
         &content_html,
         body.cover_media_id.as_deref(),
         &status,
         &visibility,
         body.category_id.as_deref(),
-        body.allow_comment.unwrap_or(true),
+        body.allow_comment.unwrap_or(content_type == "post"),
         body.pinned.unwrap_or(false),
+        &content_type,
+        body.custom_html_path.as_deref(),
+        &page_render_mode,
     )
     .await?;
 
-    if let Some(tag_ids) = body.tag_ids {
-        repository::replace_tags(&state.pool, &id, &tag_ids).await?;
+    // Pages don't have tags
+    if content_type == "post" {
+        if let Some(tag_ids) = body.tag_ids {
+            repository::replace_tags(&state.pool, &id, &tag_ids).await?;
+        }
     }
 
     get_admin_post(state, &id).await
@@ -192,11 +229,35 @@ pub async fn update_post(
     let current = repository::get_admin_post(&state.pool, id)
         .await?
         .ok_or(AppError::NotFound)?;
+
+    let content_type = normalize_content_type(
+        body.content_type
+            .as_deref()
+            .or(Some(&current.content_type)),
+    )?;
+
+    let is_page = content_type == "page";
+    let page_render_mode = normalize_page_render_mode(
+        body.page_render_mode
+            .as_deref()
+            .or(Some(&current.page_render_mode)),
+        is_page,
+    );
+
+    let custom_html_path = body
+        .custom_html_path
+        .as_deref()
+        .or(current.custom_html_path.as_deref());
+
+    // Both sides are preserved independently.
+    // If content_md is provided, update it (and re-render content_html).
+    // If not provided, keep existing values.
+    let content_md = body.content_md.unwrap_or(current.content_md.clone());
+    let content_html = markdown_to_html(&content_md);
+
     let title = body.title.unwrap_or(current.title.clone());
     let slug = body.slug.unwrap_or(current.slug.clone());
     let excerpt = body.excerpt.or(current.excerpt.clone());
-    let content_md = body.content_md.unwrap_or(current.content_md.clone());
-    let content_html = markdown_to_html(&content_md);
     let cover_media_id = body.cover_media_id.or(current.cover_media_id.clone());
     let status = normalize_status(body.status.as_deref().or(Some(&current.status)))?;
     let visibility =
@@ -223,12 +284,18 @@ pub async fn update_post(
         category_id.as_deref(),
         allow_comment,
         pinned,
+        &content_type,
+        custom_html_path,
+        &page_render_mode,
         current.published_at.as_deref(),
     )
     .await?;
 
-    if let Some(tag_ids) = body.tag_ids {
-        repository::replace_tags(&state.pool, id, &tag_ids).await?;
+    // Pages don't have tags; only update tags for posts
+    if content_type == "post" {
+        if let Some(tag_ids) = body.tag_ids {
+            repository::replace_tags(&state.pool, id, &tag_ids).await?;
+        }
     }
 
     get_admin_post(state, id).await
@@ -237,4 +304,86 @@ pub async fn update_post(
 pub async fn delete_post(state: Arc<AppState>, id: &str) -> AppResult<serde_json::Value> {
     repository::delete_post(&state.pool, id).await?;
     Ok(serde_json::json!({ "deleted": true }))
+}
+
+/// Upload custom HTML/ZIP for a page, return relative path for custom_html_path
+pub async fn upload_custom_page(
+    state: Arc<AppState>,
+    slug: &str,
+    filename: String,
+    content_type: Option<String>,
+    data: Vec<u8>,
+) -> AppResult<String> {
+    let page_dir = state.upload_dir.join("pages").join(slug);
+    if page_dir.exists() {
+        tokio::fs::remove_dir_all(&page_dir).await?;
+    }
+    tokio::fs::create_dir_all(&page_dir).await?;
+
+    let ct = content_type.as_deref().unwrap_or("");
+    if ct.contains("zip") || filename.ends_with(".zip") {
+        // Extract ZIP — run in spawn_blocking to avoid non-Send futures
+        let page_dir_clone = page_dir.clone();
+        let data_clone = data.clone();
+        tokio::task::spawn_blocking(move || -> AppResult<()> {
+            extract_zip(&data_clone, &page_dir_clone)
+        })
+        .await
+        .map_err(|e| AppError::Anyhow(anyhow::anyhow!("spawn_blocking error: {}", e)))??;
+    } else if filename.ends_with(".html") || filename.ends_with(".htm") {
+        // Single HTML file → save as index.html
+        let outpath = page_dir.join("index.html");
+        tokio::fs::write(&outpath, &data).await?;
+    } else {
+        tokio::fs::remove_dir_all(&page_dir).await.ok();
+        return Err(AppError::BadRequest(
+            "Only .html, .htm, or .zip files are accepted".into(),
+        ));
+    }
+
+    // Verify index.html exists
+    let index_path = page_dir.join("index.html");
+    if !index_path.exists() {
+        let _ = tokio::fs::remove_dir_all(&page_dir).await;
+        return Err(AppError::BadRequest(
+            "ZIP must contain an index.html file".into(),
+        ));
+    }
+
+    // Return relative path from upload_dir
+    let relative = format!("pages/{}", slug);
+    Ok(relative)
+}
+
+/// Synchronous ZIP extraction (called from spawn_blocking)
+fn extract_zip(data: &[u8], dest_dir: &std::path::Path) -> AppResult<()> {
+    let cursor = std::io::Cursor::new(data);
+    let mut archive = zip::ZipArchive::new(cursor)
+        .map_err(|e| AppError::BadRequest(format!("Invalid zip file: {}", e)))?;
+
+    for i in 0..archive.len() {
+        let mut file = archive
+            .by_index(i)
+            .map_err(|e| AppError::BadRequest(format!("Failed to read zip entry: {}", e)))?;
+        let name = file.name().to_string();
+
+        // Security: prevent path traversal
+        if name.contains("..") || name.starts_with('/') || name.contains('\\') {
+            continue;
+        }
+
+        let outpath = dest_dir.join(&name);
+        if file.is_dir() {
+            std::fs::create_dir_all(&outpath).map_err(|e| AppError::Io(e))?;
+        } else {
+            if let Some(p) = outpath.parent() {
+                std::fs::create_dir_all(p).map_err(|e| AppError::Io(e))?;
+            }
+            let mut buf = Vec::new();
+            std::io::Read::read_to_end(&mut file, &mut buf)
+                .map_err(|e| AppError::Io(e))?;
+            std::fs::write(&outpath, &buf).map_err(|e| AppError::Io(e))?;
+        }
+    }
+    Ok(())
 }
