@@ -14,8 +14,9 @@
 - 🔍 **全文搜索** — FTS5 增量索引
 - 🗑️ **统一回收站** — 文章/分类/标签/评论统一管理，定时清理
 - 📡 **SEO** — Sitemap、Robots.txt、OpenGraph / JSON-LD 元数据
-- 💾 **备份与恢复** — 本地备份，一键还原
+- 💾 **备份与恢复** — 本地备份，一键还原，定时备份调度
 - 🌐 **API 版本化** — `/api/v1/` 规范路由，旧路由兼容降级
+- 🌍 **i18n** — 管理后台多语言支持
 
 ## 🛠️ 技术栈
 
@@ -26,17 +27,20 @@
 | 数据库 | SQLite (sqlx 0.7) |
 | 模板引擎 | minijinja |
 | 认证 | JWT + Argon2 |
-| 管理后台 | React 18 + TypeScript + Vite |
-| Markdown 编辑器 | Tiptap + tiptap-markdown |
 | Markdown 渲染 | pulldown-cmark |
 | 全文搜索 | SQLite FTS5 |
+| 管理后台 | React 19 + TypeScript + Vite 8 |
+| UI 样式 | Tailwind CSS v4 + Orange 玻璃拟态风格 |
+| Markdown 编辑器 | Tiptap + tiptap-markdown |
+| 源码编辑器 | CodeMirror 6 |
 
 ## 🚀 快速开始
 
 ### 环境要求
 
 - Rust 1.75+（`rustup default stable`）
-- Node.js 18+（仅修改后台 UI 时需要）
+- Node.js 18+（修改后台 UI 时需要）
+- cargo-watch（开发模式热重载，`cargo install cargo-watch`）
 
 ### 编译运行
 
@@ -45,6 +49,9 @@
 git clone https://github.com/wenaryHY/inkforge.git
 cd inkforge
 
+# 安装前端依赖
+cd src/admin/ui && npm install && cd ../../..
+
 # 编译（首次需要下载依赖，约 2~5 分钟）
 cargo build --release
 
@@ -52,22 +59,45 @@ cargo build --release
 cargo run --release
 ```
 
-### 访问地址
+### 开发模式
 
-- 前台首页：`http://localhost:3000`
-- 管理后台：`http://localhost:3000/admin`
-- 默认端口：3000（可在 `config/default.toml` 中修改）
-
-### 修改后台 UI
+项目已配置 `concurrently` + `cargo-watch`，一条命令同时启动前后端：
 
 ```bash
-cd src/admin/ui
-npm install
-npm run dev       # 开发模式（热重载）
-npm run build     # 构建生产版本
+npm run dev:watch
 ```
 
-构建完成后，重新 `cargo build --release` 即可。
+| 服务 | 地址 | 说明 |
+|---|---|---|
+| 管理后台 (Vite) | `http://localhost:5173/admin/` | 前端开发服务器，热重载 |
+| 前台 & API (Axum) | `http://localhost:3000` | 后端服务，自动重编译 |
+
+Vite 开发服务器已配置代理，`/api`、`/ws`、`/uploads` 请求自动转发到 3000 端口的后端。
+
+### 生产部署
+
+```bash
+# 构建前端
+cd src/admin/ui && npm run build && cd ../../..
+
+# 构建后端（前端产物会被嵌入）
+cargo build --release
+```
+
+产物为单个二进制文件 `inkforge`，直接运行即可。
+
+### Docker 部署
+
+```bash
+docker build -t inkforge .
+docker run -d \
+  -p 3000:3000 \
+  -v inkforge-uploads:/app/uploads \
+  -v inkforge-backups:/app/backups \
+  inkforge
+```
+
+Docker 镜像内置 [Litestream](https://litestream.io/)，配置 S3 环境变量后可自动同步 SQLite 数据库到对象存储。
 
 ---
 
@@ -77,10 +107,10 @@ npm run build     # 构建生产版本
 inkforge/
 ├── src/
 │   ├── main.rs              # 程序入口
-│   ├── bootstrap/           # 路由组装
-│   ├── config.rs            # 配置加载（TOML + 环境变量）
-│   ├── db.rs                # 数据库连接与迁移
-│   ├── error.rs             # 统一错误处理
+│   ├── state.rs             # 全局状态
+│   ├── ws.rs                # WebSocket 处理
+│   ├── bootstrap/           # 配置加载 & 路由组装
+│   ├── infra/               # 基础设施（错误处理等）
 │   ├── modules/
 │   │   ├── auth/            # 认证（handler → service → repository）
 │   │   ├── post/            # 文章/页面
@@ -89,38 +119,55 @@ inkforge/
 │   │   ├── tag/             # 标签
 │   │   ├── media/           # 媒体管理
 │   │   ├── theme/           # 主题渲染
-│   │   ├── seo/             # SEO（sitemap, meta）
+│   │   ├── seo/             # SEO（sitemap, robots, meta）
 │   │   ├── setting/         # 系统设置
-│   │   └── backup/          # 备份恢复
+│   │   ├── backup/          # 备份恢复（含定时调度）
+│   │   ├── trash/           # 统一回收站（含过期清理调度）
+│   │   └── user/            # 用户管理
 │   └── admin/ui/            # React 管理后台源码
-├── migrations/              # SQL 迁移文件
+├── migrations/              # SQLite 迁移文件（001–010）
 ├── config/                  # TOML 配置文件
-├── themes/                  # 前台主题（minijinja 模板）
-└── uploads/                 # 上传文件目录
+├── themes/default/          # 默认前台主题（minijinja 模板）
+├── uploads/                 # 上传文件目录
+└── docker/                  # Docker 入口脚本
 ```
 
 ---
 
 ## ⚙️ 配置说明
 
-通过 `config/default.toml` 或环境变量覆盖：
+通过 `config/default.toml` 或环境变量覆盖（前缀 `INKFORGE__`，双下划线分隔层级）：
 
 ```toml
 [server]
 host = "0.0.0.0"
 port = 3000
 
-[jwt]
-secret = "your-secret-key-change-in-production"
-
 [database]
-url = "sqlite://data.db"
+url = "sqlite://inkforge.db?mode=rwc"
+
+[auth]
+secret = "inkforge-change-me-in-production"
+expires_in_seconds = 604800
+
+[storage]
+upload_dir = "uploads"
+max_upload_size_mb = 10
+
+[theme]
+theme_dir = "themes"
+active_theme_fallback = "default"
+default_mode = "system"
+
+[paths]
+admin_dist_dir = "src/admin/dist"
 ```
 
 ```bash
-# 环境变量覆盖
+# 环境变量覆盖示例
 export INKFORGE__SERVER__PORT=8080
-export INKFORGE__JWT__SECRET=your-secret-key
+export INKFORGE__AUTH__SECRET=your-production-secret
+export INKFORGE__DATABASE__URL=sqlite:///data/inkforge.db?mode=rwc
 ```
 
 ---
@@ -128,17 +175,19 @@ export INKFORGE__JWT__SECRET=your-secret-key
 ## 🔮 路线图
 
 - [x] WebSocket 实时评论通知
-- [x] React 管理后台
+- [x] React 管理后台（Orange 玻璃拟态风格）
 - [x] 页面双内容模型（Markdown + 自定义 HTML）
 - [x] Tiptap 编辑器
 - [x] 全文搜索（FTS5）
 - [x] 统一回收站
 - [x] SEO（Sitemap + OpenGraph + JSON-LD）
-- [x] 备份与恢复
+- [x] 备份与恢复（含定时调度）
+- [x] API 版本化
+- [x] Docker 部署 + Litestream
 - [ ] 安装向导
 - [ ] 插件系统（WASM）
 - [ ] S3/OSS 对象存储适配
-- [ ] 多语言支持
+- [ ] 多语言前台支持
 - [ ] Tauri 桌面客户端
 
 ---
