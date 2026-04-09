@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import type { EditorView } from '@codemirror/view';
 import { CodeMirrorPanel } from './CodeMirrorPanel';
-import { MilkdownPanel } from './MilkdownPanel';
+import { TiptapPanel } from './TiptapPanel';
 import { MediaPicker } from '../MediaPicker';
 
 type Mode = 'source' | 'wysiwyg';
@@ -20,12 +20,10 @@ export function MarkdownEditor({ value, onChange }: Props) {
     onChange(newValue);
   }, [onChange]);
 
-  // 注册 CodeMirror 实例，供外部（如媒体上传）注入内容
+  // Register CodeMirror instance for external content injection
   const handleEditorReady = useCallback((view: any) => {
     if (view && 'state' in view) {
-      // CodeMirror EditorView
       cmViewRef.current = view;
-      // 注册全局插入函数
       (window as any).inkforgeInsertMarkdown = (text: string) => {
         if (!cmViewRef.current) return;
         const v = cmViewRef.current;
@@ -35,11 +33,6 @@ export function MarkdownEditor({ value, onChange }: Props) {
       };
     }
   }, []);
-
-  // Milkdown 切换源码时也更新 CodeMirror 实例
-  const handleMilkdownChange = useCallback((newValue: string) => {
-    onChange(newValue);
-  }, [onChange]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '0' }}>
@@ -64,7 +57,7 @@ export function MarkdownEditor({ value, onChange }: Props) {
           可视化
         </TabButton>
 
-        {/* 媒体库按钮 */}
+        {/* Media library button */}
         <button
           type="button"
           onClick={() => setMediaOpen(true)}
@@ -106,7 +99,7 @@ export function MarkdownEditor({ value, onChange }: Props) {
         {mode === 'source' ? (
           <CodeMirrorPanel value={value} onChange={handleChange} onEditorReady={handleEditorReady} />
         ) : (
-          <MilkdownPanel value={value} onChange={handleMilkdownChange} onEditorReady={handleEditorReady} />
+          <TiptapPanel value={value} onChange={handleChange} />
         )}
       </div>
 

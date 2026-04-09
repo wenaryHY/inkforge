@@ -3,7 +3,7 @@ use std::sync::Arc;
 use axum::{
     extract::{Multipart, Path, State},
     http::{header, HeaderMap, StatusCode},
-    response::{Html, IntoResponse, Response},
+    response::{Html, IntoResponse, Redirect, Response},
     Json,
 };
 
@@ -241,6 +241,21 @@ pub async fn render_post(
         authenticated = auth.is_some(),
         "rendering public post"
     );
+
+    // ── Check if this is a page with custom_html render mode → redirect to /pages/:slug ──
+    let page_info = crate::modules::post::repository::get_page_by_slug(&state.pool, &slug).await?;
+    if let Some(ref p) = page_info {
+        if p.content_type == "page" && p.page_render_mode == "custom_html" {
+            tracing::info!(
+                module = "theme",
+                event = "redirect_page_to_custom",
+                slug = %slug,
+                "redirecting /posts/{} to /pages/{}", slug, slug
+            );
+            return Ok(Redirect::temporary(&format!("/pages/{}", slug)).into_response());
+        }
+    }
+
     let post =
         crate::modules::post::repository::get_public_post_by_slug(&state.pool, &slug).await?;
     if post.is_none() {
@@ -270,7 +285,7 @@ pub async fn render_post(
         .await
         .unwrap_or_default();
 
-    let seo_meta = crate::modules::seo::meta::build_post_meta(
+    let seo_meta = crate::modules::seo::meta::build_post_meta_with_content_type(
         &site_title,
         &site_url,
         &p.title,
@@ -279,6 +294,7 @@ pub async fn render_post(
         &p.content_html,
         &site_kw,
         "",
+        &p.content_type,
     );
 
     let comments = crate::modules::comment::repository::list_approved_for_post(&state.pool, &p.id)

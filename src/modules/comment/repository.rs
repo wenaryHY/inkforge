@@ -60,7 +60,8 @@ pub async fn list_by_user(
             c.created_at,
             c.updated_at,
             p.title AS post_title,
-            p.slug AS post_slug
+            p.slug AS post_slug,
+            p.content_type AS post_content_type
          FROM comments c
          JOIN users u ON u.id = c.user_id
          JOIN posts p ON p.id = c.post_id
@@ -140,7 +141,8 @@ pub async fn list_admin(
                 c.created_at,
                 c.updated_at,
                 p.title AS post_title,
-                p.slug AS post_slug
+                p.slug AS post_slug,
+                p.content_type AS post_content_type
              FROM comments c
              JOIN users u ON u.id = c.user_id
              JOIN posts p ON p.id = c.post_id
@@ -167,7 +169,8 @@ pub async fn list_admin(
                 c.created_at,
                 c.updated_at,
                 p.title AS post_title,
-                p.slug AS post_slug
+                p.slug AS post_slug,
+                p.content_type AS post_content_type
              FROM comments c
              JOIN users u ON u.id = c.user_id
              JOIN posts p ON p.id = c.post_id

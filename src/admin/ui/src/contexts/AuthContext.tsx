@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { apiData, getToken, removeToken, setToken } from '../lib/api';
+import { apiData, API_PREFIX, getToken, removeToken, setToken } from '../lib/api';
 import type { CurrentUser } from '../types';
 import { useI18n } from '../i18n';
 import { saveLanguage } from '../i18n/detector';
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
       return;
     }
-    const me = await apiData<CurrentUser>('/api/me');
+    const me = await apiData<CurrentUser>(`${API_PREFIX}/me`);
     setUser(me);
     // 同步用户语言偏好
     if (me.language) {
@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (loginValue: string, password: string) => {
     try {
-      const payload = await apiData<{ token: string }>('/api/auth/login', {
+      const payload = await apiData<{ token: string }>(`${API_PREFIX}/auth/login`, {
         method: 'POST',
         body: JSON.stringify({ login: loginValue, password }),
       });
@@ -83,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(async (data: RegisterData) => {
     try {
-      const payload = await apiData<{ token: string }>('/api/auth/register', {
+      const payload = await apiData<{ token: string }>(`${API_PREFIX}/auth/register`, {
         method: 'POST',
         body: JSON.stringify(data),
       });
@@ -99,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(async () => {
     try {
       if (getToken()) {
-        await apiData('/api/auth/logout', { method: 'POST' });
+        await apiData(`${API_PREFIX}/auth/logout`, { method: 'POST' });
       }
     } catch {
       // ignore server-side logout failure and always clear local auth

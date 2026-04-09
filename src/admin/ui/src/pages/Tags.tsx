@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { apiData } from '../lib/api';
+import { apiData, API_PREFIX } from '../lib/api';
 import { esc } from '../lib/utils';
 import type { Tag } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -64,7 +64,7 @@ export default function Tags() {
 
   const fetchTags = useCallback(async () => {
     setLoading(true);
-    try { setItems(await apiData<Tag[]>('/api/tags')); }
+    try { setItems(await apiData<Tag[]>(`${API_PREFIX}/tags`)); }
     catch (error) { toast(error instanceof Error ? error.message : t('loadTagsFailed'), 'error'); }
     finally { setLoading(false); }
   }, [toast]);
@@ -101,14 +101,14 @@ export default function Tags() {
     try {
       if (editingTag) {
         // 编辑模式
-        await apiData(`/api/admin/tags/${editingTag.id}`, {
+        await apiData(`${API_PREFIX}/admin/tags/${editingTag.id}`, {
           method: 'PATCH',
           body: JSON.stringify({ name: name.trim(), slug: slug || undefined })
         });
         toast(t('updateSuccess'), 'success');
       } else {
         // 新建模式
-        await apiData('/api/admin/tags', {
+        await apiData(`${API_PREFIX}/admin/tags`, {
           method: 'POST',
           body: JSON.stringify({ name: name.trim(), slug: slug || undefined })
         });
@@ -126,7 +126,7 @@ export default function Tags() {
   async function confirmDelete() {
     if (!deleteTag) return;
     try {
-      await apiData(`/api/admin/tags/${deleteTag.id}`, { method: 'DELETE' });
+      await apiData(`${API_PREFIX}/admin/tags/${deleteTag.id}`, { method: 'DELETE' });
       toast(t('deleteSuccess'), 'success');
       setSelectedIds(prev => { const next = new Set(prev); next.delete(deleteTag.id); return next; });
       await fetchTags();
@@ -146,7 +146,7 @@ export default function Tags() {
     try {
       await Promise.all(
         [...selectedIds].map(id =>
-          apiData(`/api/admin/tags/${id}`, { method: 'DELETE' })
+          apiData(`${API_PREFIX}/admin/tags/${id}`, { method: 'DELETE' })
         )
       );
       toast(format('tagsDeletedSuccess', { count: selectedIds.size }), 'success');

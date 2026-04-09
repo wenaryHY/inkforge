@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { apiData, paginationPages } from '../lib/api';
+import { apiData, paginationPages, API_PREFIX } from '../lib/api';
 import { esc } from '../lib/utils';
 import type { Comment, PaginatedResponse } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -47,7 +47,7 @@ export default function Comments() {
   const fetchComments = useCallback(async (nextPage: number) => {
     setLoading(true);
     try {
-      const payload = await apiData<PaginatedResponse<Comment>>(`/api/admin/comments?page=${nextPage}&page_size=15`);
+      const payload = await apiData<PaginatedResponse<Comment>>(`${API_PREFIX}/admin/comments?page=${nextPage}&page_size=15`);
       setItems(payload.items || []); setTotal(payload.pagination.total || 0); setPages(paginationPages(payload));
     } catch (error) { toast(error instanceof Error ? error.message : '加载评论失败', 'error'); }
     finally { setLoading(false); }
@@ -57,19 +57,19 @@ export default function Comments() {
   useEffect(() => { setSelectedIds(new Set()); }, [page]);
 
   async function handleApprove(id: string) {
-    try { await apiData(`/api/admin/comments/${id}/approve`, { method: 'POST' }); toast('已通过', 'success'); await fetchComments(page); }
+    try { await apiData(`${API_PREFIX}/admin/comments/${id}/approve`, { method: 'POST' }); toast('已通过', 'success'); await fetchComments(page); }
     catch (error) { toast(error instanceof Error ? error.message : '操作失败', 'error'); }
   }
 
   async function handleReject(id: string) {
-    try { await apiData(`/api/admin/comments/${id}/reject`, { method: 'POST' }); toast('已拒绝', 'success'); await fetchComments(page); }
+    try { await apiData(`${API_PREFIX}/admin/comments/${id}/reject`, { method: 'POST' }); toast('已拒绝', 'success'); await fetchComments(page); }
     catch (error) { toast(error instanceof Error ? error.message : '操作失败', 'error'); }
   }
 
   async function confirmDelete() {
     if (!deleteTarget) return;
     try {
-      await apiData(`/api/admin/comments/${deleteTarget.id}`, { method: 'DELETE' });
+      await apiData(`${API_PREFIX}/admin/comments/${deleteTarget.id}`, { method: 'DELETE' });
       toast('删除成功', 'success');
       setSelectedIds(prev => { const next = new Set(prev); next.delete(deleteTarget.id); return next; });
       await fetchComments(page);
@@ -85,7 +85,7 @@ export default function Comments() {
     });
     if (pendingIds.length === 0) { toast('没有待审核的评论', 'info'); return; }
     try {
-      await Promise.all(pendingIds.map(id => apiData(`/api/admin/comments/${id}/approve`, { method: 'POST' })));
+      await Promise.all(pendingIds.map(id => apiData(`${API_PREFIX}/admin/comments/${id}/approve`, { method: 'POST' })));
       toast(`成功通过 ${pendingIds.length} 条评论`, 'success');
       setSelectedIds(new Set());
       await fetchComments(page);
@@ -99,7 +99,7 @@ export default function Comments() {
     });
     if (pendingIds.length === 0) { toast('没有待审核的评论', 'info'); return; }
     try {
-      await Promise.all(pendingIds.map(id => apiData(`/api/admin/comments/${id}/reject`, { method: 'POST' })));
+      await Promise.all(pendingIds.map(id => apiData(`${API_PREFIX}/admin/comments/${id}/reject`, { method: 'POST' })));
       toast(`成功拒绝 ${pendingIds.length} 条评论`, 'success');
       setSelectedIds(new Set());
       await fetchComments(page);
@@ -113,7 +113,7 @@ export default function Comments() {
   async function confirmBatchDelete() {
     try {
       await Promise.all([...selectedIds].map(id =>
-        apiData(`/api/admin/comments/${id}`, { method: 'DELETE' })
+        apiData(`${API_PREFIX}/admin/comments/${id}`, { method: 'DELETE' })
       ));
       toast(`成功删除 ${selectedIds.size} 条评论`, 'success');
       setSelectedIds(new Set());
@@ -230,7 +230,7 @@ export default function Comments() {
                     </td>
                     <td style={{ ...TD, maxWidth: '160px' }}>
                       {cmt.post_title ? (
-                        <a href={`/posts/${cmt.post_slug || ''}`} target="_blank" rel="noreferrer"
+                        <a href={`/${cmt.post_content_type === 'page' ? 'pages' : 'posts'}/${cmt.post_slug || ''}`} target="_blank" rel="noreferrer"
                           title={cmt.post_title} style={{
                             fontSize: '12px', color: 'var(--primary-500)', textDecoration: 'none',
                             display: 'inline-flex', alignItems: 'center', gap: '4px',

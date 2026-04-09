@@ -1,4 +1,4 @@
-use sqlx::SqlitePool;
+use sqlx::{FromRow, SqlitePool};
 use uuid::Uuid;
 
 use super::domain::{
@@ -17,6 +17,7 @@ pub async fn list_recent_public_posts(
             p.title,
             p.slug,
             p.excerpt,
+            p.content_type,
             p.published_at,
             p.created_at,
             p.updated_at,
@@ -36,7 +37,7 @@ pub async fn list_recent_public_posts(
 
 pub async fn list_for_sitemap(pool: &SqlitePool) -> Result<Vec<SitemapItem>, sqlx::Error> {
     sqlx::query_as::<_, SitemapItem>(
-        "SELECT slug, published_at, updated_at
+        "SELECT slug, content_type, published_at, updated_at
          FROM posts
          WHERE status = 'published' AND visibility = 'public' AND deleted_at IS NULL
          ORDER BY published_at DESC",
@@ -66,6 +67,7 @@ pub async fn search_posts(
                 p.title,
                 p.slug,
                 p.excerpt,
+                p.content_type,
                 p.published_at,
                 p.created_at,
                 p.updated_at,
@@ -97,6 +99,7 @@ pub async fn search_posts(
                 p.title,
                 p.slug,
                 p.excerpt,
+                p.content_type,
                 p.published_at,
                 p.created_at,
                 p.updated_at,
@@ -135,6 +138,7 @@ pub async fn list_public_posts(
                 p.title,
                 p.slug,
                 p.excerpt,
+                p.content_type,
                 p.published_at,
                 p.created_at,
                 p.updated_at,
@@ -163,6 +167,7 @@ pub async fn list_public_posts(
                 p.title,
                 p.slug,
                 p.excerpt,
+                p.content_type,
                 p.published_at,
                 p.created_at,
                 p.updated_at,
@@ -221,6 +226,7 @@ pub async fn get_public_post_by_slug(
             p.slug,
             p.excerpt,
             p.content_html,
+            p.content_type,
             p.allow_comment,
             p.published_at,
             p.created_at,
@@ -268,11 +274,30 @@ pub async fn list_admin_posts(
     pool: &SqlitePool,
     status: Option<&str>,
     keyword: Option<&str>,
+    content_type: Option<&str>,
     limit: i64,
     offset: i64,
 ) -> Result<Vec<AdminPost>, sqlx::Error> {
-    match (status, keyword) {
-        (Some(status), Some(keyword)) => {
+    match (status, keyword, content_type) {
+        (Some(status), Some(keyword), Some(ct)) => {
+            let like = format!("%{}%", keyword);
+            sqlx::query_as::<_, AdminPost>(
+                "SELECT * FROM posts
+                 WHERE deleted_at IS NULL AND status = ? AND content_type = ? AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)
+                 ORDER BY pinned DESC, published_at DESC, created_at DESC
+                 LIMIT ? OFFSET ?",
+            )
+            .bind(status)
+            .bind(ct)
+            .bind(&like)
+            .bind(&like)
+            .bind(&like)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await
+        }
+        (Some(status), Some(keyword), None) => {
             let like = format!("%{}%", keyword);
             sqlx::query_as::<_, AdminPost>(
                 "SELECT * FROM posts
@@ -289,7 +314,21 @@ pub async fn list_admin_posts(
             .fetch_all(pool)
             .await
         }
-        (Some(status), None) => {
+        (Some(status), None, Some(ct)) => {
+            sqlx::query_as::<_, AdminPost>(
+                "SELECT * FROM posts
+                 WHERE deleted_at IS NULL AND status = ? AND content_type = ?
+                 ORDER BY pinned DESC, published_at DESC, created_at DESC
+                 LIMIT ? OFFSET ?",
+            )
+            .bind(status)
+            .bind(ct)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await
+        }
+        (Some(status), None, None) => {
             sqlx::query_as::<_, AdminPost>(
                 "SELECT * FROM posts
                  WHERE deleted_at IS NULL AND status = ?
@@ -302,7 +341,24 @@ pub async fn list_admin_posts(
             .fetch_all(pool)
             .await
         }
-        (None, Some(keyword)) => {
+        (None, Some(keyword), Some(ct)) => {
+            let like = format!("%{}%", keyword);
+            sqlx::query_as::<_, AdminPost>(
+                "SELECT * FROM posts
+                 WHERE deleted_at IS NULL AND content_type = ? AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)
+                 ORDER BY pinned DESC, published_at DESC, created_at DESC
+                 LIMIT ? OFFSET ?",
+            )
+            .bind(ct)
+            .bind(&like)
+            .bind(&like)
+            .bind(&like)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await
+        }
+        (None, Some(keyword), None) => {
             let like = format!("%{}%", keyword);
             sqlx::query_as::<_, AdminPost>(
                 "SELECT * FROM posts
@@ -318,7 +374,20 @@ pub async fn list_admin_posts(
             .fetch_all(pool)
             .await
         }
-        (None, None) => {
+        (None, None, Some(ct)) => {
+            sqlx::query_as::<_, AdminPost>(
+                "SELECT * FROM posts
+                 WHERE deleted_at IS NULL AND content_type = ?
+                 ORDER BY pinned DESC, published_at DESC, created_at DESC
+                 LIMIT ? OFFSET ?",
+            )
+            .bind(ct)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(pool)
+            .await
+        }
+        (None, None, None) => {
             sqlx::query_as::<_, AdminPost>(
                 "SELECT * FROM posts
                  WHERE deleted_at IS NULL
@@ -337,9 +406,23 @@ pub async fn count_admin_posts(
     pool: &SqlitePool,
     status: Option<&str>,
     keyword: Option<&str>,
+    content_type: Option<&str>,
 ) -> Result<i64, sqlx::Error> {
-    match (status, keyword) {
-        (Some(status), Some(keyword)) => {
+    match (status, keyword, content_type) {
+        (Some(status), Some(keyword), Some(ct)) => {
+            let like = format!("%{}%", keyword);
+            sqlx::query_scalar(
+                "SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND status = ? AND content_type = ? AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)",
+            )
+            .bind(status)
+            .bind(ct)
+            .bind(&like)
+            .bind(&like)
+            .bind(&like)
+            .fetch_one(pool)
+            .await
+        }
+        (Some(status), Some(keyword), None) => {
             let like = format!("%{}%", keyword);
             sqlx::query_scalar(
                 "SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND status = ? AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)",
@@ -351,13 +434,32 @@ pub async fn count_admin_posts(
             .fetch_one(pool)
             .await
         }
-        (Some(status), None) => {
+        (Some(status), None, Some(ct)) => {
+            sqlx::query_scalar("SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND status = ? AND content_type = ?")
+                .bind(status)
+                .bind(ct)
+                .fetch_one(pool)
+                .await
+        }
+        (Some(status), None, None) => {
             sqlx::query_scalar("SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND status = ?")
                 .bind(status)
                 .fetch_one(pool)
                 .await
         }
-        (None, Some(keyword)) => {
+        (None, Some(keyword), Some(ct)) => {
+            let like = format!("%{}%", keyword);
+            sqlx::query_scalar(
+                "SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND content_type = ? AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)",
+            )
+            .bind(ct)
+            .bind(&like)
+            .bind(&like)
+            .bind(&like)
+            .fetch_one(pool)
+            .await
+        }
+        (None, Some(keyword), None) => {
             let like = format!("%{}%", keyword);
             sqlx::query_scalar(
                 "SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND (title LIKE ? OR excerpt LIKE ? OR content_md LIKE ?)",
@@ -368,7 +470,13 @@ pub async fn count_admin_posts(
             .fetch_one(pool)
             .await
         }
-        (None, None) => {
+        (None, None, Some(ct)) => {
+            sqlx::query_scalar("SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL AND content_type = ?")
+                .bind(ct)
+                .fetch_one(pool)
+                .await
+        }
+        (None, None, None) => {
             sqlx::query_scalar("SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL")
                 .fetch_one(pool)
                 .await
@@ -416,6 +524,9 @@ pub async fn insert_post(
     category_id: Option<&str>,
     allow_comment: bool,
     pinned: bool,
+    content_type: &str,
+    custom_html_path: Option<&str>,
+    page_render_mode: &str,
 ) -> Result<String, sqlx::Error> {
     let id = Uuid::new_v4().to_string();
     let published_at = if status == "published" {
@@ -427,8 +538,9 @@ pub async fn insert_post(
     sqlx::query(
         "INSERT INTO posts (
             id, author_id, title, slug, excerpt, content_md, content_html, cover_media_id,
-            status, visibility, category_id, allow_comment, pinned, published_at
-         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            status, visibility, category_id, allow_comment, pinned, content_type,
+            custom_html_path, page_render_mode, published_at
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&id)
     .bind(author_id)
@@ -443,6 +555,9 @@ pub async fn insert_post(
     .bind(category_id)
     .bind(if allow_comment { 1 } else { 0 })
     .bind(if pinned { 1 } else { 0 })
+    .bind(content_type)
+    .bind(custom_html_path)
+    .bind(page_render_mode)
     .bind(published_at)
     .execute(pool)
     .await?;
@@ -464,6 +579,9 @@ pub async fn update_post(
     category_id: Option<&str>,
     allow_comment: bool,
     pinned: bool,
+    content_type: &str,
+    custom_html_path: Option<&str>,
+    page_render_mode: &str,
     current_published_at: Option<&str>,
 ) -> Result<(), sqlx::Error> {
     // 只在从非 published 状态首次发布时才设置 published_at；
@@ -481,7 +599,8 @@ pub async fn update_post(
     sqlx::query(
         "UPDATE posts
          SET title = ?, slug = ?, excerpt = ?, content_md = ?, content_html = ?, cover_media_id = ?,
-             status = ?, visibility = ?, category_id = ?, allow_comment = ?, pinned = ?, published_at = ?,
+             status = ?, visibility = ?, category_id = ?, allow_comment = ?, pinned = ?,
+             content_type = ?, custom_html_path = ?, page_render_mode = ?, published_at = ?,
              updated_at = datetime('now')
          WHERE id = ?",
     )
@@ -496,6 +615,9 @@ pub async fn update_post(
     .bind(category_id)
     .bind(if allow_comment { 1 } else { 0 })
     .bind(if pinned { 1 } else { 0 })
+    .bind(content_type)
+    .bind(custom_html_path)
+    .bind(page_render_mode)
     .bind(published_at)
     .bind(id)
     .execute(pool)
@@ -529,4 +651,36 @@ pub async fn delete_post(pool: &SqlitePool, id: &str) -> Result<(), sqlx::Error>
         .execute(pool)
         .await?;
     Ok(())
+}
+
+/// Get page info for custom page rendering
+#[derive(Debug, Clone, FromRow)]
+pub struct PageCustomHtml {
+    #[allow(dead_code)]
+    pub id: String,
+    #[allow(dead_code)]
+    pub title: String,
+    pub content_type: String,
+    pub custom_html_path: Option<String>,
+    pub page_render_mode: String,
+    #[allow(dead_code)]
+    pub content_md: String,
+    #[allow(dead_code)]
+    pub content_html: String,
+    pub status: String,
+    pub visibility: String,
+}
+
+pub async fn get_page_by_slug(
+    pool: &SqlitePool,
+    slug: &str,
+) -> Result<Option<PageCustomHtml>, sqlx::Error> {
+    sqlx::query_as::<_, PageCustomHtml>(
+        "SELECT id, title, content_type, custom_html_path, page_render_mode,
+                content_md, content_html, status, visibility
+         FROM posts WHERE slug = ? AND deleted_at IS NULL LIMIT 1",
+    )
+    .bind(slug)
+    .fetch_optional(pool)
+    .await
 }

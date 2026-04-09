@@ -182,7 +182,7 @@ async function loadComments() {
   commentsList.innerHTML = items.map((comment) => `
     <article class="comment-item">
       <div class="comment-meta">
-        <a href="/posts/${escapeHtml(comment.post_slug)}">${escapeHtml(comment.post_title)}</a>
+        <a href="/${comment.post_content_type === 'page' ? 'pages' : 'posts'}/${escapeHtml(comment.post_slug)}">${escapeHtml(comment.post_title)}</a>
         <span class="comment-status">${escapeHtml(comment.status)}</span>
       </div>
       <div class="comment-meta">

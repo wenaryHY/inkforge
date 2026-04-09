@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiData, getToken, paginationPages, API } from '../lib/api';
+import { apiData, getToken, paginationPages, API, API_PREFIX } from '../lib/api';
 import { esc } from '../lib/utils';
 import type { MediaItem, PaginatedResponse } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -55,7 +55,7 @@ export default function Upload() {
       if (nextKind) query.set('kind', nextKind);
       if (nextCategory) query.set('category', nextCategory);
       if (nextKeyword.trim()) query.set('keyword', nextKeyword.trim());
-      const payload = await apiData<PaginatedResponse<MediaItem>>(`/api/admin/media?${query.toString()}`);
+      const payload = await apiData<PaginatedResponse<MediaItem>>(`${API_PREFIX}/admin/media?${query.toString()}`);
       setItems(payload.items || []);
       setPages(paginationPages(payload));
     } catch (error) {
@@ -73,7 +73,7 @@ export default function Upload() {
     if (category) fd.append('category', category);
     setResult(null);
     try {
-      const res = await fetch(`${API}/api/admin/media`, {
+      const res = await fetch(`${API}${API_PREFIX}/admin/media`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${getToken()}` },
         body: fd
@@ -95,7 +95,7 @@ export default function Upload() {
   async function deleteMedia(id: string) {
     if (!window.confirm(t('deleteMediaConfirm'))) return;
     try {
-      await apiData(`/api/admin/media/${id}`, { method: 'DELETE' });
+      await apiData(`${API_PREFIX}/admin/media/${id}`, { method: 'DELETE' });
       toast(t('deleteMediaSuccess'), 'success');
       await fetchMedia(page, kind, category, keyword);
     } catch (error) {
@@ -111,7 +111,7 @@ export default function Upload() {
   async function commitRename(id: string) {
     if (!renameValue.trim()) { setRenamingId(null); return; }
     try {
-      await apiData(`/api/admin/media/${id}`, {
+      await apiData(`${API_PREFIX}/admin/media/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({ name: renameValue.trim() }),
       });
@@ -125,7 +125,7 @@ export default function Upload() {
 
   async function setItemCategory(id: string, cat: string) {
     try {
-      await apiData(`/api/admin/media/${id}/category`, {
+      await apiData(`${API_PREFIX}/admin/media/${id}/category`, {
         method: 'PATCH',
         body: JSON.stringify({ category: cat || null }),
       });

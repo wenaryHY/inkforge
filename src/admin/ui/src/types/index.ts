@@ -47,6 +47,9 @@ export interface AdminPost {
   category_id: string | null;
   allow_comment: number;
   pinned: number;
+  content_type: 'post' | 'page';
+  custom_html_path: string | null;
+  page_render_mode: 'editor' | 'custom_html';
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -58,6 +61,7 @@ export interface PublicPostSummary {
   title: string;
   slug: string;
   excerpt: string | null;
+  content_type: 'post' | 'page';
   published_at: string | null;
   created_at: string;
   updated_at: string;
@@ -78,6 +82,7 @@ export interface Comment {
   updated_at: string;
   post_title?: string;
   post_slug?: string;
+  post_content_type?: 'post' | 'page';
 }
 
 export interface Setting {

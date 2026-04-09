@@ -15,14 +15,18 @@
     "@codemirror/language": "^6.12.3",
     "@codemirror/state": "^6.6.0",
     "@codemirror/view": "^6.41.0",
-    "@milkdown/core": "^7.20.0",
-    "@milkdown/ctx": "^7.20.0",
-    "@milkdown/plugin-listener": "^7.20.0",
-    "@milkdown/preset-commonmark": "^7.20.0",
+    "@tiptap/extension-image": "^3.22.3",
+    "@tiptap/extension-placeholder": "^3.22.3",
+    "@tiptap/extension-task-item": "^3.22.3",
+    "@tiptap/extension-task-list": "^3.22.3",
+    "@tiptap/pm": "^3.22.3",
+    "@tiptap/react": "^3.22.3",
+    "@tiptap/starter-kit": "^3.22.3",
     "lucide-react": "^1.7.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.14.0"
+    "react-router-dom": "^7.14.0",
+    "tiptap-markdown": "^0.9.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

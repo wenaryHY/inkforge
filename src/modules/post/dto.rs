@@ -8,6 +8,7 @@ pub struct PostQuery {
     pub page_size: Option<i64>,
     pub keyword: Option<String>,
     pub status: Option<String>,
+    pub content_type: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -24,7 +25,7 @@ pub struct CreatePostRequest {
     pub title: String,
     pub slug: Option<String>,
     pub excerpt: Option<String>,
-    pub content_md: String,
+    pub content_md: Option<String>,
     pub cover_media_id: Option<String>,
     pub status: Option<String>,
     pub visibility: Option<String>,
@@ -32,6 +33,9 @@ pub struct CreatePostRequest {
     pub tag_ids: Option<Vec<String>>,
     pub allow_comment: Option<bool>,
     pub pinned: Option<bool>,
+    pub content_type: Option<String>,
+    pub custom_html_path: Option<String>,
+    pub page_render_mode: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -47,6 +51,9 @@ pub struct UpdatePostRequest {
     pub tag_ids: Option<Vec<String>>,
     pub allow_comment: Option<bool>,
     pub pinned: Option<bool>,
+    pub content_type: Option<String>,
+    pub custom_html_path: Option<String>,
+    pub page_render_mode: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
