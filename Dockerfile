@@ -4,11 +4,11 @@ WORKDIR /app/ui
 COPY src/admin/ui/package.json src/admin/ui/package-lock.json* ./
 RUN npm ci
 COPY src/admin/ui/ .
-RUN npm run build
-# 产物输出到 ../dist，即 /app/dist
+RUN npx tsc -b && npx vite build && \
+    if [ -f /app/dist/index.html ]; then mv /app/dist/index.html /app/dist/admin.html; fi
 
 # ── Stage 2: Rust 构建 ──
-FROM rust:1.82-slim AS backend
+FROM rust:slim AS backend
 WORKDIR /app
 COPY Cargo.toml Cargo.lock* ./
 # 预创建空 src 以缓存依赖编译
@@ -23,11 +23,11 @@ RUN apt-get update && apt-get install -y pkg-config libsqlite3-dev && \
 
 # ── Stage 3: 最终镜像 ──
 FROM debian:bookworm-slim
-ARG LITESTREAM_VERSION=v0.5.9
+ARG LITESTREAM_VERSION=0.5.11
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates libsqlite3-0 curl gettext-base && \
-    curl -fsSL "https://github.com/benbjohnson/litestream/releases/download/${LITESTREAM_VERSION}/litestream-${LITESTREAM_VERSION}-linux-amd64.deb" -o /tmp/litestream.deb && \
+    curl -fsSL "https://github.com/benbjohnson/litestream/releases/download/v${LITESTREAM_VERSION}/litestream-${LITESTREAM_VERSION}-linux-x86_64.deb" -o /tmp/litestream.deb && \
     apt-get install -y /tmp/litestream.deb && rm -f /tmp/litestream.deb && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 

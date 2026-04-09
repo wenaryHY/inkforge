@@ -7,6 +7,15 @@ import Image from '@tiptap/extension-image';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Markdown } from 'tiptap-markdown';
 
+// tiptap-markdown doesn't ship TypeScript types for editor.storage.markdown
+declare module '@tiptap/core' {
+  interface Storage {
+    markdown?: {
+      getMarkdown: () => string;
+    };
+  }
+}
+
 interface Props {
   value: string;
   onChange: (value: string) => void;
@@ -35,7 +44,7 @@ export function TiptapPanel({ value, onChange }: Props) {
     content: value || '',
     onUpdate: ({ editor }) => {
       if (isExternalUpdateRef.current) return;
-      const md = editor.storage.markdown.getMarkdown();
+      const md = editor.storage.markdown!.getMarkdown();
       onChange(md);
     },
     editorProps: {
@@ -48,7 +57,7 @@ export function TiptapPanel({ value, onChange }: Props) {
   // Sync external value changes (e.g. from CodeMirror source panel)
   useEffect(() => {
     if (!editor) return;
-    const currentMarkdown = editor.storage.markdown.getMarkdown();
+    const currentMarkdown = editor.storage.markdown!.getMarkdown();
     if (currentMarkdown !== value && value !== undefined) {
       isExternalUpdateRef.current = true;
       editor.commands.setContent(value || '');
