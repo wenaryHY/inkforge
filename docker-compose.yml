@@ -1,0 +1,30 @@
+services:
+  inkforge:
+    build: .
+    # 换成你推到 Docker Hub 后的镜像名：
+    # image: yourname/inkforge:latest
+    ports:
+      - "${INKFORGE_PORT:-3000}:3000"
+    volumes:
+      - inkforge-data:/app/data
+      - inkforge-uploads:/app/uploads
+      - inkforge-backups:/app/backups
+    environment:
+      INKFORGE__AUTH__SECRET: "${INKFORGE_AUTH_SECRET:-inkforge-change-me-in-production}"
+      # S3 备份（可选，设了就自动启用）
+      LITESTREAM_S3_BUCKET: "${LITESTREAM_S3_BUCKET:-}"
+      AWS_REGION: "${AWS_REGION:-}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-}"
+      RUST_LOG: "${RUST_LOG:-info}"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  inkforge-data:
+  inkforge-uploads:
+  inkforge-backups:
