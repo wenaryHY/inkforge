@@ -1,5 +1,4 @@
 pub mod backup;
-pub mod db;
 pub mod hash;
 pub mod jwt;
 

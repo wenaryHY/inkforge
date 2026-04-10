@@ -65,9 +65,10 @@ s3 = ["aws-config", "aws-sdk-s3"]
 
 
 [profile.release]
-debug = true          # 保留符号和行号，便于火焰图解析
-strip = false         # 避免符号被剥离导致 [unknown]
-# debug = "full"      # 若需更完整信息（文件体积增大）
+lto = true              # Link-time optimization
+opt-level = "s"         # 优化二进制大小
+codegen-units = 1       # 单代码生成单元，更好的优化
+strip = true            # 剥离符号（生产环境）
 
 [profile.bench]
 debug = true
