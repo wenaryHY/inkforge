@@ -1,4 +1,8 @@
+# Rust
 target/
+.cargo-home/
+
+# Database
 data.db
 data.db-shm
 data.db-wal
@@ -8,12 +12,26 @@ inkforge.db-wal
 inkforge.db.backup
 inkforge.db.bak
 inkforge.db.restore
+
+# Uploads & Backups
 uploads/*
 !uploads/.gitkeep
 backups/
+
+# Environment
 .env
 *.log
-.DS_Store
+
+# Frontend
 node_modules/
-.workbuddy/
+src/admin/dist/
+
+# IDE & Tools
+.DS_Store
 Thumbs.db
+.vscode/
+.idea/
+
+# Kiro
+.workbuddy/
+.codebuddy/
