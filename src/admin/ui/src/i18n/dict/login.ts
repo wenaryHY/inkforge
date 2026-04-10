@@ -24,7 +24,9 @@ export const loginDict = {
 
     // 提示
     backToHome: '返回首页',
-    registerSuccess: '注册成功，将自动跳转登录',
+    registerSuccess: '注册成功，正在进入后台',
+    registerClosedHint: '当前站点未开放公开注册',
+    checkingSetup: '正在检查安装状态…',
 
     // 语言切换
     language: '语言',
@@ -53,7 +55,9 @@ export const loginDict = {
 
     // Messages
     backToHome: 'Back to Home',
-    registerSuccess: 'Registration successful, redirecting...',
+    registerSuccess: 'Registration successful, entering admin...',
+    registerClosedHint: 'Public registration is currently disabled',
+    checkingSetup: 'Checking installation status…',
 
     // Language
     language: 'Language',

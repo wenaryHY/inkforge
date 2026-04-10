@@ -1,3 +1,7 @@
+[workspace]
+members = [".", "src-tauri"]
+resolver = "2"
+
 [package]
 name = "inkforge"
 version = "0.3.0"
@@ -49,6 +53,8 @@ zip = "2"
 sha2 = "0.10"
 hex = "0.4"
 url = "2"
+ammonia = "4"
+
 tokio-cron-scheduler = "0.9"
 aws-config = { version = "1", optional = true }
 aws-sdk-s3 = { version = "1", optional = true }
@@ -56,3 +62,12 @@ aws-sdk-s3 = { version = "1", optional = true }
 [features]
 default = []
 s3 = ["aws-config", "aws-sdk-s3"]
+
+
+[profile.release]
+debug = true          # 保留符号和行号，便于火焰图解析
+strip = false         # 避免符号被剥离导致 [unknown]
+# debug = "full"      # 若需更完整信息（文件体积增大）
+
+[profile.bench]
+debug = true

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
 
@@ -10,6 +10,7 @@ pub struct AppConfig {
     pub storage: StorageConfig,
     pub theme: ThemeConfig,
     pub paths: PathsConfig,
+    pub runtime: RuntimeConfig,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -27,6 +28,7 @@ pub struct DatabaseConfig {
 pub struct AuthConfig {
     pub secret: String,
     pub expires_in_seconds: i64,
+    pub allow_insecure_default_secret: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -48,6 +50,11 @@ pub struct PathsConfig {
     pub admin_dist_dir: String,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub struct RuntimeConfig {
+    pub mode: String,
+}
+
 impl AppConfig {
     pub fn load() -> Result<Self> {
         Ok(config::Config::builder()
@@ -59,12 +66,14 @@ impl AppConfig {
             .set_default("database.url", "sqlite://inkforge.db?mode=rwc")?
             .set_default("auth.secret", "change-me-in-production-please")?
             .set_default("auth.expires_in_seconds", 60 * 60 * 24 * 7)?
+            .set_default("auth.allow_insecure_default_secret", false)?
             .set_default("storage.upload_dir", "uploads")?
             .set_default("storage.max_upload_size_mb", 10)?
             .set_default("theme.theme_dir", "themes")?
             .set_default("theme.active_theme_fallback", "default")?
             .set_default("theme.default_mode", "system")?
             .set_default("paths.admin_dist_dir", "src/admin/dist")?
+            .set_default("runtime.mode", "development")?
             .build()?
             .try_deserialize()?)
     }
@@ -74,9 +83,21 @@ impl AppConfig {
             "inkforge-change-me-in-production",
             "change-me-in-production-please",
         ];
-        if UNSAFE_SECRETS.contains(&self.auth.secret.as_str()) {
-            tracing::warn!("⚠️  JWT secret is using default value. Please set INKFORGE__AUTH__SECRET in production!");
+        if !UNSAFE_SECRETS.contains(&self.auth.secret.as_str()) {
+            return Ok(());
         }
+
+        if self.runtime.mode.eq_ignore_ascii_case("production")
+            && !self.auth.allow_insecure_default_secret
+        {
+            bail!(
+                "unsafe default JWT secret is blocked in production; set INKFORGE__AUTH__SECRET or explicitly set INKFORGE__AUTH__ALLOW_INSECURE_DEFAULT_SECRET=true"
+            );
+        }
+
+        tracing::warn!(
+            "⚠️  JWT secret is using default value. Set INKFORGE__AUTH__SECRET before any non-development deployment."
+        );
         Ok(())
     }
 

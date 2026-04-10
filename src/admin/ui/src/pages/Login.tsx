@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { apiData, API_PREFIX } from '../lib/api';
+import type { SetupStatusResponse } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useI18n } from '../i18n';
@@ -19,6 +21,43 @@ export default function Login() {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regDisplayName, setRegDisplayName] = useState('');
+  const [setupLoaded, setSetupLoaded] = useState(false);
+  const [registerAvailable, setRegisterAvailable] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    apiData<SetupStatusResponse>(`${API_PREFIX}/setup/status`)
+      .then((status) => {
+        if (!active) return;
+        if (!status.installed) {
+          window.location.replace('/setup');
+          return;
+        }
+        setRegisterAvailable(status.allow_register);
+      })
+      .catch(() => {
+        if (active) setRegisterAvailable(false);
+      })
+      .finally(() => {
+        if (active) setSetupLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!registerAvailable && tab === 'register') {
+      setTab('login');
+    }
+  }, [registerAvailable, tab]);
+
+  const tabs = useMemo<Tab[]>(
+    () => (registerAvailable ? ['login', 'register'] : ['login']),
+    [registerAvailable],
+  );
+  const activeTabIndex = Math.max(0, tabs.indexOf(tab));
+  const showTabs = tabs.length > 1;
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -38,6 +77,10 @@ export default function Login() {
 
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
+    if (!registerAvailable) {
+      toast(t('registerClosedHint'), 'error');
+      return;
+    }
     if (!regUsername || !regEmail || !regPassword) return;
     setLoginLoading(true);
     try {
@@ -48,7 +91,7 @@ export default function Login() {
         display_name: regDisplayName || undefined,
       });
       if (result.success) {
-        toast('注册成功，将自动跳转登录', 'success');
+        toast(t('registerSuccess'), 'success');
         setTimeout(() => window.location.reload(), 100);
       } else {
         toast(result.message || '注册失败', 'error');
@@ -227,39 +270,56 @@ export default function Login() {
         </div>
 
         {/* Tab 切换 — MD3: surface-container 背景, surface-container-lowest 活跃 pill, no border/shadow */}
-        <div style={{
-          display: 'flex', margin: '24px 28px 0',
-          background: 'var(--md-surface-container)', borderRadius: 'var(--radius-full)', padding: '4px', position: 'relative',
-        }}>
-          {/* 滑块指示器 — 无阴影，tonal 区分 */}
+        {showTabs ? (
           <div style={{
-            position: 'absolute', top: '4px', left: '4px',
-            width: 'calc(50% - 4px)', height: 'calc(100% - 8px)',
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--md-surface-container-lowest)',
-            transform: tab === 'login' ? 'translateX(0)' : 'translateX(100%)',
-            transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-          }} />
-          {(['login', 'register'] as Tab[]).map(tabKey => (
-            <button
-              key={tabKey}
-              onClick={() => setTab(tabKey)}
-              style={{
-                flex: 1, padding: '10px', textAlign: 'center',
-                fontSize: '14px', fontWeight: 600,
-                border: 'none', background: 'transparent', cursor: 'pointer',
-                color: tab === tabKey ? 'var(--md-primary)' : 'var(--md-outline)',
-                transition: 'color 0.2s', position: 'relative', zIndex: 1,
-              }}
-            >
-              {t(tabKey)}
-            </button>
-          ))}
-        </div>
+            display: 'flex', margin: '24px 28px 0',
+            background: 'var(--md-surface-container)', borderRadius: 'var(--radius-full)', padding: '4px', position: 'relative',
+          }}>
+            {/* 滑块指示器 — 无阴影，tonal 区分 */}
+            <div style={{
+              position: 'absolute', top: '4px', left: '4px',
+              width: `calc(${100 / tabs.length}% - 4px)`, height: 'calc(100% - 8px)',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--md-surface-container-lowest)',
+              transform: `translateX(${activeTabIndex * 100}%)`,
+              transition: 'transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+            }} />
+            {tabs.map((tabKey) => (
+              <button
+                key={tabKey}
+                onClick={() => setTab(tabKey)}
+                style={{
+                  flex: 1, padding: '10px', textAlign: 'center',
+                  fontSize: '14px', fontWeight: 600,
+                  border: 'none', background: 'transparent', cursor: 'pointer',
+                  color: tab === tabKey ? 'var(--md-primary)' : 'var(--md-outline)',
+                  transition: 'color 0.2s', position: 'relative', zIndex: 1,
+                }}
+              >
+                {t(tabKey)}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         {/* 表单区域 */}
-        <div style={{ padding: '24px 28px 0' }}>
-          {tab === 'login' && (
+        <div style={{ padding: showTabs ? '24px 28px 0' : '28px 28px 0' }}>
+          {!setupLoaded ? (
+            <div
+              style={{
+                minHeight: '132px',
+                display: 'grid',
+                placeItems: 'center',
+                color: 'var(--md-outline)',
+                fontSize: '14px',
+                fontWeight: 600,
+              }}
+            >
+              {t('checkingSetup')}
+            </div>
+          ) : null}
+
+          {setupLoaded && tab === 'login' ? (
             <form onSubmit={handleLogin} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <input type="text" value={loginValue} onChange={e => setLoginValue(e.target.value)}
                 placeholder={t('usernameOrEmail')} required style={inputStyle} onFocus={focusIn} onBlur={focusOut} />
@@ -277,9 +337,9 @@ export default function Login() {
                 {loginLoading ? t('loggingIn') : t('loginBtn')}
               </button>
             </form>
-          )}
+          ) : null}
 
-          {tab === 'register' && (
+          {setupLoaded && tab === 'register' ? (
             <form onSubmit={handleRegister} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <input type="text" value={regUsername} onChange={e => setRegUsername(e.target.value)}
                 placeholder={t('username')} required style={inputSmallStyle} onFocus={focusIn} onBlur={focusOut} />
@@ -301,7 +361,7 @@ export default function Login() {
                 {loginLoading ? t('creating') : t('registerBtn')}
               </button>
             </form>
-          )}
+          ) : null}
         </div>
 
         {/* 底部链接 */}

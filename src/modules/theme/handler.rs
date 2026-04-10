@@ -136,25 +136,33 @@ pub async fn upload_theme_archive(
     }
     std::fs::create_dir_all(&theme_dir).map_err(|e| crate::shared::error::AppError::Io(e))?;
 
-    // 解压所有文件
-    for i in 0..archive.len() {
-        let mut file = archive.by_index(i).map_err(|e| {
-            crate::shared::error::AppError::Anyhow(anyhow::anyhow!("Failed to read archive: {}", e))
-        })?;
+    let extract_result = (|| -> AppResult<()> {
+        for i in 0..archive.len() {
+            let mut file = archive.by_index(i).map_err(|e| {
+                crate::shared::error::AppError::Anyhow(anyhow::anyhow!("Failed to read archive: {}", e))
+            })?;
+            let entry_path = file
+                .enclosed_name()
+                .ok_or_else(|| AppError::BadRequest("ZIP contains invalid path entry".to_string()))?
+                .to_path_buf();
+            let outpath = theme_dir.join(entry_path);
 
-        let outpath = theme_dir.join(file.name());
-
-        if file.is_dir() {
-            std::fs::create_dir_all(&outpath).map_err(|e| crate::shared::error::AppError::Io(e))?;
-        } else {
-            if let Some(p) = outpath.parent() {
-                std::fs::create_dir_all(p).map_err(|e| crate::shared::error::AppError::Io(e))?;
+            if file.is_dir() {
+                std::fs::create_dir_all(&outpath).map_err(crate::shared::error::AppError::Io)?;
+                continue;
+            }
+            if let Some(parent) = outpath.parent() {
+                std::fs::create_dir_all(parent).map_err(crate::shared::error::AppError::Io)?;
             }
             let mut outfile = std::fs::File::create(&outpath)
-                .map_err(|e| crate::shared::error::AppError::Io(e))?;
-            std::io::copy(&mut file, &mut outfile)
-                .map_err(|e| crate::shared::error::AppError::Io(e))?;
+                .map_err(crate::shared::error::AppError::Io)?;
+            std::io::copy(&mut file, &mut outfile).map_err(crate::shared::error::AppError::Io)?;
         }
+        Ok(())
+    })();
+    if let Err(err) = extract_result {
+        let _ = std::fs::remove_dir_all(&theme_dir);
+        return Err(err);
     }
 
     Ok(Json(ApiResponse::success(

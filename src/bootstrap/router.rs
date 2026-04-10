@@ -143,14 +143,23 @@ pub async fn build_router(state: Arc<AppState>) -> Router {
         false
     });
 
+    let auth_v1 = Router::new()
+        .route("/api/v1/auth/register", post(modules::auth::handler::register))
+        .route("/api/v1/auth/logout", post(modules::auth::handler::logout))
+        .merge(
+            Router::new()
+                .route("/api/v1/auth/login", post(modules::auth::handler::login))
+                .route_layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    crate::shared::security::login_rate_limit,
+                )),
+        );
+
     let v1 = Router::new()
         .route("/api/v1/health", get(health_check))
         .route("/api/v1/version", get(version_info))
         .route("/api/v1/setup/status", get(modules::setup::handler::status))
         .route("/api/v1/setup/initialize", post(modules::setup::handler::initialize))
-        .route("/api/v1/auth/register", post(modules::auth::handler::register))
-        .route("/api/v1/auth/login", post(modules::auth::handler::login))
-        .route("/api/v1/auth/logout", post(modules::auth::handler::logout))
         .route("/api/v1/me", get(modules::user::handler::me))
         .route("/api/v1/me/profile", patch(modules::user::handler::update_profile))
         .route("/api/v1/me/password", patch(modules::user::handler::update_password))
@@ -272,14 +281,23 @@ pub async fn build_router(state: Arc<AppState>) -> Router {
             delete(modules::trash::handler::purge_item),
         );
 
+    let auth_legacy = Router::new()
+        .route("/api/auth/register", post(modules::auth::handler::register))
+        .route("/api/auth/logout", post(modules::auth::handler::logout))
+        .merge(
+            Router::new()
+                .route("/api/auth/login", post(modules::auth::handler::login))
+                .route_layer(axum::middleware::from_fn_with_state(
+                    state.clone(),
+                    crate::shared::security::login_rate_limit,
+                )),
+        );
+
     let legacy = Router::new()
         .route("/api/health", get(health_check))
         .route("/api/version", get(version_info))
         .route("/api/setup/status", get(modules::setup::handler::status))
         .route("/api/setup/initialize", post(modules::setup::handler::initialize))
-        .route("/api/auth/register", post(modules::auth::handler::register))
-        .route("/api/auth/login", post(modules::auth::handler::login))
-        .route("/api/auth/logout", post(modules::auth::handler::logout))
         .route("/api/me", get(modules::user::handler::me))
         .route("/api/me/profile", patch(modules::user::handler::update_profile))
         .route("/api/me/password", patch(modules::user::handler::update_password))
@@ -421,7 +439,9 @@ pub async fn build_router(state: Arc<AppState>) -> Router {
         .route("/favicon.ico", get(|| async { axum::http::StatusCode::NO_CONTENT }))
         .route("/ws/admin", get(ws::ws_admin_handler))
         .route("/ws/public", get(ws::ws_public_handler))
+        .merge(auth_v1)
         .merge(v1)
+        .merge(auth_legacy)
         .merge(legacy)
         .layer(
             ServiceBuilder::new()
@@ -444,8 +464,18 @@ pub async fn build_router(state: Arc<AppState>) -> Router {
                             header::ACCEPT,
                             header::ORIGIN,
                             "x-client-request-id".parse().unwrap(),
+                        ])
+                        .expose_headers([
+                            "x-client-request-id".parse().unwrap(),
+                            "x-request-id".parse().unwrap(),
                         ]),
                 ),
         )
+        .layer(axum::middleware::from_fn(
+            crate::shared::security::security_headers,
+        ))
+        .layer(axum::middleware::from_fn(
+            crate::shared::request_id::request_id_context,
+        ))
         .with_state(state)
 }

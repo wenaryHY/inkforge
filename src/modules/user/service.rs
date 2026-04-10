@@ -25,30 +25,65 @@ pub async fn update_profile(
     auth: &AuthUser,
     body: UpdateProfileRequest,
 ) -> AppResult<CurrentUser> {
-    let theme_preference = body
-        .theme_preference
-        .unwrap_or_else(|| "system".to_string());
-    if !matches!(theme_preference.as_str(), "system" | "light" | "dark") {
-        return Err(AppError::BadRequest("invalid theme preference".into()));
-    }
-
-    let language = body.language.unwrap_or_else(|| "zh".to_string());
-    if !matches!(language.as_str(), "zh" | "en") {
-        return Err(AppError::BadRequest("invalid language".into()));
-    }
+    let current = me(state.clone(), auth).await?;
+    let display_name = merge_display_name(body.display_name, &current.display_name)?;
+    let bio = merge_nullable_text(body.bio, current.bio);
+    let avatar_media_id = merge_nullable_text(body.avatar_media_id, current.avatar_media_id);
+    let theme_preference = merge_theme_preference(body.theme_preference, &current.theme_preference)?;
+    let language = merge_language(body.language, &current.language)?;
 
     repository::update_profile(
         &state.pool,
         &auth.id,
-        body.display_name.trim(),
-        body.bio.as_deref(),
-        body.avatar_media_id.as_deref(),
+        &display_name,
+        bio.as_deref(),
+        avatar_media_id.as_deref(),
         &theme_preference,
         &language,
     )
     .await?;
 
     me(state, auth).await
+}
+
+fn merge_display_name(value: Option<String>, current: &str) -> AppResult<String> {
+    let next = value.unwrap_or_else(|| current.to_string());
+    let trimmed = next.trim();
+    if !trimmed.is_empty() {
+        return Ok(trimmed.to_string());
+    }
+    Err(AppError::BadRequest("display_name is required".into()))
+}
+
+fn merge_nullable_text(value: Option<Option<String>>, current: Option<String>) -> Option<String> {
+    match value {
+        Some(Some(next)) => {
+            let trimmed = next.trim();
+            if trimmed.is_empty() {
+                None
+            } else {
+                Some(trimmed.to_string())
+            }
+        }
+        Some(None) => None,
+        None => current,
+    }
+}
+
+fn merge_theme_preference(value: Option<String>, current: &str) -> AppResult<String> {
+    let next = value.unwrap_or_else(|| current.to_string());
+    if matches!(next.as_str(), "system" | "light" | "dark") {
+        return Ok(next);
+    }
+    Err(AppError::BadRequest("invalid theme preference".into()))
+}
+
+fn merge_language(value: Option<String>, current: &str) -> AppResult<String> {
+    let next = value.unwrap_or_else(|| current.to_string());
+    if matches!(next.as_str(), "zh" | "en") {
+        return Ok(next);
+    }
+    Err(AppError::BadRequest("invalid language".into()))
 }
 
 pub async fn update_password(

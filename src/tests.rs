@@ -49,10 +49,16 @@ mod config_tests {
     }
 
     #[test]
-    fn config_validate_warns_on_default_secret() {
+    fn config_validate_allows_default_secret_in_development() {
         let config = AppConfig::load().unwrap();
-        // validate 应该返回 Ok 即使是不安全的密钥（只是警告，不是错误）
         assert!(config.validate().is_ok());
+    }
+
+    #[test]
+    fn config_validate_blocks_default_secret_in_production() {
+        let mut config = AppConfig::load().unwrap();
+        config.runtime.mode = "production".to_string();
+        assert!(config.validate().is_err());
     }
 
     #[test]

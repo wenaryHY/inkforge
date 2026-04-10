@@ -4,6 +4,7 @@ type ApiError = Error & {
   status?: number;
   payload?: unknown;
   clientRequestId?: string;
+  requestId?: string;
 };
 
 function logDebug(event: string, details?: Record<string, unknown>): void {
@@ -43,12 +44,13 @@ async function parseResponse<T>(response: Response, clientRequestId: string): Pr
   const contentType = response.headers.get('content-type') || '';
   const isJson = contentType.includes('application/json');
   const payload = isJson ? await response.json().catch(() => null) : null;
+  const requestId = payload?.request_id || response.headers.get('x-request-id') || response.headers.get('x-client-request-id') || undefined;
 
   if (response.ok && payload?.code === 0) {
     logDebug('api_response_ok', {
       status: response.status,
       clientRequestId,
-      requestId: payload.request_id,
+      requestId,
     });
     return payload.data as T;
   }
@@ -57,9 +59,11 @@ async function parseResponse<T>(response: Response, clientRequestId: string): Pr
   error.status = response.status;
   error.payload = payload;
   error.clientRequestId = clientRequestId;
+  error.requestId = requestId;
   logError('api_response_error', {
     status: response.status,
     clientRequestId,
+    requestId,
     payload,
   });
   throw error;

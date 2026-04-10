@@ -2,11 +2,12 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use sqlx::SqlitePool;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{broadcast, Mutex, RwLock};
 
 use crate::{
     bootstrap::config::AppConfig,
     modules::setup::domain::SetupStage,
+    shared::security::LoginRateLimiter,
     ws::ServerEvent,
 };
 
@@ -28,6 +29,8 @@ pub struct AppState {
     pub admin_url: Arc<RwLock<String>>,
     /// Cached setup stage used by entry routing and auth guards.
     pub setup_stage: Arc<RwLock<SetupStage>>,
+    /// In-memory login rate limiter for basic brute-force protection.
+    pub login_rate_limiter: Arc<Mutex<LoginRateLimiter>>,
 }
 
 impl AppState {
@@ -51,6 +54,7 @@ impl AppState {
             site_url: Arc::new(RwLock::new(site_url)),
             admin_url: Arc::new(RwLock::new(admin_url)),
             setup_stage: Arc::new(RwLock::new(setup_stage)),
+            login_rate_limiter: Arc::new(Mutex::new(LoginRateLimiter::new())),
         })
     }
 }

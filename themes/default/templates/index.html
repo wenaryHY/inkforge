@@ -294,8 +294,11 @@ async function doSearch() {
     const res = await fetch('/api/search?' + params.toString());
     const json = await res.json();
     const items = json.data?.items || [];
+    const total = json.data?.pagination?.total ?? items.length;
     document.getElementById('searchInfo').style.display = 'block';
-    document.getElementById('searchInfo').textContent = `找到 ${items.length} 篇相关文章`;
+    document.getElementById('searchInfo').textContent = total > items.length
+      ? `找到 ${total} 篇相关文章，当前显示前 ${items.length} 篇`
+      : `找到 ${total} 篇相关文章`;
     renderPosts(items);
   } catch { renderPosts([]); }
 }

@@ -56,72 +56,78 @@ pub async fn search_posts(
     limit: i64,
     offset: i64,
 ) -> Result<Vec<PublicPostSummary>, sqlx::Error> {
-    // Escape FTS5 special characters: wrap in double-quotes for exact phrase search
     let fts_keyword = format!("\"{}\"", keyword.replace('"', "\"\""));
+    sqlx::query_as::<_, PublicPostSummary>(
+        "SELECT
+            p.id,
+            p.title,
+            p.slug,
+            p.excerpt,
+            p.content_type,
+            p.published_at,
+            p.created_at,
+            p.updated_at,
+            u.display_name AS author_display_name,
+            c.name AS category_name
+         FROM posts p
+         JOIN users u ON u.id = p.author_id
+         LEFT JOIN categories c ON c.id = p.category_id
+         JOIN posts_fts fts ON fts.rowid = p.rowid
+         WHERE p.status = 'published'
+           AND p.visibility = 'public'
+           AND p.deleted_at IS NULL
+           AND fts.posts_fts MATCH ?
+           AND (? IS NULL OR p.category_id = ?)
+           AND (
+                ? IS NULL OR EXISTS (
+                    SELECT 1 FROM post_tags pt
+                    WHERE pt.post_id = p.id AND pt.tag_id = ?
+                )
+           )
+         ORDER BY bm25(posts_fts), p.pinned DESC, p.published_at DESC, p.created_at DESC
+         LIMIT ? OFFSET ?",
+    )
+    .bind(&fts_keyword)
+    .bind(category_id)
+    .bind(category_id)
+    .bind(tag_id)
+    .bind(tag_id)
+    .bind(limit)
+    .bind(offset)
+    .fetch_all(pool)
+    .await
+}
 
-    // Build the FTS5 MATCH query with optional filters
-    if category_id.is_some() || tag_id.is_some() {
-        sqlx::query_as::<_, PublicPostSummary>(
-            "SELECT
-                p.id,
-                p.title,
-                p.slug,
-                p.excerpt,
-                p.content_type,
-                p.published_at,
-                p.created_at,
-                p.updated_at,
-                u.display_name AS author_display_name,
-                c.name AS category_name
-             FROM posts p
-             JOIN users u ON u.id = p.author_id
-             LEFT JOIN categories c ON c.id = p.category_id
-             JOIN posts_fts fts ON fts.rowid = p.rowid
-             WHERE p.status = 'published'
-               AND p.visibility = 'public'
-               AND p.deleted_at IS NULL
-               AND fts.posts_fts MATCH ?
-               AND (? IS NULL OR p.category_id = ?)
-             ORDER BY rank
-             LIMIT ? OFFSET ?",
-        )
-        .bind(&fts_keyword)
-        .bind(category_id)
-        .bind(category_id)
-        .bind(limit)
-        .bind(offset)
-        .fetch_all(pool)
-        .await
-    } else {
-        sqlx::query_as::<_, PublicPostSummary>(
-            "SELECT
-                p.id,
-                p.title,
-                p.slug,
-                p.excerpt,
-                p.content_type,
-                p.published_at,
-                p.created_at,
-                p.updated_at,
-                u.display_name AS author_display_name,
-                c.name AS category_name
-             FROM posts p
-             JOIN users u ON u.id = p.author_id
-             LEFT JOIN categories c ON c.id = p.category_id
-             JOIN posts_fts fts ON fts.rowid = p.rowid
-             WHERE p.status = 'published'
-               AND p.visibility = 'public'
-               AND p.deleted_at IS NULL
-               AND fts.posts_fts MATCH ?
-             ORDER BY rank
-             LIMIT ? OFFSET ?",
-        )
-        .bind(&fts_keyword)
-        .bind(limit)
-        .bind(offset)
-        .fetch_all(pool)
-        .await
-    }
+pub async fn count_search_posts(
+    pool: &SqlitePool,
+    keyword: &str,
+    category_id: Option<&str>,
+    tag_id: Option<&str>,
+) -> Result<i64, sqlx::Error> {
+    let fts_keyword = format!("\"{}\"", keyword.replace('"', "\"\""));
+    sqlx::query_scalar(
+        "SELECT COUNT(*)
+         FROM posts p
+         JOIN posts_fts fts ON fts.rowid = p.rowid
+         WHERE p.status = 'published'
+           AND p.visibility = 'public'
+           AND p.deleted_at IS NULL
+           AND fts.posts_fts MATCH ?
+           AND (? IS NULL OR p.category_id = ?)
+           AND (
+                ? IS NULL OR EXISTS (
+                    SELECT 1 FROM post_tags pt
+                    WHERE pt.post_id = p.id AND pt.tag_id = ?
+                )
+           )",
+    )
+    .bind(&fts_keyword)
+    .bind(category_id)
+    .bind(category_id)
+    .bind(tag_id)
+    .bind(tag_id)
+    .fetch_one(pool)
+    .await
 }
 
 pub async fn list_public_posts(

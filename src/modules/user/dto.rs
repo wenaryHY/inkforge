@@ -2,9 +2,9 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateProfileRequest {
-    pub display_name: String,
-    pub bio: Option<String>,
-    pub avatar_media_id: Option<String>,
+    pub display_name: Option<String>,
+    pub bio: Option<Option<String>>,
+    pub avatar_media_id: Option<Option<String>>,
     pub theme_preference: Option<String>,
     pub language: Option<String>,
 }

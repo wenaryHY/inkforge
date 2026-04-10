@@ -1,59 +1,67 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { getToken } from '../lib/api';
+import { useCallback, useEffect, useRef } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 type WSEventType = 'comment_created' | 'comment_approved' | 'comment_deleted';
 type WSHandler = (event: { type: WSEventType }) => void;
 
 export function useWebSocket(onEvent?: WSHandler) {
+  const { token } = useAuth();
   const wsRef = useRef<WebSocket | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const attemptsRef = useRef(0);
   const onEventRef = useRef(onEvent);
   onEventRef.current = onEvent;
 
+  const close = useCallback(() => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+    attemptsRef.current = 0;
+  }, []);
+
   const connect = useCallback(() => {
-    if (wsRef.current) { wsRef.current.close(); wsRef.current = null; }
-    const token = getToken();
+    close();
     if (!token) return;
 
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const url = `${protocol}//${location.host}/ws/admin?token=${encodeURIComponent(token)}`;
-    wsRef.current = new WebSocket(url);
+    wsRef.current = new WebSocket(`${protocol}//${location.host}/ws/admin`);
 
     wsRef.current.onopen = () => {
       console.log('[InkForge WS] 已连接');
       attemptsRef.current = 0;
-      if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
     };
 
-    wsRef.current.onmessage = (e) => {
+    wsRef.current.onmessage = (event) => {
       try {
-        const event = JSON.parse(e.data);
-        console.log('[InkForge WS] 收到事件:', event.type);
-        onEventRef.current?.(event as { type: WSEventType });
-      } catch (err) {
-        console.error('[InkForge WS] 解析消息失败:', err);
+        const payload = JSON.parse(event.data);
+        console.log('[InkForge WS] 收到事件:', payload.type);
+        onEventRef.current?.(payload as { type: WSEventType });
+      } catch (error) {
+        console.error('[InkForge WS] 解析消息失败:', error);
       }
     };
 
     wsRef.current.onclose = () => {
       console.log('[InkForge WS] 连接断开');
       wsRef.current = null;
-      // 指数退避重连
-      const t = getToken();
-      if (t && !timerRef.current) {
-        const delay = Math.min(1000 * Math.pow(2, attemptsRef.current), 30000);
-        attemptsRef.current += 1;
-        timerRef.current = setTimeout(() => { timerRef.current = null; connect(); }, delay);
-      }
+      if (!token || timerRef.current) return;
+      const delay = Math.min(1000 * Math.pow(2, attemptsRef.current), 30000);
+      attemptsRef.current += 1;
+      timerRef.current = setTimeout(() => {
+        timerRef.current = null;
+        connect();
+      }, delay);
     };
-  }, []);
-
-  const close = useCallback(() => {
-    if (wsRef.current) { wsRef.current.close(); wsRef.current = null; }
-    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
-    attemptsRef.current = 0;
-  }, []);
+  }, [close, token]);
 
   useEffect(() => {
     connect();

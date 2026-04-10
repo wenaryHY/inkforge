@@ -68,7 +68,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
     >
       {/* ── 顶部品牌区 ── */}
       <div
-        onClick={() => window.location.href = '/'}
+        onClick={() => onNavigate('posts')}
         style={{
           padding: '24px 20px',
           display: 'flex',

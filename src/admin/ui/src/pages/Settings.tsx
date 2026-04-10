@@ -5,7 +5,6 @@ import {
   API_PREFIX,
   createBackup,
   deleteBackup as deleteBackupApi,
-  getToken,
   listBackups,
   mergeRestoreBackup,
 } from '../lib/api';
@@ -15,6 +14,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { Select } from '../components/Select';
 import { TimePicker } from '../components/TimePicker';
+import { NumberWheelPicker } from '../components/NumberWheelPicker';
 import { useToast } from '../contexts/ToastContext';
 import { useI18n } from '../i18n';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,7 +24,7 @@ const sectionStyle: React.CSSProperties = {
   background: 'var(--md-surface-container-lowest)',
   borderRadius: 'var(--radius-lg)',
   marginBottom: '20px',
-  overflow: 'hidden',
+  // overflow: 'hidden' removed to allow TimePicker popover to overflow
 };
 const secHeadStyle: React.CSSProperties = {
   padding: '18px 24px', background: 'var(--md-surface-container-low)',
@@ -37,6 +37,30 @@ const secBodyStyle: React.CSSProperties = { padding: '24px', display: 'flex', fl
 const formRowStyle: React.CSSProperties = { display: 'grid', gridTemplateColumns: '160px 1fr', gap: '12px', alignItems: 'start' };
 const labelStyle: React.CSSProperties = { fontSize: '13.5px', fontWeight: 600, color: 'var(--md-on-surface-variant)', paddingTop: '10px' };
 const hintStyle: React.CSSProperties = { fontSize: '12px', color: 'var(--md-outline)', opacity: 0.8 };
+const preferenceGridStyle: React.CSSProperties = {
+  display: 'grid',
+  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+  gap: '16px',
+};
+const preferenceCardStyle: React.CSSProperties = {
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '16px',
+  padding: '18px',
+  borderRadius: 'var(--radius-lg)',
+  background: 'var(--md-surface-container-low)',
+};
+const preferenceTitleStyle: React.CSSProperties = {
+  fontSize: '15px',
+  fontWeight: 700,
+  color: 'var(--md-on-surface)',
+  letterSpacing: '-0.02em',
+};
+const preferenceHintStyle: React.CSSProperties = {
+  fontSize: '12.5px',
+  lineHeight: 1.6,
+  color: 'var(--md-on-surface-variant)',
+};
 
 function SettingSection({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
@@ -57,6 +81,20 @@ function FormRow({ label, children, hint }: { label: string; children: React.Rea
       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '5px' }}>
         {children}
         {hint && <span style={hintStyle}>{hint}</span>}
+      </div>
+    </div>
+  );
+}
+
+function PreferenceCard({ label, children, hint }: { label: string; children: React.ReactNode; hint?: string }) {
+  return (
+    <div style={preferenceCardStyle}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <span style={preferenceTitleStyle}>{label}</span>
+        {hint && <span style={preferenceHintStyle}>{hint}</span>}
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {children}
       </div>
     </div>
   );
@@ -108,10 +146,10 @@ export default function Settings() {
   async function downloadBackupById(backupId: string) {
     try {
       setDownloadingBackupId(backupId);
-      const token = getToken();
       const res = await fetch(`${API}${API_PREFIX}/admin/backup/${backupId}`, {
-        headers: { Authorization: `Bearer ${token}` },
+        credentials: 'include',
       });
+
       if (!res.ok) {
         throw new Error('下载备份失败');
       }
@@ -182,6 +220,7 @@ export default function Settings() {
         ['site_title', kv.site_title || ''],
         ['site_description', kv.site_description || ''],
         ['site_url', kv.site_url || ''],
+        ['admin_url', kv.admin_url || ''],
         ['allow_register', kv.allow_register || 'true'],
         ['allow_comment', kv.allow_comment || 'true'],
         ['comment_require_login', kv.comment_require_login || 'true'],
@@ -207,7 +246,6 @@ export default function Settings() {
         await apiData(`${API_PREFIX}/me/profile`, {
           method: 'PATCH',
           body: JSON.stringify({
-            display_name: user.display_name,
             language: newLang,
           }),
         });
@@ -342,31 +380,28 @@ export default function Settings() {
       </SettingSection>
 
       <SettingSection title="回收站与清理" description="配置已删除内容的保留天数与自动清理时间">
-        <FormRow label="保留天数" hint="软删除的内容将被保存的天数，最长90天。过期后自动永久清理。">
-          <Input 
-            type="number" 
-            min="1" 
-            max="90" 
-            value={kv.trash_retention_days || '30'} 
-            onChange={(e) => {
-              let val = parseInt(e.target.value);
-              if (isNaN(val)) val = 30;
-              if (val < 1) val = 1;
-              if (val > 90) val = 90;
-              update('trash_retention_days', val.toString());
-            }} 
-          />
-        </FormRow>
-        <FormRow label="自动清理时间" hint="每天执行自动永久清理任务的时间。建议设在凌晨避开访问高峰。">
-          <TimePicker 
-            hour={parseInt(kv.trash_cleanup_hour || '3')} 
-            minute={parseInt(kv.trash_cleanup_minute || '0')} 
-            onChange={(h, m) => {
-              update('trash_cleanup_hour', h.toString());
-              update('trash_cleanup_minute', m.toString());
-            }} 
-          />
-        </FormRow>
+        <div style={preferenceGridStyle}>
+          <PreferenceCard label="保留天数" hint="软删除的内容将被保存的天数，最长 90 天。过期后自动永久清理。">
+            <NumberWheelPicker
+              value={parseInt(kv.trash_retention_days || '30')}
+              min={1}
+              max={90}
+              suffix="天"
+              onChange={(val) => update('trash_retention_days', val.toString())}
+            />
+          </PreferenceCard>
+
+          <PreferenceCard label="自动清理时间" hint="每天执行自动永久清理任务的时间。建议设在凌晨，避开访问高峰。">
+            <TimePicker
+              hour={parseInt(kv.trash_cleanup_hour || '3')}
+              minute={parseInt(kv.trash_cleanup_minute || '0')}
+              onChange={(h, m) => {
+                update('trash_cleanup_hour', h.toString());
+                update('trash_cleanup_minute', m.toString());
+              }}
+            />
+          </PreferenceCard>
+        </div>
       </SettingSection>
 
       {/* 界面设置 */}
@@ -408,12 +443,12 @@ export default function Settings() {
                 }
                 const formData = new FormData();
                 formData.append('file', file);
-                const token = getToken();
                 fetch(`${API}${API_PREFIX}/admin/backup/restore`, {
                   method: 'POST',
-                  headers: { Authorization: `Bearer ${token}` },
                   body: formData,
+                  credentials: 'include',
                 })
+
                   .then((r) => r.json())
                   .then((json) => {
                     if (json.code === 0) {

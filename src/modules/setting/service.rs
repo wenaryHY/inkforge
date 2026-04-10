@@ -58,6 +58,22 @@ fn normalize_setting_value(key: &str, value: &str) -> AppResult<String> {
         "allow_register" | "allow_comment" | "comment_require_login" => {
             normalize_bool_string(value, key)
         }
+        "trash_retention_days" => normalize_i64_range(value, key, 1, 90),
+        "trash_cleanup_hour" => normalize_i64_range(value, key, 0, 23),
+        "trash_cleanup_minute" => normalize_i64_range(value, key, 0, 59),
         _ => Ok(value.trim().to_string()),
     }
+}
+
+fn normalize_i64_range(value: &str, key: &str, min: i64, max: i64) -> AppResult<String> {
+    let parsed = value
+        .trim()
+        .parse::<i64>()
+        .map_err(|_| AppError::BadRequest(format!("{key} must be an integer")))?;
+    if (min..=max).contains(&parsed) {
+        return Ok(parsed.to_string());
+    }
+    Err(AppError::BadRequest(format!(
+        "{key} must be between {min} and {max}"
+    )))
 }

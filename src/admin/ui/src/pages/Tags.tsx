@@ -205,7 +205,7 @@ export default function Tags() {
           {t('activeTags')}
         </button>
         <button
-          onClick={() => navigate('/trash?tab=tag')}
+          onClick={() => navigate('/admin/trash?tab=tag')}
           style={{
             padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)',
             background: 'transparent', border: 'none', cursor: 'pointer',

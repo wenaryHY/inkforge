@@ -1,5 +1,6 @@
 use serde::Serialize;
-use uuid::Uuid;
+
+use crate::shared::request_id::current_or_generate_request_id;
 
 #[derive(Debug, Serialize)]
 pub struct ApiResponse<T: Serialize> {
@@ -24,20 +25,28 @@ pub struct PaginatedResponse<T: Serialize> {
 
 impl<T: Serialize> ApiResponse<T> {
     pub fn success(data: T) -> Self {
+        Self::success_with_request_id(data, current_or_generate_request_id())
+    }
+
+    pub fn success_with_request_id(data: T, request_id: String) -> Self {
         Self {
             code: 0,
             message: "ok".into(),
             data: Some(data),
-            request_id: Uuid::new_v4().to_string(),
+            request_id,
         }
     }
 
     pub fn error(code: i32, message: impl Into<String>) -> Self {
+        Self::error_with_request_id(code, message, current_or_generate_request_id())
+    }
+
+    pub fn error_with_request_id(code: i32, message: impl Into<String>, request_id: String) -> Self {
         Self {
             code,
             message: message.into(),
             data: None,
-            request_id: Uuid::new_v4().to_string(),
+            request_id,
         }
     }
 }

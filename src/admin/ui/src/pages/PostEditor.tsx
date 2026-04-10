@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { apiData, API, API_PREFIX, getToken } from '../lib/api';
+import { apiData, API, API_PREFIX } from '../lib/api';
 import { esc } from '../lib/utils';
 import type { AdminPost, Category, Tag } from '../types';
 
@@ -162,8 +162,8 @@ export default function PostEditor() {
         fd.append('slug', slug);
         const uploadRes = await fetch(`${API}${API_PREFIX}/admin/pages/upload`, {
           method: 'POST',
-          headers: { Authorization: `Bearer ${getToken()}` },
           body: fd,
+          credentials: 'include',
         }).then(r => r.json());
 
         if (uploadRes.code !== 0) throw new Error(uploadRes.message || '上传失败');
@@ -206,7 +206,7 @@ export default function PostEditor() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
-            onClick={() => navigate('/posts')}
+            onClick={() => navigate('/admin/posts')}
             style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: '40px', height: '40px', borderRadius: 'var(--radius-full)',
@@ -265,7 +265,7 @@ export default function PostEditor() {
               </button>
             </div>
           )}
-          <Button variant="ghost" onClick={() => navigate('/posts')}>{t('cancel')}</Button>
+          <Button variant="ghost" onClick={() => navigate('/admin/posts')}>{t('cancel')}</Button>
           <Button onClick={() => handleSave()} disabled={saving} loading={saving}>
             <IconCheck size={14} /> {t('save')}
           </Button>

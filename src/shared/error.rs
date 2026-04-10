@@ -19,6 +19,8 @@ pub enum AppError {
     BadRequest(String),
     #[error("conflict: {0}")]
     Conflict(String),
+    #[error("too many requests: {0}")]
+    TooManyRequests(String),
     #[error("multipart error: {0}")]
     Multipart(String),
     #[error(transparent)]
@@ -47,6 +49,7 @@ impl IntoResponse for AppError {
             Self::Forbidden => (StatusCode::FORBIDDEN, 40300, "forbidden".to_string()),
             Self::BadRequest(msg) => (StatusCode::BAD_REQUEST, 40000, msg),
             Self::Conflict(msg) => (StatusCode::CONFLICT, 40900, msg),
+            Self::TooManyRequests(msg) => (StatusCode::TOO_MANY_REQUESTS, 42900, msg),
             Self::Multipart(msg) => (StatusCode::BAD_REQUEST, 40000, msg),
             Self::Sqlx(err) => {
                 tracing::error!(

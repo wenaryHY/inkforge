@@ -8,6 +8,7 @@ export const API_PREFIX = '/api/v1';
 export class ApiClientError extends Error {
   code: number;
   clientRequestId?: string;
+  requestId?: string;
 
   constructor(message: string, code = 50000) {
     super(message);
@@ -22,28 +23,12 @@ function generateClientRequestId(): string {
   return `req_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
 
-export function getToken(): string {
-  return localStorage.getItem('inkforge_token') || '';
-}
-
-export function setToken(token: string): void {
-  localStorage.setItem('inkforge_token', token);
-}
-
-export function removeToken(): void {
-  localStorage.removeItem('inkforge_token');
-}
-
 export async function api<T = unknown>(path: string, opts: RequestInit = {}): Promise<ApiResponse<T>> {
-  const token = getToken();
   const headers = new Headers(opts.headers || {});
   const clientRequestId = generateClientRequestId();
 
   headers.set('X-Client-Request-Id', clientRequestId);
 
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
   if (opts.body && !(opts.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
@@ -53,16 +38,23 @@ export async function api<T = unknown>(path: string, opts: RequestInit = {}): Pr
   let data: ApiResponse<T>;
 
   try {
-    data = text ? (JSON.parse(text) as ApiResponse<T>) : ({ code: res.ok ? 0 : 50000, message: text || 'Empty response', data: null, request_id: '' } as ApiResponse<T>);
+    data = text ? (JSON.parse(text) as ApiResponse<T>) : ({
+      code: res.ok ? 0 : 50000,
+      message: text || 'Empty response',
+      data: null,
+      request_id: res.headers.get('X-Request-Id') || res.headers.get('X-Client-Request-Id') || '',
+    } as ApiResponse<T>);
   } catch {
     const err = new ApiClientError(text || 'Invalid server response');
     err.clientRequestId = clientRequestId;
+    err.requestId = res.headers.get('X-Request-Id') || res.headers.get('X-Client-Request-Id') || undefined;
     throw err;
   }
 
   if (!res.ok || data.code !== 0) {
     const err = new ApiClientError(data.message || `Request failed with ${res.status}`, data.code);
     err.clientRequestId = clientRequestId;
+    err.requestId = data.request_id || res.headers.get('X-Request-Id') || res.headers.get('X-Client-Request-Id') || undefined;
     throw err;
   }
 

@@ -29,7 +29,7 @@ fn markdown_to_html(markdown: &str) -> String {
     let parser = Parser::new_ext(markdown, options);
     let mut html_out = String::new();
     html::push_html(&mut html_out, parser);
-    html_out
+    ammonia::clean(&html_out)
 }
 
 fn normalize_status(value: Option<&str>) -> AppResult<String> {
@@ -106,7 +106,13 @@ pub async fn search_posts(
         offset,
     )
     .await?;
-    let total = items.len() as i64;
+    let total = repository::count_search_posts(
+        &state.pool,
+        &query.keyword,
+        query.category_id.as_deref(),
+        query.tag_id.as_deref(),
+    )
+    .await?;
     Ok(PaginatedResponse::new(items, page, page_size, total))
 }
 
@@ -365,25 +371,22 @@ fn extract_zip(data: &[u8], dest_dir: &std::path::Path) -> AppResult<()> {
         let mut file = archive
             .by_index(i)
             .map_err(|e| AppError::BadRequest(format!("Failed to read zip entry: {}", e)))?;
-        let name = file.name().to_string();
+        let entry_path = file
+            .enclosed_name()
+            .ok_or_else(|| AppError::BadRequest("ZIP contains invalid path entry".into()))?
+            .to_path_buf();
+        let outpath = dest_dir.join(entry_path);
 
-        // Security: prevent path traversal
-        if name.contains("..") || name.starts_with('/') || name.contains('\\') {
+        if file.is_dir() {
+            std::fs::create_dir_all(&outpath).map_err(AppError::Io)?;
             continue;
         }
-
-        let outpath = dest_dir.join(&name);
-        if file.is_dir() {
-            std::fs::create_dir_all(&outpath).map_err(|e| AppError::Io(e))?;
-        } else {
-            if let Some(p) = outpath.parent() {
-                std::fs::create_dir_all(p).map_err(|e| AppError::Io(e))?;
-            }
-            let mut buf = Vec::new();
-            std::io::Read::read_to_end(&mut file, &mut buf)
-                .map_err(|e| AppError::Io(e))?;
-            std::fs::write(&outpath, &buf).map_err(|e| AppError::Io(e))?;
+        if let Some(parent) = outpath.parent() {
+            std::fs::create_dir_all(parent).map_err(AppError::Io)?;
         }
+        let mut buf = Vec::new();
+        std::io::Read::read_to_end(&mut file, &mut buf).map_err(AppError::Io)?;
+        std::fs::write(&outpath, &buf).map_err(AppError::Io)?;
     }
     Ok(())
 }

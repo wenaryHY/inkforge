@@ -15,72 +15,23 @@ use super::{
 };
 
 pub async fn register(state: Arc<AppState>, body: RegisterRequest) -> AppResult<TokenPayload> {
-    let allow_register = setting_repository::get_bool(&state.pool, "allow_register", true).await?;
+    ensure_public_registration_available(&state, &body).await?;
+    validate_register_request(&body)?;
+    ensure_identity_available(&state, &body).await?;
 
-    if !allow_register {
-        tracing::warn!(
-            module = "auth",
-            event = "register_disabled",
-            username = %body.username,
-            email = %body.email,
-            "registration rejected"
-        );
-        return Err(AppError::Forbidden);
-    }
-
-    if body.username.trim().len() < 3 {
-        tracing::warn!(
-            module = "auth",
-            event = "register_invalid_username",
-            username = %body.username,
-            "registration rejected"
-        );
-        return Err(AppError::BadRequest(
-            "username must be at least 3 characters".into(),
-        ));
-    }
-    if body.password.len() < 6 {
-        tracing::warn!(
-            module = "auth",
-            event = "register_invalid_password",
-            username = %body.username,
-            "registration rejected"
-        );
-        return Err(AppError::BadRequest(
-            "password must be at least 6 characters".into(),
-        ));
-    }
-
-    let exists =
-        repository::exists_by_username_or_email(&state.pool, &body.username, &body.email).await?;
-    if exists {
-        tracing::warn!(
-            module = "auth",
-            event = "register_conflict",
-            username = %body.username,
-            email = %body.email,
-            "registration rejected"
-        );
-        return Err(AppError::Conflict(
-            "username or email already exists".into(),
-        ));
-    }
-
-    let role = if repository::user_count(&state.pool).await? == 0 {
-        "admin"
-    } else {
-        "member"
-    };
+    let username = body.username.trim().to_string();
+    let email = body.email.trim().to_string();
     let display_name = body
         .display_name
-        .unwrap_or_else(|| body.username.clone())
+        .unwrap_or_else(|| username.clone())
         .trim()
         .to_string();
     let password_hash = hash_password(&body.password)?;
+    let role = "member";
     let user_id = repository::insert_user(
         &state.pool,
-        body.username.trim(),
-        body.email.trim(),
+        &username,
+        &email,
         &password_hash,
         &display_name,
         role,
@@ -91,13 +42,13 @@ pub async fn register(state: Arc<AppState>, body: RegisterRequest) -> AppResult<
         &state.config.auth.secret,
         state.config.auth.expires_in_seconds,
         user_id,
-        body.username.trim().to_string(),
+        username.clone(),
         role.to_string(),
     )?;
     tracing::info!(
         module = "auth",
         event = "register_success",
-        username = %body.username.trim(),
+        username = %username,
         role = %role,
         "registration succeeded"
     );
@@ -164,6 +115,87 @@ pub async fn login(state: Arc<AppState>, body: LoginRequest) -> AppResult<TokenP
         user.role,
     )?;
     Ok(TokenPayload { token })
+}
+
+async fn ensure_public_registration_available(
+    state: &Arc<AppState>,
+    body: &RegisterRequest,
+) -> AppResult<()> {
+    ensure_setup_completed(state).await?;
+
+    let allow_register = setting_repository::get_bool(&state.pool, "allow_register", true).await?;
+    if !allow_register {
+        tracing::warn!(
+            module = "auth",
+            event = "register_disabled",
+            username = %body.username,
+            email = %body.email,
+            "registration rejected"
+        );
+        return Err(AppError::Conflict("public registration is disabled".into()));
+    }
+
+    if repository::user_count(&state.pool).await? > 0 {
+        return Ok(());
+    }
+
+    tracing::warn!(
+        module = "auth",
+        event = "register_without_initialized_admin",
+        username = %body.username,
+        email = %body.email,
+        "registration rejected"
+    );
+    Err(AppError::Conflict(
+        "public registration is unavailable before administrator initialization".into(),
+    ))
+}
+
+fn validate_register_request(body: &RegisterRequest) -> AppResult<()> {
+    if body.username.trim().len() < 3 {
+        tracing::warn!(
+            module = "auth",
+            event = "register_invalid_username",
+            username = %body.username,
+            "registration rejected"
+        );
+        return Err(AppError::BadRequest(
+            "username must be at least 3 characters".into(),
+        ));
+    }
+
+    if body.password.len() < 6 {
+        tracing::warn!(
+            module = "auth",
+            event = "register_invalid_password",
+            username = %body.username,
+            "registration rejected"
+        );
+        return Err(AppError::BadRequest(
+            "password must be at least 6 characters".into(),
+        ));
+    }
+
+    Ok(())
+}
+
+async fn ensure_identity_available(state: &Arc<AppState>, body: &RegisterRequest) -> AppResult<()> {
+    let exists =
+        repository::exists_by_username_or_email(&state.pool, &body.username, &body.email).await?;
+    if !exists {
+        return Ok(());
+    }
+
+    tracing::warn!(
+        module = "auth",
+        event = "register_conflict",
+        username = %body.username,
+        email = %body.email,
+        "registration rejected"
+    );
+    Err(AppError::Conflict(
+        "username or email already exists".into(),
+    ))
 }
 
 async fn ensure_setup_completed(state: &Arc<AppState>) -> AppResult<()> {

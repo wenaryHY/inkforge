@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiData, getToken, paginationPages, API, API_PREFIX } from '../lib/api';
+import { apiData, paginationPages, API, API_PREFIX } from '../lib/api';
+
 import { esc } from '../lib/utils';
 import type { MediaItem, PaginatedResponse } from '../types';
 import { PageHeader } from '../components/PageHeader';
@@ -75,8 +76,8 @@ export default function Upload() {
     try {
       const res = await fetch(`${API}${API_PREFIX}/admin/media`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${getToken()}` },
-        body: fd
+        body: fd,
+        credentials: 'include',
       });
       const json = await res.json();
       if (!res.ok || json.code !== 0) throw new Error(json.message || t('uploadFailed'));

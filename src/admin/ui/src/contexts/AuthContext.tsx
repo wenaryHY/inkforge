@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { apiData, API_PREFIX, getToken, removeToken, setToken } from '../lib/api';
+import { apiData, API_PREFIX } from '../lib/api';
 import type { CurrentUser } from '../types';
 import { useI18n } from '../i18n';
 import { saveLanguage } from '../i18n/detector';
@@ -21,88 +21,81 @@ interface AuthContextValue {
   isLoading: boolean;
 }
 
+const SESSION_TOKEN = 'session';
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CurrentUser | null>(null);
-  const [token, setTokenState] = useState(() => getToken());
+  const [token, setTokenState] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const { setLang } = useI18n();
 
   const clearAuth = useCallback(() => {
-    removeToken();
     setTokenState('');
     setUser(null);
   }, []);
 
-  const applyToken = useCallback((nextToken: string) => {
-    setToken(nextToken);
-    setTokenState(nextToken);
+  const applySession = useCallback(() => {
+    setTokenState(SESSION_TOKEN);
   }, []);
 
   const refreshUser = useCallback(async () => {
-    if (!getToken()) {
-      setUser(null);
-      return;
-    }
     const me = await apiData<CurrentUser>(`${API_PREFIX}/me`);
     setUser(me);
-    // 同步用户语言偏好
+    applySession();
     if (me.language) {
       setLang(me.language);
       saveLanguage(me.language);
     }
-  }, [setLang]);
+  }, [applySession, setLang]);
 
   useEffect(() => {
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-
+    let active = true;
     refreshUser()
-      .catch(() => clearAuth())
-      .finally(() => setIsLoading(false));
-  }, [token, refreshUser, clearAuth]);
+      .catch(() => {
+        if (active) clearAuth();
+      })
+      .finally(() => {
+        if (active) setIsLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [refreshUser, clearAuth]);
 
   const login = useCallback(async (loginValue: string, password: string) => {
     try {
-      const payload = await apiData<{ token: string }>(`${API_PREFIX}/auth/login`, {
+      await apiData<{ token: string }>(`${API_PREFIX}/auth/login`, {
         method: 'POST',
         body: JSON.stringify({ login: loginValue, password }),
       });
-      applyToken(payload.token);
-      // 不在这里调用 refreshUser，让 useEffect 处理
+      await refreshUser();
       return { success: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : '登录失败';
       clearAuth();
-      return { success: false, message };
+      return { success: false, message: error instanceof Error ? error.message : '登录失败' };
     }
-  }, [applyToken, clearAuth]);
+  }, [clearAuth, refreshUser]);
 
   const register = useCallback(async (data: RegisterData) => {
     try {
-      const payload = await apiData<{ token: string }>(`${API_PREFIX}/auth/register`, {
+      await apiData<{ token: string }>(`${API_PREFIX}/auth/register`, {
         method: 'POST',
         body: JSON.stringify(data),
       });
-      applyToken(payload.token);
-      // 不在这里调用 refreshUser，让 useEffect 处理
+      await refreshUser();
       return { success: true };
     } catch (error) {
-      const message = error instanceof Error ? error.message : '注册失败';
-      return { success: false, message };
+      clearAuth();
+      return { success: false, message: error instanceof Error ? error.message : '注册失败' };
     }
-  }, [applyToken]);
+  }, [clearAuth, refreshUser]);
 
   const logout = useCallback(async () => {
     try {
-      if (getToken()) {
-        await apiData(`${API_PREFIX}/auth/logout`, { method: 'POST' });
-      }
+      await apiData(`${API_PREFIX}/auth/logout`, { method: 'POST' });
     } catch {
-      // ignore server-side logout failure and always clear local auth
+      // ignore server-side logout failure and always clear local auth state
     } finally {
       clearAuth();
     }

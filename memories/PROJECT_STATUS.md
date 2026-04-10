@@ -1,175 +1,181 @@
 # InkForge 项目现状（唯一真相来源）
 
-**最后更新**: 2026-04-10
-**版本**: v0.3.5
-**状态**: 开发中
+**最后更新**: 2026-04-10  
+**版本**: v0.3.5  
+**状态**: 开发中（Web 主链路已可用，`Phase 3A` 进行中，`Phase 3B` 待验收）
 
 ---
 
-## 技术栈
+## 一句话结论
 
-| 层 | 技术 |
-|----|------|
-| 后端语言 | Rust |
-| Web 框架 | Axum 0.7 |
-| 数据库 | SQLite (sqlx 0.7) |
-| 异步运行时 | Tokio |
-| 模板引擎 | MiniJinja |
-| 序列化 | serde + serde_json + toml |
-| 认证 | JWT (jsonwebtoken) + Argon2 |
-| 前端框架 | React 18 + TypeScript |
-| 前端构建 | Vite |
-| 容器化 | Docker |
+InkForge 当前已经是一个**功能面较完整的 Web 优先单体 CMS**；真正卡住后续演进的，不是“还缺多少功能”，而是 **内容安全边界、备份 / 部署路径坐标、Tauri 验收闭环** 还没有完全收敛。
 
 ---
 
-## 已完成功能
+## 当前技术基线（已核对代码）
 
-### 核心 CMS
-- ✅ 用户认证与授权（JWT + Argon2）
-- ✅ 文章管理（CRUD + Markdown 渲染 + FTS5 全文搜索）
-- ✅ 评论系统（创建、审核、删除）
-- ✅ 分类管理（CRUD）
-- ✅ 标签管理（CRUD）
-
-### 媒体系统
-- ✅ 媒体上传与管理
-- ✅ 媒体分类（6 个默认分类 + 自定义分类 CRUD）
-- ✅ 前端 Media 分类 UI（Select、Badge 组件）
-
-### 主题系统
-- ✅ 主题扫描与列表
-- ✅ 主题激活与切换
-- ✅ 主题详情查看
-- ✅ 主题配置保存（schema → 数据库）
-- ✅ 主题 zip 上传（含 theme.toml 校验）
-- ✅ 前台主题渲染（MiniJinja 动态加载 + SSR 数据注入）
-
-### 备份与恢复
-- ✅ 本地备份（数据库 + 媒体文件打包为 zip）
-- ✅ 备份恢复（上传 zip 恢复）
-- ✅ 定时备份调度（tokio-cron-scheduler）
-- ✅ 备份列表、删除、下载
-- ✅ 统一回收站系统（支持文章、分类、标签、媒体、媒体分类、评论的软删除与恢复）
-- ✅ 自动化灾难恢复配置（支持 1-90 天过期清理、自定义清理时间点、带滚轮动画的 TimePicker UI）
-- ⚠️ S3 备份声明支持但运行时未接线
-
-### SEO
-- ✅ Sitemap 生成
-- ✅ Robots.txt 配置
-- ✅ Meta 标签构建器已全部接入前台页面渲染
-
-### 实时通知
-- ✅ WebSocket（管理员通知 + 公开事件）
-
-### 管理后台（React）
-- ✅ 10 个页面：Posts、Categories、Tags、Comments、Settings、Upload、MediaCategories、Themes、ThemeDetail、Login
-- ✅ 16 个通用组件
-- ✅ 主题切换（Orange 风格）
+| 层 | 技术 | 状态 |
+|---|---|---|
+| 后端 | Rust + Axum 0.7 + sqlx 0.7 + SQLite | 已落地 |
+| 前端 | React 19 + TypeScript + Vite 8 | 已落地 |
+| 编辑器 | Tiptap + CodeMirror 6 | 已落地 |
+| 模板渲染 | MiniJinja | 已落地 |
+| 搜索 | SQLite FTS5 | 已落地，公开搜索契约已校正 |
+| 桌面壳 | Tauri 2 | 已有骨架，未通过验收 |
 
 ---
 
-## 已有但未接入的代码
+## 已验证落地的能力
 
-这些代码已编写但未被路由或业务调用：
+### 内容与后台
+- ✅ 认证与授权（JWT + Argon2）
+- ✅ `post | page` 双内容类型
+- ✅ `page_render_mode`（`editor | custom_html`）
+- ✅ Tiptap 编辑器 + CodeMirror 源码模式
+- ✅ `/api/v1/...` 正式接口 + 旧 `/api/...` 兼容层
+- ✅ React 管理后台与中英文切换
 
-| 模块 | 文件 | 状态 |
-|------|------|------|
-| 插件系统 | `infra/plugin/` | 纯接口占位，无实现 |
-| 存储后端 | `infra/storage/` | 抽象层占位，实际用直接文件 I/O |
-| S3 备份 | `infra/backup/s3.rs` | 编译通过但运行时未使用 |
+### 安装向导
+- ✅ `setup` 模块（handler / service / repository）
+- ✅ `not_started / admin_created / configured / completed` 四阶段状态模型
+- ✅ 空库时 `/` 与 `/admin` 自动引导到 `/setup`
+- ✅ Web 首装流程：站点信息、管理员初始化、后台入口配置
+- ✅ 安装完成后的运行态缓存刷新与旧库状态回填
 
----
+### 主题与前台
+- ✅ 主题扫描、详情、激活、配置保存
+- ✅ 主题 ZIP 上传与路径校验
+- ✅ MiniJinja 前台主题渲染
+- ✅ Sitemap、Robots、Meta / OpenGraph / JSON-LD 接入
+- ✅ 默认主题前台评论实时更新链路
 
-## 项目结构
-
-```
-inkforge/
-├── src/
-│   ├── main.rs              # 入口
-│   ├── state.rs             # AppState
-│   ├── ws.rs                # WebSocket
-│   ├── admin/               # 管理后台（React 构建产物 + 源码）
-│   ├── bootstrap/           # 配置与路由
-│   ├── infra/               # 基础设施（db, jwt, hash, backup, plugin, storage）
-│   ├── modules/             # 11 个业务模块
-│   └── shared/              # 错误、认证、分页、响应
-├── migrations/              # 6 个 SQL 迁移文件
-├── themes/default/          # 默认主题（templates + static）
-├── config/default.toml      # 默认配置
-├── uploads/                 # 上传文件
-├── backups/                 # 备份存储
-└── memories/                # 项目文档（本目录）
-```
+### 媒体、备份、运维
+- ✅ 媒体上传、分类、重命名、删除
+- ✅ 本地备份、恢复、调度、下载、删除
+- ✅ 统一回收站与过期清理调度
+- ✅ WebSocket 管理员 / 公开事件通道
+- ✅ `/api/v1/health` 与 `/api/v1/version`
 
 ---
 
-## API 端点总览（39 个）
+## 已完成的基线加固（代码已存在）
 
-### 公开 API
-- `GET  /api/health` / `GET /api/version`
-- `POST /api/auth/register` / `POST /api/auth/login` / `POST /api/auth/logout`
-- `GET  /api/me` / `PATCH /api/me/profile` / `PATCH /api/me/password`
-- `GET  /api/posts` / `GET /api/search` / `GET /api/posts/:slug`
-- `GET  /api/categories` / `GET /api/tags`
-- `GET  /api/themes/active`
-- `GET  /sitemap.xml` / `GET /robots.txt`
+以下事项已经落在真实代码中，不应再被记为“未开始”：
 
-### 管理 API
-- 文章: CRUD + 列表
-- 评论: 列表 + 审核 + 删除
-- 分类/标签: CRUD
-- 媒体: 上传 + 列表 + 删除 + 重命名 + 分类管理
-- 主题: 列表 + 详情 + 配置 + 上传 + 激活
-- 设置: 列表 + 更新（含回收站自动清理配置）
-- 备份: 创建 + 列表 + 恢复 + 调度 + 删除 + 下载
-- 回收站: 跨模块列表查询 + 恢复 + 彻底删除 + 过期自动清理调度
-
-### WebSocket
-- `GET /ws/admin` / `GET /ws/public`
+- ✅ 生产环境默认 JWT secret 已可阻断，除非显式开启不安全模式
+- ✅ 管理端已改为 **HttpOnly Cookie Session + 内存占位 token**，不再长期依赖 `localStorage` 存放真实 JWT
+- ✅ 登录链路已有内存级限流器
+- ✅ 通用安全响应头中间件已接入
+- ✅ 主题 ZIP 解压已做 `enclosed_name()` 路径保护
+- ✅ Markdown 渲染输出已在服务端完成 sanitize
+- ✅ 公开注册已复用 setup 完成态守卫，且首个管理员只能由安装向导创建
+- ✅ 登录页已按 `/setup/status` 动态决定跳转 `/setup` 与是否展示注册入口
+- ✅ 管理后台内部导航已收敛到 `/admin/*`，不再因根路径跳转丢失页面与 query
+- ✅ `Settings.tsx` 中回收站保留天数与清理时间已接通真实保存链路
+- ✅ `me/profile` 已按字段合并更新，未提交字段不会再被默认值覆盖
+- ✅ 公开搜索已修复 `tag_id` 过滤与 `pagination.total` 真实总数契约
+- ✅ 全局 request_id 中间件已接入，响应体与响应头会复用同一追踪 ID
 
 ---
 
-## 长期路线图
+## 已存在但未完成验收的部分
 
-参见 [v0.3-architecture-vision.md](./v0.3-architecture-vision.md) 与 [executable-roadmap.md](./executable-roadmap.md)
+### Phase 3A：基线加固与验收补齐
+当前阶段不再是“补多少新功能”，而是收敛以下主链路边界：
+- `custom_html`、主题模板 `safe` 输出与通用 CSP 的内容安全边界
+- legacy `/api` 兼容层退出路径
+- 备份、部署与静态入口路径统一
 
-核心方向：**Headless Rust Core + Web-Based Theme Engine + Tauri 桌面应用**
+### Phase 3B：Tauri 运行壳
+当前仓库已存在 `src-tauri/`，并且已经尝试接入：
+- workspace 成员
+- sidecar 生命周期代码
+- setup 页到 admin 页的 Tauri IPC 跳转
+- 窗口管理与启动入口骨架
 
-### 近期优先级（v0.3 → v0.4）
-1. ✅ 前台主题渲染打通（已完成）
-2. ✅ 安装向导（四阶段状态模型 + 旧库回填兼容）
-3. 插件系统最小可用
-4. Tauri 集成
+但 **尚未通过阶段验收**，原因至少包括：
+- `cargo check --workspace` 当前失败
+- `src-tauri` 依赖与 manifest 仍未完全闭环
+- sidecar 资源、打包与 dev / prod 一致性未验证完成
+- setup 状态字段读取与后端 DTO 存在不匹配风险
 
-### 中期规划（v0.5+）
-1. JavaScript SDK (window.cms.*)
-2. 主题生态与市场
-3. 性能优化
-4. 安全加固
-
-### 治理与执行文档（2026-04-09）
-- `executable-roadmap.md` - 面向落地的分阶段执行路线图
-- `phase-task-checklist.md` - 各 Phase 的可勾选任务清单
-- `RUNTIME_RULES.md` - 每次会话的提问、风险分级与执行协议
+**结论**：`Phase 3B` 只能记为“进行中 / 待验收”，不能记为“已完成”。
 
 ---
 
-## 开发指南
+## 当前明确风险
 
-### 运行
-```bash
-cargo run                    # 启动服务器（默认 :2000）
-```
+### 1. API 兼容层仍待收敛
+- 默认主题前台仍真实依赖 legacy `/api/...`
+- legacy `/api` 的退出顺序与弃用策略仍未明确
 
-### 构建
-```bash
-cargo build --release        # 生产构建
-docker build -t inkforge .   # Docker 构建
-```
+### 2. 内容安全边界尚未收口
+- Markdown 渲染 sanitize 已完成，但 `custom_html` 仍是高信任同源执行模型
+- 默认主题模板对 `post.content_html` 使用 `safe`
+- Web 主链路仍缺少通用 CSP
 
-### 添加新模块
-1. `src/modules/<name>/` 下创建 domain、dto、repository、service、handler
-2. 在 `src/modules/mod.rs` 中 pub mod
-3. 在 `src/bootstrap/router.rs` 中注册路由
-4. 如需数据库表，在 `migrations/` 添加新迁移
+### 3. 备份 / 部署 / 静态入口坐标不一致
+- 备份服务、备份下载、Docker 与 Litestream 使用的路径坐标不完全一致
+- `parse_sqlite_url()` 仍存在绝对路径解析风险
+- 后台静态入口仍存在 `index.html / admin.html` 语义漂移
+
+### 4. Tauri setup 状态字段读取不匹配
+- 后端响应字段是 `data.stage`
+- Tauri sidecar 当前读取的是 `data.setup_stage`
+
+### 5. 验收与可观测性仍偏弱
+- 请求追踪链路虽已打通，但仍缺少面向主链路的回归验收项
+- 仓库缺少稳定的前端测试与基础 CI workflow
+
+---
+
+## 当前架构判断
+
+### 已经稳定的边界
+- Rust 单体业务内核仍是唯一真相源
+- Web 安装向导是未来桌面安装体验的唯一逻辑来源
+- `/api/v1` 已是正式契约层
+- React 管理后台是当前唯一官方后台 UI
+- Markdown 渲染 sanitize 已进入真实服务链路
+
+### 仍需收敛的边界
+- legacy `/api` 的迁移退出路径
+- `custom_html` / theme `safe` / CSP 的内容安全边界
+- 备份、恢复、Docker、Litestream 的统一路径坐标
+- Tauri 启动模型、窗口模型与 sidecar 打包方案
+
+---
+
+## 最近审计入口
+
+- 详细结构化审计见 `architecture-audit-2026-04-10.md`
+
+---
+
+## 近期优先级（按建议执行顺序）
+
+1. **收口 `custom_html`、主题模板与 CSP 的内容安全边界**
+2. **统一备份 / 部署 / 静态入口路径坐标，并明确 legacy `/api` 的退出路径**
+3. **修复 Tauri setup 状态读取并恢复 `Phase 3B` 验收**
+4. **为 Web 主链路补最小回归验收与 CI 入口**
+5. **在验收体系稳定前，不继续前推插件系统**
+
+---
+
+## 仓库事实（2026-04-10）
+
+- 默认后端端口：`2000`
+- 默认 Vite 开发端口：`5173`
+- 迁移文件：`001` 到 `013`
+- 根仓库当前已声明 workspace，并包含 `src-tauri/`
+- `src-tauri/` 当前属于**实验性骨架**而非稳定交付物
+
+---
+
+## 文档使用说明
+
+- 想知道**现在是什么状态**，看本文件。
+- 想知道**为什么这样设计**，看 `architecture-decisions.md`。
+- 想知道**接下来怎么推进**，看 `executable-roadmap.md` 与 `phase-task-checklist.md`。
+- 想知道**审计里发现了什么**，看 `architecture-audit-2026-04-10.md`。
+- 想知道**历史上真实完成过什么**，看 `v0.3-progress.md`。

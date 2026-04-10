@@ -96,7 +96,7 @@ export default function ThemeDetail() {
             >
               {t('activateTheme')}
             </Button>
-            <Button onClick={() => navigate('/themes')} variant="ghost">
+            <Button onClick={() => navigate('/admin/themes')} variant="ghost">
               {t('backToList')}
             </Button>
           </div>

@@ -4,9 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "concurrently -n rust,vite -c blue,green \"cargo run\" \"npm run dev --prefix src/admin/ui\"",
-    "dev:watch": "concurrently -n rust,vite -c blue,green \"cargo watch -x run\" \"npm run dev --prefix src/admin/ui\""
+    "dev:watch": "concurrently -n rust,vite -c blue,green \"cargo watch -x run\" \"npm run dev --prefix src/admin/ui\"",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "npm run build --prefix src/admin/ui && tauri build"
+
   },
   "devDependencies": {
-    "concurrently": "^9.0.0"
+    "@tauri-apps/cli": "^2",
+    "concurrently": "^9.0.0",
+    "wait-on": "^8.0.3"
   }
 }
+

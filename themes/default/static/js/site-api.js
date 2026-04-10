@@ -34,12 +34,13 @@
     const contentType = response.headers.get('content-type') || '';
     const isJson = contentType.includes('application/json');
     const payload = isJson ? await response.json().catch(() => null) : null;
+    const requestId = (payload && payload.request_id) || response.headers.get('x-request-id') || response.headers.get('x-client-request-id') || undefined;
 
     if (response.ok && payload && payload.code === 0) {
       logDebug('api_response_ok', {
         status: response.status,
         clientRequestId,
-        requestId: payload.request_id,
+        requestId,
       });
       return payload.data;
     }
@@ -48,9 +49,11 @@
     error.status = response.status;
     error.payload = payload;
     error.clientRequestId = clientRequestId;
+    error.requestId = requestId;
     logError('api_response_error', {
       status: response.status,
       clientRequestId,
+      requestId,
       payload,
     });
     throw error;

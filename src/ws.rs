@@ -3,16 +3,18 @@ use axum::{
         ws::{Message, WebSocket, WebSocketUpgrade},
         Query, State,
     },
+    http::HeaderMap,
     response::Response,
 };
-use futures_util::stream::StreamExt;
-use futures_util::SinkExt;
+use futures_util::{SinkExt, stream::StreamExt};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tokio::sync::broadcast;
 
-use crate::shared::auth::decode_token;
-use crate::state::AppState;
+use crate::{
+    shared::auth::{decode_token, session_token_from_headers},
+    state::AppState,
+};
 
 // ─── Server Event ───────────────────────────────────────────────────────────
 
@@ -42,18 +44,29 @@ pub enum ServerEvent {
 
 // ─── Admin WebSocket ────────────────────────────────────────────────────────
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Default)]
 pub struct WsAdminParams {
-    token: String,
+    token: Option<String>,
 }
 
 pub async fn ws_admin_handler(
     ws: WebSocketUpgrade,
     State(state): State<Arc<AppState>>,
-    Query(params): Query<WsAdminParams>,
+    headers: HeaderMap,
+    params: Option<Query<WsAdminParams>>,
 ) -> Response {
-    // 使用与 HTTP 路由完全相同的密钥来验证 JWT
-    let claims = match decode_token(&params.token, &state.config.auth.secret) {
+    let token = params
+        .and_then(|Query(query)| query.token)
+        .or_else(|| session_token_from_headers(&headers));
+
+    let Some(token) = token else {
+        return Response::builder()
+            .status(401)
+            .body("Unauthorized".into())
+            .unwrap();
+    };
+
+    let claims = match decode_token(&token, &state.config.auth.secret) {
         Ok(c) => c,
         Err(_) => {
             return Response::builder()
@@ -100,25 +113,19 @@ async fn handle_ws(
 ) {
     let (mut sender, mut receiver) = socket.split();
 
-    // 独立 task：接收客户端消息（目前仅处理 Close 帧）
     let _recv_task = tokio::spawn(async move {
         while let Some(msg) = receiver.next().await {
-            match msg {
-                Ok(Message::Close(_)) => break,
-                _ => {} // 忽略其他消息
+            if matches!(msg, Ok(Message::Close(_))) {
+                break;
             }
         }
     });
 
-    // 主循环：从 broadcast channel 读取事件并推送给客户端
     while let Ok(event) = rx.recv().await {
-        // 如果是前台连接（有 post_id），只推送该文章的 approved 事件
         if let Some(ref pid) = post_id {
             match &event {
-                ServerEvent::CommentApproved { post_id, .. } if post_id == pid => {
-                    // 推送
-                }
-                _ => continue, // 跳过不相关事件
+                ServerEvent::CommentApproved { post_id, .. } if post_id == pid => {}
+                _ => continue,
             }
         }
 
@@ -128,7 +135,7 @@ async fn handle_ws(
         };
 
         if sender.send(Message::Text(json.into())).await.is_err() {
-            break; // 客户端断开
+            break;
         }
     }
 }

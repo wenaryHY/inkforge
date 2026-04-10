@@ -1,220 +1,168 @@
-# InkForge v0.3 集成测试清单
+# InkForge 集成测试与阶段验收清单
 
-## 登录凭证
-- **用户名**: testuser
-- **密码**: test123456
-- **访问地址**: http://localhost:5173/admin/
-
----
-
-## 第 1 阶段：主题管理（Stage 6A）
-
-### 1.1 主题列表页面
-- [ ] 访问 `/admin/themes`
-- [ ] 验证主题列表加载成功
-- [ ] 验证显示主题名称、版本、作者
-- [ ] 验证"激活"按钮状态
-
-### 1.2 主题详情页面
-- [ ] 点击主题进入详情页
-- [ ] 验证显示主题基本信息（名称、版本、作者、描述）
-- [ ] 验证显示主题配置字段（如果有）
-- [ ] 验证"返回列表"按钮可用
-
-### 1.3 主题配置编辑
-- [ ] 在详情页编辑配置字段
-- [ ] 点击"保存配置"按钮
-- [ ] 验证保存成功提示
-- [ ] 验证配置已保存（刷新页面后仍存在）
-
-### 1.4 主题激活
-- [ ] 点击"激活主题"按钮
-- [ ] 验证激活成功提示
-- [ ] 验证按钮状态变为"已激活"
-- [ ] 验证其他主题的激活按钮恢复为可用状态
+> 用途：作为当前主链路与阶段验收的统一检查表。
+> 默认端口约定：
+> - 后端开发默认：`http://localhost:2000`
+> - 管理后台开发态：`http://localhost:5173/admin/`
+> - Docker 镜像默认：`http://localhost:3000`
+>
+> 若本地端口已调整，请以实际配置为准。
 
 ---
 
-## 第 2 阶段：数据备份（Backup 模块）
+## A. 基线预检（每次阶段验收前先跑）
 
-### 2.1 手动备份
-- [ ] 导航到设置页面 → 数据备份
-- [ ] 点击"下载数据库备份"按钮
-- [ ] 验证备份文件下载成功
-- [ ] 验证备份文件大小合理（> 100KB）
-- [ ] 验证文件名包含时间戳
+### A1. Rust / Workspace
+- [ ] 运行 `cargo check --workspace`
+- [ ] 确认无 manifest 级错误
+- [ ] 确认无新增编译错误
 
-### 2.2 备份导入
-- [ ] 点击"选择备份文件导入"
-- [ ] 选择刚下载的备份文件
-- [ ] 确认导入（会自动备份原数据库）
-- [ ] 验证导入成功提示
-- [ ] 验证页面刷新后数据完整
+### A2. 前端构建
+- [ ] 运行 `npm run build --prefix src/admin/ui`
+- [ ] 确认 TypeScript 构建通过
+- [ ] 确认 Vite 生产构建通过
 
-### 2.3 备份计划配置
-- [ ] 在备份设置中配置自动备份
-- [ ] 设置备份频率（每天/每周/每月）
-- [ ] 设置备份时间
-- [ ] 点击"保存"
-- [ ] 验证配置已保存
-
-### 2.4 备份列表查看
-- [ ] 查看备份列表
-- [ ] 验证显示备份时间、大小、状态
-- [ ] 验证可以删除备份
-- [ ] 验证可以恢复备份
+### A3. 主程序启动
+- [ ] 运行 `cargo run`
+- [ ] 确认后端启动无 panic
+- [ ] 访问 `GET /api/v1/health`
+- [ ] 访问 `GET /api/v1/version`
 
 ---
 
-## 第 3 阶段：SEO 优化（SEO 模块）
+## B. Web 主链路回归
 
-### 3.1 Robots.txt
-- [ ] 访问 http://localhost:3000/robots.txt
-- [ ] 验证返回 robots.txt 内容
-- [ ] 验证包含 `User-agent: *`
-- [ ] 验证包含 `Sitemap:` 指向 sitemap.xml
+### B1. 安装向导
+- [ ] 空库状态访问 `/` 自动进入 `/setup`
+- [ ] 空库状态访问 `/admin` 自动进入 `/setup`
+- [ ] `/api/v1/setup/status` 返回结构正确，且字段为 `data.stage`
+- [ ] 完成安装后返回 token 与 `redirect_to`
+- [ ] 安装完成后访问 `/setup` 会跳到后台入口
+- [ ] 重启服务后不会重复进入安装页
 
-### 3.2 Sitemap.xml
-- [ ] 访问 http://localhost:3000/sitemap.xml
-- [ ] 验证返回 XML 格式内容
-- [ ] 验证包含 `<?xml version="1.0"?>`
-- [ ] 验证包含 `<urlset>` 标签
-- [ ] 验证包含已发布文章的 URL
+### B2. 认证链路
+- [ ] 登录成功后可进入后台
+- [ ] 登出后会话失效
+- [ ] 无效 token / 失效会话返回 401
+- [ ] `/api/v1/me` 响应结构正确
+- [ ] setup 未完成时公开注册被正确阻断
 
-### 3.3 Meta 标签生成
-- [ ] 访问前台首页 http://localhost:3000/
-- [ ] 打开浏览器开发者工具 → 检查元素
-- [ ] 验证 `<meta name="description">` 存在
-- [ ] 验证 `<meta property="og:title">` 存在
-- [ ] 验证 `<meta property="og:description">` 存在
+### B3. 内容与页面
+- [ ] 创建 `post` 成功
+- [ ] 创建 `page` 成功
+- [ ] `page_render_mode = editor` 的页面可正常查看
+- [ ] `page_render_mode = custom_html` 的页面可正常查看
+- [ ] 编辑器中的媒体插入仍可用
+- [ ] Markdown 页面输出在 sanitize 后仍能正常渲染
+- [x] 标签筛选搜索可真实命中 `tag_id` 条件
+- [x] 搜索分页中的 `total` 与真实命中总数一致
 
-### 3.4 JSON-LD 结构化数据
-- [ ] 在前台页面查看页面源代码
-- [ ] 搜索 `<script type="application/ld+json">`
-- [ ] 验证包含 `@context: "https://schema.org"`
-- [ ] 验证包含 `@type: "WebSite"` 或 `"BlogPosting"`
+### B4. 主题与前台
+- [ ] 后台主题列表加载成功
+- [ ] 主题详情页加载成功
+- [ ] 主题配置可保存并刷新后保留
+- [ ] 主题切换后前台首页可正常访问
+- [ ] `robots.txt` 与 `sitemap.xml` 可访问
+- [ ] 默认主题前台仍可通过 legacy `/api/...` 正常完成搜索与评论链路
+- [ ] `/ws/public` 评论实时刷新链路可用
 
----
-
-## 第 4 阶段：系统集成验证
-
-### 4.1 后端服务
-- [ ] 验证后端启动无错误
-- [ ] 访问 http://localhost:3000/api/health
-- [ ] 验证返回 `{"status":"ok"}`
-- [ ] 访问 http://localhost:3000/api/version
-- [ ] 验证返回版本信息
-
-### 4.2 前端构建
-- [ ] 验证前端构建成功（npm run build）
-- [ ] 验证前端开发服务器运行正常
-- [ ] 验证管理后台可访问
-- [ ] 验证导航菜单加载完整
-
-### 4.3 API 响应格式
-- [ ] 验证所有 API 返回标准格式：
-  ```json
-  {
-    "code": 0,
-    "message": "ok",
-    "data": {...},
-    "request_id": "..."
-  }
-  ```
-- [ ] 验证错误响应包含错误码和消息
-- [ ] 验证分页响应包含 pagination 信息
-
-### 4.4 错误处理
-- [ ] 测试无效的主题 slug → 验证返回 404
-- [ ] 测试无效的备份 ID → 验证返回 404
-- [ ] 测试无效的 token → 验证返回 401
-- [ ] 测试网络错误恢复 → 验证错误提示显示
+### B5. 媒体、备份、回收站
+- [ ] 媒体上传成功
+- [ ] 媒体分类增删改可用
+- [ ] 手动备份成功
+- [ ] 备份列表可读取
+- [ ] 备份下载、恢复与删除使用同一套有效路径坐标
+- [ ] 回收站恢复 / 彻底删除可用
 
 ---
 
-## 第 5 阶段：API 端点验证（使用 curl）
+## C. API 契约与兼容层检查
 
-### 5.1 主题 API
-```bash
-# 获取主题列表
-curl http://localhost:3000/api/admin/themes \
-  -H "Authorization: Bearer $TOKEN"
+### C1. 正式契约
+- [ ] 新增功能接口优先位于 `/api/v1/...`
+- [ ] `ApiResponse` 结构保持统一：`code / message / data / request_id`
+- [ ] 分页响应保持统一结构
+- [ ] setup 状态 DTO 与前端 / Tauri 消费字段一致
 
-# 获取主题详情
-curl http://localhost:3000/api/admin/themes/default/detail \
-  -H "Authorization: Bearer $TOKEN"
-
-# 保存主题配置
-curl -X PATCH http://localhost:3000/api/admin/themes/default/config \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"config":{"key":"value"}}'
-
-# 激活主题
-curl -X POST http://localhost:3000/api/admin/themes/default/activate \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-### 5.2 备份 API
-```bash
-# 创建备份
-curl -X POST http://localhost:3000/api/admin/backup \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"provider":"local"}'
-
-# 列出备份
-curl http://localhost:3000/api/admin/backup/list \
-  -H "Authorization: Bearer $TOKEN"
-
-# 获取备份计划
-curl http://localhost:3000/api/admin/backup/schedule \
-  -H "Authorization: Bearer $TOKEN"
-```
-
-### 5.3 SEO API
-```bash
-# 获取 robots.txt
-curl http://localhost:3000/robots.txt
-
-# 获取 sitemap.xml
-curl http://localhost:3000/sitemap.xml
-```
+### C2. 兼容层
+- [ ] 默认主题当前依赖的旧 `/api/...` 路径仍可访问
+- [ ] legacy 非 auth 路由带 `Deprecation` / `Sunset` 响应头
+- [ ] legacy auth 路由的弃用策略与文档说明一致
+- [ ] 已明确记录兼容层退出条件与迁移顺序
 
 ---
 
-## 测试结果记录
+## D. 安全回归（Phase 3A 必测）
 
-| 功能 | 状态 | 备注 |
-|------|------|------|
-| 主题列表 | ⬜ | |
-| 主题详情 | ⬜ | |
-| 主题配置编辑 | ⬜ | |
-| 主题激活 | ⬜ | |
-| 手动备份 | ⬜ | |
-| 备份导入 | ⬜ | |
-| 备份计划 | ⬜ | |
-| Robots.txt | ⬜ | |
-| Sitemap.xml | ⬜ | |
-| Meta 标签 | ⬜ | |
-| JSON-LD | ⬜ | |
-| 后端健康检查 | ⬜ | |
-| 前端构建 | ⬜ | |
-| API 响应格式 | ⬜ | |
-| 错误处理 | ⬜ | |
+### D1. 配置与认证
+- [ ] 生产模式下默认 JWT secret 被阻断或显式标记为不安全
+- [ ] 登录接口具备基础限流 / 防爆破保护
+- [ ] 管理端真实凭证不再长期暴露在 `localStorage`
+- [ ] setup 未完成时后台路由保护正常
 
----
+### D2. 内容与上传
+- [ ] Markdown 渲染输出经过 sanitize
+- [ ] `custom_html` 页面上传、落盘与访问路径一致
+- [ ] 已评估 `custom_html` 与模板 `safe` 输出的同源安全边界
+- [ ] 主题 ZIP 上传无法写出主题目录之外的文件
+- [ ] 非法 ZIP / 非法主题包返回结构化错误
 
-## 已知问题
-
-- ⚠️ 旧的 "admin" 用户密码哈希损坏，无法登录
-- ✅ 已解决：使用 testuser/test123456 进行测试
+### D3. 响应头与跨域
+- [ ] 关键安全响应头已统一接入
+- [ ] CORS 仅允许明确来源
+- [ ] Web 主链路的 CSP / 内容安全策略与当前 HTML 信任模型一致
 
 ---
 
-## 后续步骤
+## E. 可观测性与诊断能力
 
-1. 完成上述所有测试
-2. 记录任何失败或异常
-3. 根据测试结果修复问题
-4. 准备进入 Stage 7（前台主题渲染）
+### E1. 请求追踪
+- [x] 管理后台请求会发送 `X-Client-Request-Id`
+- [x] 前台主题请求会发送 `X-Client-Request-Id`
+- [x] 后端响应 `request_id` 与请求追踪链路可稳定关联
+
+### E2. 运行诊断
+- [ ] 健康检查接口能反映服务可用性
+- [ ] 版本接口可返回当前版本信息
+- [ ] 关键错误日志可定位到对应请求或操作链路
+
+---
+
+## F. Tauri 桌面验收（仅在 Phase 3B 执行）
+
+### F1. 开发态
+- [ ] `tauri dev` 可启动
+- [ ] sidecar 或替代启动模型可正确拉起后端
+- [ ] 未安装状态进入 `/setup`
+- [ ] 已安装状态进入 `/admin`
+- [ ] sidecar 读取 `data.stage` 与后端 DTO 一致
+
+### F2. 打包态
+- [ ] 打包产物可生成
+- [ ] 打包产物首次运行可进入正确页面
+- [ ] 打包产物可正确携带桌面所需资源与二进制
+
+### F3. 生命周期
+- [ ] 窗口关闭后无孤儿进程
+- [ ] 启动失败时有明确降级或错误提示
+- [ ] setup → admin 的桌面态切换符合既定窗口模型
+
+---
+
+## G. 验收记录
+
+| 阶段 | 日期 | 结果 | 备注 |
+|------|------|------|------|
+| Phase 1 |  |  |  |
+| Phase 2 |  |  |  |
+| Phase 3A |  |  |  |
+| Phase 3B |  |  |  |
+| Phase 4 |  |  |  |
+
+---
+
+## 当前提醒
+
+- `Phase 3` 当前尚未通过本清单中的 `A1` 与 `A2`，因此不能记为完成。
+- `Phase 3A` 的重点已从“补 Markdown sanitize”转为“收口注册边界、搜索正确性、内容安全边界、request-id 与部署坐标”。
+- 后续任何新阶段开始前，都应先确认当前阶段在本清单中的退出条件已经被满足。

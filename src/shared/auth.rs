@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::{
     extract::{FromRef, FromRequestParts},
-    http::request::Parts,
+    http::{request::Parts, HeaderMap},
     RequestPartsExt,
 };
 use axum_extra::{
@@ -31,7 +31,6 @@ impl AuthUser {
     pub fn has_permission(&self, action: &str) -> bool {
         match action {
             "admin:access" => self.role == "admin",
-            // 示例：可以加更多如 "comment:create" 等权限点，根据用户身份不同返回
             _ => true,
         }
     }
@@ -39,6 +38,12 @@ impl AuthUser {
 
 #[derive(Debug, Clone)]
 pub struct AdminUser(pub AuthUser);
+
+pub fn session_token_from_headers(headers: &HeaderMap) -> Option<String> {
+    CookieJar::from_headers(headers)
+        .get("inkforge_session")
+        .map(|cookie| cookie.value().to_string())
+}
 
 #[axum::async_trait]
 impl<S> FromRequestParts<S> for AuthUser
@@ -49,7 +54,6 @@ where
     type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        // 第一优先级：解析 Authorization Headers
         let auth_header = parts
             .extract::<TypedHeader<Authorization<Bearer>>>()
             .await
@@ -57,20 +61,16 @@ where
 
         let token = if let Some(TypedHeader(Authorization(bearer))) = auth_header {
             bearer.token().to_string()
+        } else if let Some(cookie_token) = session_token_from_headers(&parts.headers) {
+            cookie_token
         } else {
-            // 第二优先级：读取 同源 Cookie
-            let jar = CookieJar::from_headers(&parts.headers);
-            if let Some(cookie) = jar.get("inkforge_session") {
-                cookie.value().to_string()
-            } else {
-                tracing::debug!(
-                    module = "shared_auth",
-                    event = "auth_missing_credentials",
-                    path = %parts.uri.path(),
-                    "no credentials found on request"
-                );
-                return Err(AppError::Unauthorized);
-            }
+            tracing::debug!(
+                module = "shared_auth",
+                event = "auth_missing_credentials",
+                path = %parts.uri.path(),
+                "no credentials found on request"
+            );
+            return Err(AppError::Unauthorized);
         };
 
         let app_state = Arc::<AppState>::from_ref(state);

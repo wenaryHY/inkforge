@@ -1,21 +1,22 @@
 # 🖋️ InkForge（墨炉）
 
-> 用 Rust 从零构建的现代化博客平台。Axum + SQLite + React，单体二进制，零依赖部署。
+> 用 Rust 从零构建的现代化博客平台。Axum + SQLite + React，**Web 优先单体架构**，支持单二进制部署。
 
 ## ✨ 功能特性
 
-- 📝 **文章与页面** — 支持 post/page 双内容类型，页面可同时拥有 Markdown 和自定义 HTML
+- 📝 **文章与页面** — 支持 `post / page` 双内容类型，页面可同时拥有 Markdown 和自定义 HTML
 - ✏️ **双模式编辑器** — Tiptap 所见即所得 + CodeMirror 源码模式，自由切换
+- 🧭 **安装向导** — Web 首装流程、安装状态回填、后台入口配置
 - 📁 **分类 & 标签** — 层级分类，多标签关联
 - 💬 **评论系统** — 审核流程，WebSocket 实时推送
-- 🖼️ **媒体管理** — 本地存储，分类整理，支持图片/音频
-- 🔐 **用户认证** — Argon2 密码加密 + JWT Token
-- 🎨 **主题系统** — minijinja 模板引擎，支持可视化配置
+- 🖼️ **媒体管理** — 本地存储，分类整理，支持图片 / 音频
+- 🔐 **用户认证** — Argon2 密码加密 + JWT / Session
+- 🎨 **主题系统** — MiniJinja 模板引擎，支持可视化配置与 ZIP 上传
 - 🔍 **全文搜索** — FTS5 增量索引
-- 🗑️ **统一回收站** — 文章/分类/标签/评论统一管理，定时清理
+- 🗑️ **统一回收站** — 文章 / 分类 / 标签 / 评论统一管理，定时清理
 - 📡 **SEO** — Sitemap、Robots.txt、OpenGraph / JSON-LD 元数据
 - 💾 **备份与恢复** — 本地备份，一键还原，定时备份调度
-- 🌐 **API 版本化** — `/api/v1/` 规范路由，旧路由兼容降级
+- 🌐 **API 版本化** — `/api/v1/` 正式路由，旧路由兼容过渡
 - 🌍 **i18n** — 管理后台多语言支持
 
 ## 🛠️ 技术栈
@@ -24,15 +25,16 @@
 |---|---|
 | Web 框架 | Axum 0.7 |
 | 运行时 | Tokio |
-| 数据库 | SQLite (sqlx 0.7) |
-| 模板引擎 | minijinja |
-| 认证 | JWT + Argon2 |
-| Markdown 渲染 | pulldown-cmark |
+| 数据库 | SQLite (`sqlx` 0.7) |
+| 模板引擎 | MiniJinja |
+| 认证 | JWT + Argon2 + Cookie Session |
+| Markdown 渲染 | `pulldown-cmark` + `ammonia` |
 | 全文搜索 | SQLite FTS5 |
 | 管理后台 | React 19 + TypeScript + Vite 8 |
 | UI 样式 | Tailwind CSS v4 + Orange 玻璃拟态风格 |
 | Markdown 编辑器 | Tiptap + tiptap-markdown |
 | 源码编辑器 | CodeMirror 6 |
+| 桌面壳 | Tauri 2（实验中） |
 
 ## 🚀 快速开始
 
@@ -59,6 +61,8 @@ cargo build --release
 cargo run --release
 ```
 
+默认情况下，后端会监听 `http://localhost:2000`。
+
 ### 开发模式
 
 项目已配置 `concurrently` + `cargo-watch`，一条命令同时启动前后端：
@@ -70,9 +74,9 @@ npm run dev:watch
 | 服务 | 地址 | 说明 |
 |---|---|---|
 | 管理后台 (Vite) | `http://localhost:5173/admin/` | 前端开发服务器，热重载 |
-| 前台 & API (Axum) | `http://localhost:3000` | 后端服务，自动重编译 |
+| 前台 & API (Axum) | `http://localhost:2000` | 后端服务，自动重编译 |
 
-Vite 开发服务器已配置代理，`/api`、`/ws`、`/uploads` 请求自动转发到 3000 端口的后端。
+Vite 开发服务器已配置代理，`/api`、`/ws`、`/uploads` 请求默认转发到 `2000` 端口的后端。
 
 ### 生产部署
 
@@ -88,6 +92,8 @@ cargo build --release
 
 ### Docker 部署
 
+> 本地开发默认端口为 `2000`；当前 Docker 镜像默认通过环境变量将服务绑定到 `3000`，如有需要可自行覆盖。
+
 ```bash
 docker build -t inkforge .
 docker run -d \
@@ -97,13 +103,13 @@ docker run -d \
   inkforge
 ```
 
-Docker 镜像内置 [Litestream](https://litestream.io/)，配置 S3 环境变量后可自动同步 SQLite 数据库到对象存储。
+镜像内置 Litestream，可按 `config/litestream.yml` 配置对象存储复制；**应用内备份模块的 S3 后端目前仍未真正接线**，如需对象存储同步请优先按 Litestream 链路配置。
 
 ---
 
 ## 📁 项目结构
 
-```
+```text
 inkforge/
 ├── src/
 │   ├── main.rs              # 程序入口
@@ -113,7 +119,8 @@ inkforge/
 │   ├── infra/               # 基础设施（错误处理等）
 │   ├── modules/
 │   │   ├── auth/            # 认证（handler → service → repository）
-│   │   ├── post/            # 文章/页面
+│   │   ├── setup/           # 安装向导
+│   │   ├── post/            # 文章 / 页面
 │   │   ├── comment/         # 评论
 │   │   ├── category/        # 分类
 │   │   ├── tag/             # 标签
@@ -125,9 +132,10 @@ inkforge/
 │   │   ├── trash/           # 统一回收站（含过期清理调度）
 │   │   └── user/            # 用户管理
 │   └── admin/ui/            # React 管理后台源码
-├── migrations/              # SQLite 迁移文件（001–010）
+├── migrations/              # SQLite 迁移文件（001–013）
 ├── config/                  # TOML 配置文件
-├── themes/default/          # 默认前台主题（minijinja 模板）
+├── themes/default/          # 默认前台主题（MiniJinja 模板）
+├── src-tauri/               # Tauri 桌面壳（实验中）
 ├── uploads/                 # 上传文件目录
 └── docker/                  # Docker 入口脚本
 ```
@@ -141,7 +149,7 @@ inkforge/
 ```toml
 [server]
 host = "0.0.0.0"
-port = 3000
+port = 2000
 
 [database]
 url = "sqlite://inkforge.db?mode=rwc"
@@ -184,7 +192,7 @@ export INKFORGE__DATABASE__URL=sqlite:///data/inkforge.db?mode=rwc
 - [x] 备份与恢复（含定时调度）
 - [x] API 版本化
 - [x] Docker 部署 + Litestream
-- [ ] 安装向导
+- [x] 安装向导（Web）
 - [ ] 插件系统（WASM）
 - [ ] S3/OSS 对象存储适配
 - [ ] 多语言前台支持
