@@ -55,7 +55,7 @@ pub async fn initialize(
     ensure_not_installed(snapshot.stage)?;
     ensure_setup_can_run(&snapshot)?;
 
-    let model = build_write_model(body)?;
+    let model = build_write_model(body).await?;
     let user_id = repository::create_installation(&state.pool, &model).await?;
     refresh_runtime_cache(&state, &model).await;
 
@@ -73,7 +73,7 @@ pub async fn initialize(
     })
 }
 
-fn build_write_model(body: SetupInitializeRequest) -> AppResult<SetupWriteModel> {
+async fn build_write_model(body: SetupInitializeRequest) -> AppResult<SetupWriteModel> {
     let site_title = require_text(&body.site_title, "site_title")?;
     let username = require_text(&body.username, "username")?;
     let email = require_text(&body.email, "email")?;
@@ -97,7 +97,7 @@ fn build_write_model(body: SetupInitializeRequest) -> AppResult<SetupWriteModel>
         username,
         email,
         display_name,
-        password_hash: hash_password(&body.password)?,
+        password_hash: hash_password(&body.password).await?,
     })
 }
 

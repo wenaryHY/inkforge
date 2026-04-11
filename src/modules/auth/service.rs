@@ -26,7 +26,7 @@ pub async fn register(state: Arc<AppState>, body: RegisterRequest) -> AppResult<
         .unwrap_or_else(|| username.clone())
         .trim()
         .to_string();
-    let password_hash = hash_password(&body.password)?;
+    let password_hash = hash_password(&body.password).await?;
     let role = "member";
     let user_id = repository::insert_user(
         &state.pool,
@@ -87,7 +87,7 @@ pub async fn login(state: Arc<AppState>, body: LoginRequest) -> AppResult<TokenP
         return Err(AppError::Forbidden);
     }
 
-    if !verify_password(&body.password, &user.password_hash)? {
+    if !verify_password(&body.password, &user.password_hash).await? {
         tracing::warn!(
             module = "auth",
             event = "login_bad_password",

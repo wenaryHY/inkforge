@@ -100,11 +100,11 @@ pub async fn update_password(
     let current_hash = repository::find_password_hash(&state.pool, &auth.id)
         .await?
         .ok_or(AppError::Unauthorized)?;
-    if !verify_password(&body.current_password, &current_hash)? {
+    if !verify_password(&body.current_password, &current_hash).await? {
         return Err(AppError::Unauthorized);
     }
 
-    let new_hash = hash_password(&body.new_password)?;
+    let new_hash = hash_password(&body.new_password).await?;
     repository::update_password(&state.pool, &auth.id, &new_hash).await?;
     Ok(serde_json::json!({ "updated": true }))
 }
