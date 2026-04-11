@@ -4,7 +4,11 @@ use sqlx::SqlitePool;
 
 use crate::{
     modules::{
-        setting::validator::{normalize_admin_url, normalize_site_url},
+        setting::{
+            repository as setting_repository,
+            validator::{canonical_admin_url_from_site_url, normalize_admin_url, normalize_site_url},
+        },
+
         setup::{
             domain::SetupStage,
             dto::{SetupInitializeRequest, SetupInitializeResponse, SetupStatusResponse},
@@ -88,11 +92,15 @@ async fn build_write_model(body: SetupInitializeRequest) -> AppResult<SetupWrite
     ensure_username(&username)?;
     ensure_password(&body.password)?;
 
+    let site_url = normalize_site_url(&body.site_url)?;
+    let _ = normalize_admin_url(&body.admin_url)?;
+    let admin_url = canonical_admin_url_from_site_url(&site_url)?;
+
     Ok(SetupWriteModel {
         site_title,
         site_description: body.site_description.trim().to_string(),
-        site_url: normalize_site_url(&body.site_url)?,
-        admin_url: normalize_admin_url(&body.admin_url)?,
+        site_url,
+        admin_url,
         allow_register: body.allow_register,
         username,
         email,
@@ -100,6 +108,7 @@ async fn build_write_model(body: SetupInitializeRequest) -> AppResult<SetupWrite
         password_hash: hash_password(&body.password).await?,
     })
 }
+
 
 fn require_text(value: &str, field: &str) -> AppResult<String> {
     let trimmed = value.trim();
@@ -144,12 +153,35 @@ pub fn ensure_not_installed(stage: SetupStage) -> AppResult<()> {
 }
 
 async fn load_and_reconcile_snapshot(pool: &SqlitePool) -> AppResult<SetupSnapshot> {
-    let snapshot = repository::load_snapshot(pool).await?;
+    let mut snapshot = repository::load_snapshot(pool).await?;
+
+    let mut changed = false;
+    if !snapshot.site_url.trim().is_empty() {
+        let normalized_site = normalize_site_url(&snapshot.site_url)?;
+        if normalized_site != snapshot.site_url {
+            snapshot.site_url = normalized_site;
+            changed = true;
+        }
+
+        let canonical_admin = canonical_admin_url_from_site_url(&snapshot.site_url)?;
+        if canonical_admin != snapshot.admin_url {
+            snapshot.admin_url = canonical_admin;
+            changed = true;
+        }
+    }
+
     if snapshot.needs_state_backfill() {
         repository::persist_stage(pool, snapshot.stage).await?;
     }
+
+    if changed {
+        setting_repository::upsert(pool, "site_url", &snapshot.site_url).await?;
+        setting_repository::upsert(pool, "admin_url", &snapshot.admin_url).await?;
+    }
+
     Ok(snapshot)
 }
+
 
 async fn refresh_runtime_from_snapshot(state: &Arc<AppState>, snapshot: &SetupSnapshot) {
     *state.site_url.write().await = snapshot.site_url.clone();

@@ -178,7 +178,7 @@ export default function Themes() {
                       </span>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <Button
-                          onClick={() => navigate(`/admin/themes/${theme.manifest.slug}`)}
+                          onClick={() => navigate(`/themes/${theme.manifest.slug}`)}
                           variant="ghost"
                         >
                           {t('themeDetail')}

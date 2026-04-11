@@ -1,7 +1,6 @@
 use std::{
     collections::HashSet,
     io::{Cursor, Read},
-    path::PathBuf,
     sync::Arc,
 };
 
@@ -27,12 +26,8 @@ const BACKUP_ARCHIVE_NAME: &str = "backup.zip";
 const BACKUP_DB_ENTRY: &str = "database/inkforge.db";
 const SYSTEM_SKIP_TABLES: &[&str] = &["backups", "backup_schedules", "theme_configs", "_sqlx_migrations"];
 
-fn backup_root_dir() -> AppResult<PathBuf> {
-    Ok(std::env::current_dir()?.join("backups"))
-}
-
 fn local_backend() -> AppResult<LocalBackupStorage> {
-    Ok(LocalBackupStorage::new(backup_root_dir()?))
+    Ok(LocalBackupStorage::new(AppState::backup_root_dir()?))
 }
 
 fn hash_bytes(data: &[u8]) -> String {
@@ -75,7 +70,9 @@ fn extract_archive(bytes: &[u8]) -> AppResult<(Vec<u8>, String)> {
 }
 
 async fn validate_sqlite_image_bytes(state: &AppState, db_bytes: &[u8]) -> AppResult<()> {
-    let tmp_path = backup_root_dir()?.join(format!("validate-merge-{}.db", uuid::Uuid::new_v4()));
+    let backup_dir = AppState::backup_root_dir()?;
+    fs::create_dir_all(&backup_dir).await?;
+    let tmp_path = backup_dir.join(format!("validate-merge-{}.db", uuid::Uuid::new_v4()));
     fs::write(&tmp_path, db_bytes).await?;
 
     let tmp_literal = quote_sqlite_literal(tmp_path.to_string_lossy().as_ref());
@@ -224,7 +221,9 @@ async fn merge_post_tags(conn: &mut SqliteConnection) -> AppResult<()> {
 }
 
 async fn merge_database(state: &AppState, db_bytes: &[u8]) -> AppResult<()> {
-    let restore_path = backup_root_dir()?.join(format!("merge-restore-{}.db", uuid::Uuid::new_v4()));
+    let backup_dir = AppState::backup_root_dir()?;
+    fs::create_dir_all(&backup_dir).await?;
+    let restore_path = backup_dir.join(format!("merge-restore-{}.db", uuid::Uuid::new_v4()));
     fs::write(&restore_path, db_bytes).await?;
 
     let restore_path_str = restore_path

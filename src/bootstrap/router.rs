@@ -64,6 +64,10 @@ async fn serve_admin_entry(State(state): State<Arc<AppState>>) -> impl IntoRespo
     serve_admin_index(State(state)).await.into_response()
 }
 
+async fn redirect_admin_with_trailing_slash() -> impl IntoResponse {
+    Redirect::permanent("/admin")
+}
+
 async fn serve_admin_path(
     Path(path): Path<String>,
     State(state): State<Arc<AppState>>,
@@ -283,6 +287,7 @@ pub async fn build_router(state: Arc<AppState>) -> Router {
         .route("/uploads/*file_path", get(modules::theme::handler::serve_upload_static))
         .route("/setup", get(serve_setup_entry))
         .route("/admin", get(serve_admin_entry))
+        .route("/admin/", get(redirect_admin_with_trailing_slash))
         .route("/admin/*path", get(serve_admin_path))
         .route("/sitemap.xml", get(modules::seo::sitemap::serve_sitemap))
         .route("/robots.txt", get(modules::seo::robots::serve_robots))

@@ -267,7 +267,7 @@ a{color:inherit;text-decoration:none}
 
 <script>
 function esc(s) { return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-const _posts = {{ get_recent_posts(100) | tojson | safe }};
+const _posts = {{ get_recent_posts(100) | tojson_script | safe }};
 let _currentKeyword = '';
 let _currentCategory = '';
 let _allPosts = _posts;
@@ -291,7 +291,7 @@ async function doSearch() {
   try {
     const params = new URLSearchParams({ keyword });
     if (_currentCategory) params.set('category_id', _currentCategory);
-    const res = await fetch('/api/search?' + params.toString());
+    const res = await fetch('/api/v1/search?' + params.toString());
     const json = await res.json();
     const items = json.data?.items || [];
     const total = json.data?.pagination?.total ?? items.length;
@@ -311,8 +311,9 @@ function filterByCategory(catId) {
 
 (async function loadCategories() {
   try {
-    const res = await fetch('/api/categories');
+    const res = await fetch('/api/v1/categories');
     const json = await res.json();
+
     const cats = json.data || [];
     const container = document.getElementById('filterChips');
     cats.forEach(cat => {

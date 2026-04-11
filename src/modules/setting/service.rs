@@ -8,7 +8,10 @@ use crate::{
 use super::{
     dto::{SettingItem, UpdateSettingRequest},
     repository,
-    validator::{normalize_admin_url, normalize_bool_string, normalize_site_url},
+    validator::{
+        canonical_admin_url_from_site_url, normalize_admin_url, normalize_bool_string,
+        normalize_site_url,
+    },
 };
 
 const ALLOWED_SETTINGS: &[&str] = &[
@@ -38,14 +41,31 @@ pub async fn update_setting(
         return Err(AppError::BadRequest("setting key is not writable".into()));
     }
 
-    let value = normalize_setting_value(&body.key, &body.value)?;
-    repository::upsert(&state.pool, &body.key, &value).await?;
-
-    if body.key == "site_url" {
-        *state.site_url.write().await = value.clone();
-    }
-    if body.key == "admin_url" {
-        *state.admin_url.write().await = value.clone();
+    match body.key.as_str() {
+        "site_url" => {
+            let site_url = normalize_site_url(&body.value)?;
+            let admin_url = canonical_admin_url_from_site_url(&site_url)?;
+            repository::upsert(&state.pool, "site_url", &site_url).await?;
+            repository::upsert(&state.pool, "admin_url", &admin_url).await?;
+            *state.site_url.write().await = site_url;
+            *state.admin_url.write().await = admin_url;
+        }
+        "admin_url" => {
+            let _ = normalize_admin_url(&body.value)?;
+            let site_url = repository::get_string(&state.pool, "site_url", "").await?;
+            if site_url.trim().is_empty() {
+                return Err(AppError::BadRequest(
+                    "site_url must be configured before admin_url".into(),
+                ));
+            }
+            let admin_url = canonical_admin_url_from_site_url(&site_url)?;
+            repository::upsert(&state.pool, "admin_url", &admin_url).await?;
+            *state.admin_url.write().await = admin_url;
+        }
+        _ => {
+            let value = normalize_setting_value(&body.key, &body.value)?;
+            repository::upsert(&state.pool, &body.key, &value).await?;
+        }
     }
 
     Ok(serde_json::json!({ "updated": true }))

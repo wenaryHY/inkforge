@@ -1,11 +1,9 @@
-// sidecar 生命周期管理
-// 负责拉起 inkforge Axum 二进制，健康检查，进程退出联动
+// sidecar 生命周期管理 (重构后仅保留状态查询，保持历史命名或后续再重命名)
+// 负责与 In-Process Axum 联调健康检查
 
 use std::time::Duration;
-use tauri::AppHandle;
-use tauri_plugin_shell::ShellExt;
 
-/// 等待 inkforge sidecar 服务就绪（最多 10 秒）
+/// 等待 inkforge 服务就绪（最多 10 秒）
 /// 每 500ms 轮询 /api/v1/health，超时返回 Err
 pub async fn wait_ready(port: u16) -> Result<(), String> {
     let url = format!("http://127.0.0.1:{}/api/v1/health", port);
@@ -19,7 +17,7 @@ pub async fn wait_ready(port: u16) -> Result<(), String> {
     for i in 0..max_attempts {
         match client.get(&url).send().await {
             Ok(resp) if resp.status().is_success() => {
-                tracing::info!("inkforge sidecar ready after {} attempts", i + 1);
+                tracing::info!("inkforge service ready after {} attempts", i + 1);
                 return Ok(());
             }
             _ => {
@@ -28,7 +26,7 @@ pub async fn wait_ready(port: u16) -> Result<(), String> {
         }
     }
     Err(format!(
-        "inkforge sidecar did not become ready within 10 seconds on port {}",
+        "inkforge service did not become ready within 10 seconds on port {}",
         port
     ))
 }
@@ -59,22 +57,4 @@ pub async fn get_setup_stage(port: u16) -> Result<String, String> {
         .to_string();
 
     Ok(stage)
-}
-
-/// 启动 inkforge sidecar 进程
-/// 返回 sidecar 进程句柄，由调用方持有生命周期
-pub fn spawn_inkforge(
-    app: &AppHandle,
-) -> Result<tauri_plugin_shell::process::CommandChild, String> {
-    let sidecar_cmd = app
-        .shell()
-        .sidecar("inkforge")
-        .map_err(|e| format!("failed to build sidecar command: {}", e))?;
-
-    let (_, child) = sidecar_cmd
-        .spawn()
-        .map_err(|e| format!("failed to spawn inkforge sidecar: {}", e))?;
-
-    tracing::info!("inkforge sidecar spawned");
-    Ok(child)
 }

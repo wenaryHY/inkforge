@@ -12,6 +12,13 @@ use crate::{shared::error::AppError, state::AppState};
 const LOGIN_WINDOW: Duration = Duration::from_secs(60);
 const MAX_LOGIN_ATTEMPTS: u32 = 8;
 
+pub const SECURITY_PROFILE_HEADER: &str = "x-inkforge-security-profile";
+pub const SECURITY_PROFILE_THEME_HTML: &str = "theme-html";
+pub const SECURITY_PROFILE_CUSTOM_HTML: &str = "custom-html";
+
+const THEME_HTML_CSP: &str = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'; form-action 'self'; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; font-src 'self' data: https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss:; frame-src 'none'";
+const CUSTOM_HTML_CSP: &str = "default-src 'self' data: blob:; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; img-src 'self' data: blob:; media-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'none'; frame-src 'none'; worker-src 'self' blob:";
+
 #[derive(Debug, Default)]
 pub struct LoginRateLimiter {
     attempts: HashMap<String, AttemptWindow>,
@@ -106,6 +113,20 @@ pub async fn login_rate_limit(
     Ok(next.run(request).await)
 }
 
+fn csp_for_profile(profile: &str) -> Option<&'static str> {
+    match profile {
+        SECURITY_PROFILE_THEME_HTML => Some(THEME_HTML_CSP),
+        SECURITY_PROFILE_CUSTOM_HTML => Some(CUSTOM_HTML_CSP),
+        _ => None,
+    }
+}
+
+pub fn mark_response_security_profile(response: &mut Response, profile: &'static str) {
+    response
+        .headers_mut()
+        .insert(SECURITY_PROFILE_HEADER, HeaderValue::from_static(profile));
+}
+
 pub async fn security_headers(request: Request, next: Next) -> Response {
     let mut response = next.run(request).await;
     let headers = response.headers_mut();
@@ -119,5 +140,19 @@ pub async fn security_headers(request: Request, next: Next) -> Response {
         "Permissions-Policy",
         HeaderValue::from_static("camera=(), microphone=(), geolocation=()"),
     );
+    headers.insert(
+        "Cross-Origin-Resource-Policy",
+        HeaderValue::from_static("same-origin"),
+    );
+
+    if let Some(profile) = headers
+        .remove(SECURITY_PROFILE_HEADER)
+        .and_then(|value| value.to_str().ok().map(ToOwned::to_owned))
+    {
+        if let Some(csp) = csp_for_profile(&profile) {
+            headers.insert("Content-Security-Policy", HeaderValue::from_static(csp));
+        }
+    }
+
     response
 }

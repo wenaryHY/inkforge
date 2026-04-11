@@ -153,7 +153,7 @@ export default function Categories() {
           {t('activeCategories')}
         </button>
         <button
-          onClick={() => navigate('/admin/trash?tab=category')}
+          onClick={() => navigate('/trash?tab=category')}
           style={{
             padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)',
             background: 'transparent', border: 'none', cursor: 'pointer',

@@ -8,7 +8,7 @@ use std::{path::PathBuf, sync::Arc};
 use crate::state::AppState;
 
 /// Serves /admin and /admin/* paths from the dist directory.
-/// admin.html lives inside dist/ so all files come from one place.
+/// index.html lives inside dist/ and is reused as the admin shell entry.
 pub async fn admin_static(
     Path(path): Path<String>,
     State(state): State<Arc<AppState>>,

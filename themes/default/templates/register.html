@@ -56,7 +56,7 @@ a{color:#0f766e;text-decoration:none;font-weight:700}
 </section>
 <script src="{{ theme_assets_url('js/site-api.js') }}"></script>
 <script>
-const redirectTo = {{ redirect_to | tojson | safe }};
+const redirectTo = {{ redirect_to | tojson_script | safe }};
 const alertEl = document.getElementById('errorAlert');
 
 document.getElementById('registerForm').addEventListener('submit', async (event) => {

@@ -93,17 +93,17 @@ export function sanitizeRedirect(target: string | null | undefined, fallback = '
 }
 
 export function login(data: { login: string; password: string }) {
-  return apiRequest('/api/auth/login', { method: 'POST', body: data });
+  return apiRequest('/api/v1/auth/login', { method: 'POST', body: data });
 }
 
 export function register(data: { username: string; email: string; password: string; display_name?: string | null }) {
-  return apiRequest('/api/auth/register', { method: 'POST', body: data });
+  return apiRequest('/api/v1/auth/register', { method: 'POST', body: data });
 }
 
 export function logout() {
-  return apiRequest('/api/auth/logout', { method: 'POST' });
+  return apiRequest('/api/v1/auth/logout', { method: 'POST' });
 }
 
 export function getMe<T>() {
-  return apiRequest<T>('/api/me');
+  return apiRequest<T>('/api/v1/me');
 }

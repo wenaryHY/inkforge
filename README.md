@@ -34,7 +34,13 @@
 | UI 样式 | Tailwind CSS v4 + Orange 玻璃拟态风格 |
 | Markdown 编辑器 | Tiptap + tiptap-markdown |
 | 源码编辑器 | CodeMirror 6 |
-| 桌面壳 | Tauri 2（实验中） |
+| 桌面壳 | Tauri 2（In-Process 单进程底座已落地） |
+
+## 📌 依赖版本治理策略
+
+- 所有新增依赖必须使用**精确版本**（Cargo 用 `=x.y.z`，npm 用 `x.y.z`）。
+- 当前全仓版本台账见 `memories/PACKAGE_VERSIONS.md`（含根项目、UI、E2E、主题测试子工程与 Rust 可选/开发依赖）。
+- 升级依赖时，必须同步更新对应 `package.json` / `Cargo.toml` 与版本台账文档，避免隐式漂移。
 
 ## 🚀 快速开始
 
@@ -73,8 +79,8 @@ npm run dev:watch
 
 | 服务 | 地址 | 说明 |
 |---|---|---|
-| 管理后台 (Vite) | `http://localhost:5173/admin/` | 前端开发服务器，热重载 |
-| 前台 & API (Axum) | `http://localhost:2000` | 后端服务，自动重编译 |
+| 管理后台 (Vite) | `http://localhost:5173/admin/` | 仅前端开发服务器（请勿作为联调主入口） |
+| 前台 & API (Axum) | `http://localhost:2000` | 本地开发与联调唯一入口 |
 
 Vite 开发服务器已配置代理，`/api`、`/ws`、`/uploads` 请求默认转发到 `2000` 端口的后端。
 
@@ -112,7 +118,8 @@ docker run -d \
 ```text
 inkforge/
 ├── src/
-│   ├── main.rs              # 程序入口
+│   ├── main.rs              # 二进制入口（委托到 lib::serve）
+│   ├── lib.rs               # 后端服务入口（供 Web / Tauri 复用）
 │   ├── state.rs             # 全局状态
 │   ├── ws.rs                # WebSocket 处理
 │   ├── bootstrap/           # 配置加载 & 路由组装
@@ -135,7 +142,7 @@ inkforge/
 ├── migrations/              # SQLite 迁移文件（001–013）
 ├── config/                  # TOML 配置文件
 ├── themes/default/          # 默认前台主题（MiniJinja 模板）
-├── src-tauri/               # Tauri 桌面壳（实验中）
+├── src-tauri/               # Tauri 桌面壳（In-Process 已落地）
 ├── uploads/                 # 上传文件目录
 └── docker/                  # Docker 入口脚本
 ```
@@ -196,7 +203,8 @@ export INKFORGE__DATABASE__URL=sqlite:///data/inkforge.db?mode=rwc
 - [ ] 插件系统（WASM）
 - [ ] S3/OSS 对象存储适配
 - [ ] 多语言前台支持
-- [ ] Tauri 桌面客户端
+- [x] Tauri In-Process 启动模型与单窗口状态路由
+- [ ] Tauri 桌面端打包验收闭环
 
 ---
 

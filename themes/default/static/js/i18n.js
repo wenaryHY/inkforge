@@ -5,6 +5,18 @@
   // 翻译字典
   const dictionary = {
     zh: {
+      // 登录页面
+      loginTitle: '欢迎回来',
+      loginSubtitle: '登录后即可评论、管理个人中心与同步会话。',
+      loginLabel: '登录名',
+      loginPlaceholder: '用户名或邮箱',
+      passwordLabel: '密码',
+      passwordPlaceholder: '请输入密码',
+      loginButton: '登录',
+      createAccount: '创建账号',
+      backToHome: '返回首页',
+      loginError: '登录失败，请稍后重试。',
+
       // 导航
       backHome: '返回首页',
       signOut: '退出登录',
@@ -38,12 +50,29 @@
       noComments: '暂无评论',
       loadCommentsError: '无法加载评论',
 
+      // 统计
+      posts: '文章',
+      comments: '评论',
+      likes: '点赞',
+
       // 提示
       profileUpdated: '个人资料已更新',
       passwordUpdated: '密码已更新',
       passwordMismatch: '两次输入的密码不一致',
     },
     en: {
+      // Login page
+      loginTitle: 'Welcome back',
+      loginSubtitle: 'Sign in to comment, manage your profile, and sync sessions.',
+      loginLabel: 'Username',
+      loginPlaceholder: 'Username or email',
+      passwordLabel: 'Password',
+      passwordPlaceholder: 'Enter your password',
+      loginButton: 'Sign in',
+      createAccount: 'Create account',
+      backToHome: 'Back to home',
+      loginError: 'Login failed. Please try again later.',
+
       // Nav
       backHome: 'Back home',
       signOut: 'Sign out',
@@ -77,6 +106,11 @@
       noComments: 'No comments yet',
       loadCommentsError: 'Unable to load comments',
 
+      // Stats
+      posts: 'Posts',
+      comments: 'Comments',
+      likes: 'Likes',
+
       // Messages
       profileUpdated: 'Profile updated',
       passwordUpdated: 'Password updated',
@@ -85,6 +119,24 @@
   };
 
   let currentLang = 'zh';
+
+  // Cookie 工具函数
+  function setCookie(name, value, days = 365) {
+    const expires = new Date();
+    expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+    document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/`;
+  }
+
+  function getCookie(name) {
+    const nameEQ = name + '=';
+    const ca = document.cookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+      let c = ca[i];
+      while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+      if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    }
+    return null;
+  }
 
   // 翻译函数
   function t(key, fallback) {
@@ -114,18 +166,30 @@
     document.querySelectorAll('.lang-btn').forEach(btn => {
       const btnLang = btn.dataset.lang;
       if (btnLang === currentLang) {
-        btn.style.background = 'var(--accent)';
-        btn.style.color = '#fff';
+        btn.classList.add('active');
       } else {
-        btn.style.background = 'transparent';
-        btn.style.color = 'var(--text)';
+        btn.classList.remove('active');
       }
     });
   }
 
   // 初始化
   function init(lang) {
-    currentLang = lang || 'zh';
+    if (lang) {
+      currentLang = lang;
+      setCookie('lang', lang);
+    } else {
+      // 尝试从 cookie 读取
+      const savedLang = getCookie('lang');
+      if (savedLang && (savedLang === 'zh' || savedLang === 'en')) {
+        currentLang = savedLang;
+      } else {
+        // 使用浏览器语言
+        const browserLang = navigator.language || navigator.userLanguage;
+        currentLang = browserLang.startsWith('zh') ? 'zh' : 'en';
+        setCookie('lang', currentLang);
+      }
+    }
     updatePage();
   }
 

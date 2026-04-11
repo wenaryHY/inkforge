@@ -70,7 +70,12 @@ pub async fn render_profile_page(
         })
         .map_err(|e| AppError::Anyhow(anyhow::anyhow!("Render error: {}", e)))?;
 
-    Ok(Html(rendered).into_response())
+    let mut response = Html(rendered).into_response();
+    crate::shared::security::mark_response_security_profile(
+        &mut response,
+        crate::shared::security::SECURITY_PROFILE_THEME_HTML,
+    );
+    Ok(response)
 }
 
 pub async fn render_login_page(
@@ -115,7 +120,12 @@ pub async fn render_login_page(
         })
         .map_err(|e| AppError::Anyhow(anyhow::anyhow!("Render error: {}", e)))?;
 
-    Ok(Html(rendered).into_response())
+    let mut response = Html(rendered).into_response();
+    crate::shared::security::mark_response_security_profile(
+        &mut response,
+        crate::shared::security::SECURITY_PROFILE_THEME_HTML,
+    );
+    Ok(response)
 }
 
 pub async fn render_register_page(
@@ -160,5 +170,10 @@ pub async fn render_register_page(
         })
         .map_err(|e| AppError::Anyhow(anyhow::anyhow!("Render error: {}", e)))?;
 
-    Ok(Html(rendered).into_response())
+    let mut response = Html(rendered).into_response();
+    crate::shared::security::mark_response_security_profile(
+        &mut response,
+        crate::shared::security::SECURITY_PROFILE_THEME_HTML,
+    );
+    Ok(response)
 }

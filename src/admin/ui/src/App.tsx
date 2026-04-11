@@ -17,28 +17,27 @@ import RecycleBin from './pages/RecycleBin';
 import Setup from './pages/Setup';
 
 const pageToRoute: Record<string, string> = {
-  posts: '/admin/posts',
-  categories: '/admin/categories',
-  tags: '/admin/tags',
-  comments: '/admin/comments',
-  settings: '/admin/settings',
-  upload: '/admin/upload',
-  'media-categories': '/admin/media-categories',
-  themes: '/admin/themes',
-  trash: '/admin/trash',
+  posts: '/posts',
+  categories: '/categories',
+  tags: '/tags',
+  comments: '/comments',
+  settings: '/settings',
+  upload: '/upload',
+  'media-categories': '/media-categories',
+  themes: '/themes',
+  trash: '/trash',
 };
 
 function getActivePage(pathname: string): string {
-  const adminPath = pathname.startsWith('/admin') ? pathname.slice('/admin'.length) || '/' : pathname;
-  if (adminPath.startsWith('/posts')) return 'posts';
-  if (adminPath.startsWith('/themes')) return 'themes';
-  if (adminPath.startsWith('/categories')) return 'categories';
-  if (adminPath.startsWith('/tags')) return 'tags';
-  if (adminPath.startsWith('/comments')) return 'comments';
-  if (adminPath.startsWith('/settings')) return 'settings';
-  if (adminPath.startsWith('/upload')) return 'upload';
-  if (adminPath.startsWith('/media-categories')) return 'media-categories';
-  if (adminPath.startsWith('/trash')) return 'trash';
+  if (pathname.startsWith('/posts')) return 'posts';
+  if (pathname.startsWith('/themes')) return 'themes';
+  if (pathname.startsWith('/categories')) return 'categories';
+  if (pathname.startsWith('/tags')) return 'tags';
+  if (pathname.startsWith('/comments')) return 'comments';
+  if (pathname.startsWith('/settings')) return 'settings';
+  if (pathname.startsWith('/upload')) return 'upload';
+  if (pathname.startsWith('/media-categories')) return 'media-categories';
+  if (pathname.startsWith('/trash')) return 'trash';
   return 'posts';
 }
 
@@ -51,7 +50,7 @@ function AdminLayout() {
     <div className="flex h-screen overflow-hidden">
       <Sidebar
         activePage={activePage}
-        onNavigate={(page) => navigate(pageToRoute[page] || '/admin/posts')}
+        onNavigate={(page) => navigate(pageToRoute[page] || '/posts')}
       />
       <main className="flex-1 overflow-y-auto" style={{ padding: '24px 32px', background: 'var(--bg-base)' }}>
         <Outlet />
@@ -80,10 +79,10 @@ function AdminGate() {
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/admin">
       <Routes>
         <Route path="/setup" element={<Setup />} />
-        <Route path="/admin" element={<AdminGate />}>
+        <Route path="/" element={<AdminGate />}>
           <Route index element={<Navigate to="posts" replace />} />
           <Route path="posts" element={<Posts />} />
           <Route path="posts/new" element={<PostEditor />} />
@@ -98,7 +97,7 @@ export default function App() {
           <Route path="themes/:slug" element={<ThemeDetail />} />
           <Route path="trash" element={<RecycleBin />} />
         </Route>
-        <Route path="*" element={<Navigate to="/admin" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

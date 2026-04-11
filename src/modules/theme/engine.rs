@@ -1,4 +1,4 @@
-use minijinja::{Environment, Value};
+use minijinja::{AutoEscape, Environment, Value};
 use std::sync::Arc;
 
 use super::repository;
@@ -15,6 +15,13 @@ pub async fn build_template_engine(state: Arc<AppState>) -> AppResult<Environmen
     let template_dir = state.theme_dir.join(&active_theme).join("templates");
 
     let mut env = Environment::new();
+    env.set_auto_escape_callback(|name| {
+        if name.ends_with(".html") || name.ends_with(".htm") || name.ends_with(".xml") {
+            AutoEscape::Html
+        } else {
+            AutoEscape::None
+        }
+    });
 
     // ── 1A: Dynamic template loader ──────────────────────────────────
     let loader_path = template_dir.clone();
@@ -79,6 +86,22 @@ pub async fn build_template_engine(state: Arc<AppState>) -> AppResult<Environmen
         "tojson",
         |value: Value| -> Result<String, minijinja::Error> {
             serde_json::to_string(&value)
+                .map_err(|err| {
+                    minijinja::Error::new(minijinja::ErrorKind::InvalidOperation, err.to_string())
+                })
+        },
+    );
+    env.add_filter(
+        "tojson_script",
+        |value: Value| -> Result<String, minijinja::Error> {
+            serde_json::to_string(&value)
+                .map(|json| {
+                    json.replace('<', "\\u003c")
+                        .replace('>', "\\u003e")
+                        .replace('&', "\\u0026")
+                        .replace('\u{2028}', "\\u2028")
+                        .replace('\u{2029}', "\\u2029")
+                })
                 .map_err(|err| {
                     minijinja::Error::new(minijinja::ErrorKind::InvalidOperation, err.to_string())
                 })

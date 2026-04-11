@@ -206,7 +206,7 @@ export default function PostEditor() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <button
-            onClick={() => navigate('/admin/posts')}
+            onClick={() => navigate('/posts')}
             style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: '40px', height: '40px', borderRadius: 'var(--radius-full)',
@@ -265,7 +265,7 @@ export default function PostEditor() {
               </button>
             </div>
           )}
-          <Button variant="ghost" onClick={() => navigate('/admin/posts')}>{t('cancel')}</Button>
+          <Button variant="ghost" onClick={() => navigate('/posts')}>{t('cancel')}</Button>
           <Button onClick={() => handleSave()} disabled={saving} loading={saving}>
             <IconCheck size={14} /> {t('save')}
           </Button>
@@ -320,8 +320,11 @@ export default function PostEditor() {
               <p style={{ fontSize: '12.5px', color: 'var(--md-on-surface-variant)', marginBottom: '6px' }}>
                 上传单个 HTML 文件或包含 HTML/CSS/JS 的 ZIP 包
               </p>
-              <p style={{ fontSize: '11.5px', color: 'var(--md-outline)', marginBottom: '16px', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '11.5px', color: 'var(--md-outline)', marginBottom: '8px', lineHeight: 1.5 }}>
                 ZIP 包中必须包含 index.html，发布后前台将通过 /pages/&#123;slug&#125; 访问
+              </p>
+              <p style={{ fontSize: '11.5px', color: 'var(--md-error)', marginBottom: '16px', lineHeight: 1.6 }}>
+                发布后的自定义 HTML 会启用更严格的安全策略：禁止表单提交、外部连接与页面嵌入；如需脚本，仅应依赖当前站点内联或同源静态资源。
               </p>
               <input
                 type="file"

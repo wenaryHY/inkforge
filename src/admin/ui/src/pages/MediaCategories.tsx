@@ -194,7 +194,7 @@ export default function MediaCategories() {
           {t('activeMediaCategories')}
         </button>
         <button
-          onClick={() => navigate('/admin/trash?tab=media_category')}
+          onClick={() => navigate('/trash?tab=media_category')}
           style={{
             padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)',
             background: 'transparent', border: 'none', cursor: 'pointer',

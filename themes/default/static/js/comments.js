@@ -71,7 +71,7 @@
     logDebug('submit_start', { slug });
 
     try {
-      await window.InkForgeApi.apiRequest(`/api/posts/${slug}/comments`, {
+      await window.InkForgeApi.apiRequest(`/api/v1/posts/${slug}/comments`, {
         method: 'POST',
         body: {
           content: String(data.get('content') || '').trim(),

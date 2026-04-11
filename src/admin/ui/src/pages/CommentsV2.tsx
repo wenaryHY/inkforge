@@ -244,7 +244,7 @@ export default function CommentsV2() {
           {t('activeComments')}
         </button>
         <button
-          onClick={() => navigate('/admin/trash?tab=comment')}
+          onClick={() => navigate('/trash?tab=comment')}
           style={{
             padding: '8px 18px', fontSize: '13px', fontWeight: 600, color: 'var(--md-on-surface-variant)',
             background: 'transparent', border: 'none', cursor: 'pointer',

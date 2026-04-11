@@ -83,19 +83,19 @@
   }
 
   function login(data) {
-    return apiRequest('/api/auth/login', { method: 'POST', body: data });
+    return apiRequest('/api/v1/auth/login', { method: 'POST', body: data });
   }
 
   function register(data) {
-    return apiRequest('/api/auth/register', { method: 'POST', body: data });
+    return apiRequest('/api/v1/auth/register', { method: 'POST', body: data });
   }
 
   function logout() {
-    return apiRequest('/api/auth/logout', { method: 'POST' });
+    return apiRequest('/api/v1/auth/logout', { method: 'POST' });
   }
 
   function getMe() {
-    return apiRequest('/api/me');
+    return apiRequest('/api/v1/me');
   }
 
   window.InkForgeApi = {

@@ -4,8 +4,7 @@ WORKDIR /app/ui
 COPY src/admin/ui/package.json src/admin/ui/package-lock.json* ./
 RUN npm ci
 COPY src/admin/ui/ .
-RUN npx tsc -b && npx vite build && \
-    if [ -f /app/dist/index.html ]; then mv /app/dist/index.html /app/dist/admin.html; fi
+RUN npx tsc -b && npx vite build
 
 # ── Stage 2: Rust 构建 ──
 FROM rust:slim AS backend

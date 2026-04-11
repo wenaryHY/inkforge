@@ -57,24 +57,60 @@ impl AppState {
             login_rate_limiter: Arc::new(Mutex::new(LoginRateLimiter::new())),
         })
     }
+
+    pub fn backup_root_dir() -> anyhow::Result<PathBuf> {
+        AppConfig::resolve_path("backups")
+    }
+}
+
+fn normalize_sqlite_path(raw: &str) -> &str {
+    if cfg!(windows) && raw.starts_with('/') && raw.chars().nth(2) == Some(':') {
+        &raw[1..]
+    } else {
+        raw
+    }
 }
 
 /// 从 sqlite:// URL 中提取文件路径（支持相对和绝对路径）
 fn parse_sqlite_url(url: &str) -> anyhow::Result<PathBuf> {
-    let url = url.trim_start_matches("sqlite:");
-    let path = if url.starts_with(":////") {
-        &url[4..]
-    } else if url.starts_with("://") {
-        &url[3..]
-    } else {
-        url
-    };
-    let path = path.split('?').next().unwrap_or(path);
-    let path = path.trim_start_matches('/');
-    let path = PathBuf::from(path);
+    let raw = url
+        .strip_prefix("sqlite://")
+        .or_else(|| url.strip_prefix("sqlite:"))
+        .unwrap_or(url);
+    let raw = raw.split('?').next().unwrap_or(raw);
+    let path = PathBuf::from(normalize_sqlite_path(raw));
     if path.is_absolute() {
         Ok(path)
     } else {
         Ok(std::env::current_dir()?.join(&path))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::parse_sqlite_url;
+    use std::path::PathBuf;
+
+    #[test]
+    fn parse_sqlite_url_resolves_relative_paths() {
+        let path = parse_sqlite_url("sqlite://inkforge.db?mode=rwc").unwrap();
+        assert!(path.is_absolute());
+        assert!(path.ends_with("inkforge.db"));
+    }
+
+    #[test]
+    fn parse_sqlite_url_preserves_absolute_paths() {
+        let expected = if cfg!(windows) {
+            PathBuf::from("C:/inkforge/data.db")
+        } else {
+            PathBuf::from("/app/data/inkforge.db")
+        };
+        let url = if cfg!(windows) {
+            "sqlite:///C:/inkforge/data.db?mode=rwc"
+        } else {
+            "sqlite:///app/data/inkforge.db?mode=rwc"
+        };
+        let path = parse_sqlite_url(url).unwrap();
+        assert_eq!(path, expected);
     }
 }

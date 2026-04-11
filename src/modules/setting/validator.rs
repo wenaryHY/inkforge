@@ -12,6 +12,13 @@ pub fn normalize_admin_url(value: &str) -> AppResult<String> {
     Ok(format!("{}/admin", url.origin().unicode_serialization()))
 }
 
+pub fn canonical_admin_url_from_site_url(site_url: &str) -> AppResult<String> {
+    let url = parse_http_url(site_url, "site_url must be a valid absolute http/https URL")?;
+    ensure_root_path(&url)?;
+    Ok(format!("{}/admin", url.origin().unicode_serialization()))
+}
+
+
 pub fn normalize_bool_string(value: &str, field: &str) -> AppResult<String> {
     match value.trim() {
         "true" => Ok("true".to_string()),

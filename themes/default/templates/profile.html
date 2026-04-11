@@ -4,65 +4,248 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Profile - {{ site_title }}</title>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="{{ theme_assets_url('css/design-system.css') }}" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box}
-:root{--text:#1f2937;--muted:#64748b;--border:#dbe3ef;--card:#ffffff;--bg:#f8fafc;--accent:#ea580c;--accent-deep:#c2410c;--danger:#dc2626;--soft:#fff7ed}
-body{margin:0;background:linear-gradient(180deg,#fef3e8 0,#f8fafc 24%,#f8fafc 100%);font-family:'Manrope',sans-serif;color:var(--text)}
+body{margin:0;background:var(--surface);font-family:var(--font-body);color:var(--on-surface)}
 .wrap{max-width:920px;margin:0 auto;padding:28px 20px 60px}
-.nav,.panel-head,.row{display:flex;align-items:center;justify-content:space-between;gap:14px}
-.nav{margin-bottom:24px}
-.nav-links{display:flex;gap:12px;flex-wrap:wrap}
+
+/* 4.1 玻璃态导航栏 */
+.nav{
+  position:sticky;
+  top:0;
+  z-index:100;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:16px 24px;
+  margin-bottom:32px;
+  background:rgba(255,248,246,0.75);
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow-md);
+}
+.nav-links{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 a{text-decoration:none}
-.link,.ghost,.danger,.primary{display:inline-flex;align-items:center;justify-content:center;padding:11px 16px;border-radius:14px;font-weight:700;font-size:14px;border:1px solid var(--border);transition:all .2s ease}
-.link,.ghost{background:#fff;color:var(--text)}
-.link:hover,.ghost:hover{border-color:#94a3b8}
-.primary{border:0;background:linear-gradient(135deg,var(--accent),var(--accent-deep));color:#fff;box-shadow:0 14px 30px rgba(234,88,12,.24)}
-.primary:hover{transform:translateY(-1px)}
-.danger{background:#fff1f2;color:var(--danger);border-color:#fecaca}
-.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
-.panel{grid-column:span 12;background:rgba(255,255,255,.92);border:1px solid rgba(255,255,255,.75);border-radius:28px;padding:28px;box-shadow:0 20px 60px rgba(15,23,42,.08)}
-.hero{display:flex;align-items:center;gap:18px;margin-bottom:10px}
-.avatar{width:78px;height:78px;border-radius:24px;background:linear-gradient(135deg,#fb923c,#ea580c);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;box-shadow:0 16px 32px rgba(234,88,12,.22)}
-.meta h1{margin:0 0 6px;font-size:30px;line-height:1.05}
-.meta p{margin:0;color:var(--muted)}
-.section-title{margin:0;font-size:20px}
-.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:20px}
+
+/* 语言切换器 */
+.lang-switch{
+  display:flex;
+  gap:4px;
+  background:var(--surface-container-low);
+  padding:4px;
+  border-radius:12px;
+}
+.lang-btn{
+  padding:8px 14px;
+  border:none;
+  border-radius:8px;
+  background:transparent;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:600;
+  color:var(--on-surface-variant);
+  transition:all var(--transition-base);
+  font-family:var(--font-display);
+}
+.lang-btn.active{
+  background:var(--primary);
+  color:#ffffff;
+  box-shadow:0 4px 12px rgba(255,109,0,0.24);
+}
+.lang-btn:hover:not(.active){
+  background:var(--surface-container);
+}
+
+/* 4.2 用户英雄区 */
+.hero-section{
+  margin-bottom:24px;
+  background:var(--surface-container-low);
+  border-radius:var(--radius-xl);
+  padding:var(--space-2xl);
+  box-shadow:var(--shadow-md);
+}
+.hero{display:flex;align-items:center;gap:24px}
+.avatar{
+  width:88px;
+  height:88px;
+  border-radius:28px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-dark));
+  color:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:36px;
+  font-weight:800;
+  font-family:var(--font-display);
+  box-shadow:0 16px 32px rgba(255,109,0,0.28);
+  flex-shrink:0;
+}
+.meta h1{
+  margin:0 0 8px;
+  font-family:var(--font-display);
+  font-size:32px;
+  font-weight:700;
+  line-height:1.1;
+  color:var(--on-surface);
+}
+.meta p{
+  margin:0;
+  color:var(--on-surface-variant);
+  font-size:15px;
+}
+
+/* 4.4 基于卡片的区块容器 */
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:24px}
+.panel{
+  grid-column:span 12;
+  background:var(--surface-container-low);
+  border-radius:var(--radius-lg);
+  padding:var(--space-xl);
+  box-shadow:var(--shadow-md);
+}
+.panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:var(--space-lg);
+}
+.section-title{
+  margin:0;
+  font-family:var(--font-display);
+  font-size:22px;
+  font-weight:600;
+  color:var(--on-surface);
+}
+
+/* 统计卡片 */
+.stats-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+  margin-bottom:24px;
+}
+.stat-card{
+  background:var(--surface-container);
+  border-radius:var(--radius-lg);
+  padding:24px;
+  text-align:center;
+  box-shadow:var(--shadow-sm);
+}
+.stat-value{
+  display:block;
+  font-family:var(--font-display);
+  font-size:32px;
+  font-weight:700;
+  color:var(--primary);
+  margin-bottom:8px;
+}
+.stat-label{
+  display:block;
+  font-size:13px;
+  font-weight:600;
+  color:var(--on-surface-variant);
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+}
+
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:20px}
 .field{display:flex;flex-direction:column;gap:8px}
 .field.full{grid-column:1 / -1}
-label{font-size:13px;font-weight:700;color:#475569}
-input,textarea,select{width:100%;padding:14px 16px;border-radius:16px;border:1px solid var(--border);background:#fff;font:inherit;color:var(--text);transition:border-color .2s,box-shadow .2s}
-input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px rgba(234,88,12,.12)}
-textarea{min-height:120px;resize:vertical}
-.actions{display:flex;justify-content:flex-end;gap:12px;margin-top:18px;flex-wrap:wrap}
-.alert{display:none;margin-top:16px;padding:12px 14px;border-radius:14px;font-size:13px;font-weight:700}
-.alert.success{display:block;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
-.alert.error{display:block;background:#fff1f2;color:#be123c;border:1px solid #fecdd3}
-.comment-list{display:flex;flex-direction:column;gap:14px;margin-top:20px}
-.comment-item{padding:18px 18px 16px;border:1px solid var(--border);border-radius:20px;background:#fff}
-.comment-meta{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
-.comment-meta a{color:var(--accent);font-weight:800}
-.comment-status{font-size:12px;font-weight:800;padding:5px 10px;border-radius:999px;background:var(--soft);color:var(--accent-deep)}
-.empty{margin-top:18px;padding:24px;border-radius:20px;background:#fff;border:1px dashed var(--border);color:var(--muted);text-align:center}
-@media(max-width:760px){.form-grid{grid-template-columns:1fr}.panel{padding:22px}.hero{align-items:flex-start;flex-direction:column}.nav,.panel-head,.comment-meta{align-items:flex-start;flex-direction:column}}
+.actions{display:flex;justify-content:flex-end;gap:12px;margin-top:24px;flex-wrap:wrap}
+.comment-list{display:flex;flex-direction:column;gap:16px;margin-top:20px}
+.comment-item{
+  padding:20px;
+  border-radius:var(--radius-lg);
+  background:var(--surface-container);
+  box-shadow:var(--shadow-sm);
+}
+.comment-meta{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.comment-meta a{color:var(--primary);font-weight:700;font-family:var(--font-display)}
+.comment-status{
+  font-size:11px;
+  font-weight:700;
+  padding:6px 12px;
+  border-radius:999px;
+  background:var(--surface-container-high);
+  color:var(--primary-dark);
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+}
+.empty{
+  margin-top:18px;
+  padding:32px;
+  border-radius:var(--radius-lg);
+  background:var(--surface-container);
+  color:var(--on-surface-muted);
+  text-align:center;
+}
+
+/* Mobile Breakpoint (< 768px) */
+@media(max-width:767px){
+  .wrap{padding:22px 16px 40px}
+  .form-grid{grid-template-columns:1fr}
+  .panel{padding:22px}
+  .hero{align-items:flex-start;flex-direction:column}
+  .hero-section{padding:22px}
+  .avatar{width:72px;height:72px;font-size:28px;border-radius:22px}
+  .meta h1{font-size:26px}
+  .meta p{font-size:14px}
+  .nav{flex-direction:column;align-items:stretch;padding:14px 18px}
+  .nav-links{flex-direction:column}
+  .stats-grid{grid-template-columns:1fr}
+  .stat-card{padding:20px}
+  .stat-value{font-size:28px}
+  .panel-head{align-items:flex-start;flex-direction:column}
+  .comment-meta{align-items:flex-start;flex-direction:column}
+  .actions{justify-content:stretch;flex-direction:column}
+  .actions .btn{width:100%}
+  .section-title{font-size:20px}
+}
+
+/* Tablet Breakpoint (768px - 1024px) */
+@media(min-width:768px) and (max-width:1024px){
+  .wrap{max-width:920px;padding:24px 20px 60px}
+  .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .panel{padding:var(--space-xl)}
+  .hero-section{padding:var(--space-xl)}
+  .stats-grid{grid-template-columns:repeat(3,1fr)}
+  .nav{padding:16px 24px}
+}
+
+/* Desktop Breakpoint (> 1024px) */
+@media(min-width:1025px){
+  .wrap{max-width:920px;margin:0 auto;padding:28px 20px 60px}
+  .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .panel{padding:var(--space-xl)}
+  .hero-section{padding:var(--space-2xl)}
+  .stats-grid{grid-template-columns:repeat(3,1fr)}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:24px}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <!-- 4.1 玻璃态导航栏 -->
   <nav class="nav">
-    <a href="/" class="link" data-i18n="backHome">Back home</a>
+    <a href="/" class="btn btn-secondary" data-i18n="backHome">Back home</a>
     <div class="nav-links">
-      <!-- 语言切换 -->
-      <div class="lang-switch" style="display:flex;gap:4px;background:#fff;padding:4px;border-radius:10px;border:1px solid var(--border);">
-        <button type="button" data-lang="zh" class="lang-btn" style="padding:6px 12px;border:none;border-radius:6px;background:transparent;cursor:pointer;font-size:12px;font-weight:600;">中</button>
-        <button type="button" data-lang="en" class="lang-btn" style="padding:6px 12px;border:none;border-radius:6px;background:transparent;cursor:pointer;font-size:12px;font-weight:600;">En</button>
+      <!-- 语言切换器 -->
+      <div class="lang-switch">
+        <button type="button" data-lang="zh" class="lang-btn">中</button>
+        <button type="button" data-lang="en" class="lang-btn">En</button>
       </div>
-      <a href="{{ admin_url or '/admin' }}" class="ghost">Admin</a>
-      <button id="logoutBtn" class="danger" type="button" data-i18n="signOut">Sign out</button>
+      <a href="{{ admin_url or '/admin' }}" class="btn btn-ghost" data-i18n="admin">Admin</a>
+      <button id="logoutBtn" class="btn btn-ghost" type="button" data-i18n="signOut" style="color:var(--error)">Sign out</button>
     </div>
   </nav>
 
-  <section class="panel">
+  <!-- 4.2 用户英雄区 -->
+  <section class="hero-section">
     <div class="hero">
       <div class="avatar">{{ current_user.display_name[:1] | upper }}</div>
       <div class="meta">
@@ -72,7 +255,24 @@ textarea{min-height:120px;resize:vertical}
     </div>
   </section>
 
+  <!-- 5.1 统计卡片组件 -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-value" id="postsCount">0</span>
+      <span class="stat-label" data-i18n="posts">Posts</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="commentsCount">0</span>
+      <span class="stat-label" data-i18n="comments">Comments</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-value" id="likesCount">0</span>
+      <span class="stat-label" data-i18n="likes">Likes</span>
+    </div>
+  </div>
+
   <div class="grid">
+    <!-- 4.4 基于卡片的区块容器 - Profile Settings -->
     <section class="panel">
       <div class="panel-head">
         <h2 class="section-title" data-i18n="profileSettings">Profile settings</h2>
@@ -81,35 +281,36 @@ textarea{min-height:120px;resize:vertical}
       <form id="profileForm">
         <div class="form-grid">
           <div class="field">
-            <label for="displayName" data-i18n="displayName">Display name</label>
-            <input id="displayName" name="display_name" type="text" value="{{ current_user.display_name }}" required>
+            <label for="displayName" class="label" data-i18n="displayName">Display name</label>
+            <input id="displayName" name="display_name" type="text" value="{{ current_user.display_name }}" class="input" required>
           </div>
           <div class="field">
-            <label for="language">Language</label>
-            <select id="language" name="language">
+            <label for="language" class="label">Language</label>
+            <select id="language" name="language" class="select">
               <option value="zh" {% if current_user.language == "zh" %}selected{% endif %}>简体中文</option>
               <option value="en" {% if current_user.language == "en" %}selected{% endif %}>English</option>
             </select>
           </div>
           <div class="field">
-            <label for="themePreference" data-i18n="themePreference">Theme preference</label>
-            <select id="themePreference" name="theme_preference">
+            <label for="themePreference" class="label" data-i18n="themePreference">Theme preference</label>
+            <select id="themePreference" name="theme_preference" class="select">
               <option value="system" {% if current_user.theme_preference == "system" %}selected{% endif %} data-i18n="system">System</option>
               <option value="light" {% if current_user.theme_preference == "light" %}selected{% endif %} data-i18n="light">Light</option>
               <option value="dark" {% if current_user.theme_preference == "dark" %}selected{% endif %} data-i18n="dark">Dark</option>
             </select>
           </div>
           <div class="field full">
-            <label for="bio" data-i18n="bio">Bio</label>
-            <textarea id="bio" name="bio" placeholder="Write a short bio" data-i18n-placeholder="bioPlaceholder">{{ current_user.bio or "" }}</textarea>
+            <label for="bio" class="label" data-i18n="bio">Bio</label>
+            <textarea id="bio" name="bio" placeholder="Write a short bio" class="textarea" data-i18n-placeholder="bioPlaceholder">{{ current_user.bio or "" }}</textarea>
           </div>
         </div>
         <div class="actions">
-          <button class="primary" id="saveProfileBtn" type="submit" data-i18n="saveProfile">Save profile</button>
+          <button class="btn btn-primary" id="saveProfileBtn" type="submit" data-i18n="saveProfile">Save profile</button>
         </div>
       </form>
     </section>
 
+    <!-- 4.4 基于卡片的区块容器 - Password Change -->
     <section class="panel">
       <div class="panel-head">
         <h2 class="section-title" data-i18n="changePassword">Change password</h2>
@@ -118,24 +319,25 @@ textarea{min-height:120px;resize:vertical}
       <form id="passwordForm">
         <div class="form-grid">
           <div class="field full">
-            <label for="currentPassword" data-i18n="currentPassword">Current password</label>
-            <input id="currentPassword" name="current_password" type="password" autocomplete="current-password" required>
+            <label for="currentPassword" class="label" data-i18n="currentPassword">Current password</label>
+            <input id="currentPassword" name="current_password" type="password" class="input" autocomplete="current-password" required>
           </div>
           <div class="field">
-            <label for="newPassword" data-i18n="newPassword">New password</label>
-            <input id="newPassword" name="new_password" type="password" autocomplete="new-password" required>
+            <label for="newPassword" class="label" data-i18n="newPassword">New password</label>
+            <input id="newPassword" name="new_password" type="password" class="input" autocomplete="new-password" required>
           </div>
           <div class="field">
-            <label for="confirmPassword" data-i18n="confirmPassword">Confirm new password</label>
-            <input id="confirmPassword" type="password" autocomplete="new-password" required>
+            <label for="confirmPassword" class="label" data-i18n="confirmPassword">Confirm new password</label>
+            <input id="confirmPassword" type="password" class="input" autocomplete="new-password" required>
           </div>
         </div>
         <div class="actions">
-          <button class="primary" id="changePasswordBtn" type="submit" data-i18n="updatePassword">Update password</button>
+          <button class="btn btn-primary" id="changePasswordBtn" type="submit" data-i18n="updatePassword">Update password</button>
         </div>
       </form>
     </section>
 
+    <!-- 4.4 基于卡片的区块容器 - Comments -->
     <section class="panel">
       <div class="panel-head">
         <h2 class="section-title" data-i18n="myComments">My comments</h2>
@@ -148,7 +350,7 @@ textarea{min-height:120px;resize:vertical}
 <script src="{{ theme_assets_url('js/site-api.js') }}"></script>
 <script src="{{ theme_assets_url('js/i18n.js') }}"></script>
 <script>
-const profileData = {{ current_user | tojson | safe }};
+const profileData = {{ current_user | tojson_script | safe }};
 const currentLang = profileData.language || 'zh';
 const commentsList = document.getElementById('commentsList');
 const commentsEmpty = document.getElementById('commentsEmpty');
@@ -156,7 +358,7 @@ const commentsEmpty = document.getElementById('commentsEmpty');
 function showAlert(id, message, type) {
   const el = document.getElementById(id);
   el.textContent = message;
-  el.className = `alert ${type}`;
+  el.className = `alert alert-${type}`;
 }
 
 function escapeHtml(value) {
@@ -168,29 +370,58 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-async function loadComments() {
-  const data = await window.InkForgeApi.apiRequest('/api/me/comments?page=1&page_size=20');
-  const items = data.items || [];
-
-  if (items.length === 0) {
-    commentsEmpty.style.display = 'block';
-    commentsList.innerHTML = '';
-    return;
+// 5.2 获取并显示用户统计数据
+async function loadStats() {
+  try {
+    // TODO: 后端需要在用户对象中添加统计字段
+    // 或者创建单独的 /api/v1/me/stats 端点
+    const postsCount = profileData.posts_count || 0;
+    const commentsCount = profileData.comments_count || 0;
+    const likesCount = profileData.likes_count || 0;
+    
+    document.getElementById('postsCount').textContent = postsCount;
+    document.getElementById('commentsCount').textContent = commentsCount;
+    document.getElementById('likesCount').textContent = likesCount;
+  } catch (error) {
+    console.error('Failed to load stats:', error);
+    // 显示占位数据
+    document.getElementById('postsCount').textContent = '0';
+    document.getElementById('commentsCount').textContent = '0';
+    document.getElementById('likesCount').textContent = '0';
   }
+}
 
-  commentsEmpty.style.display = 'none';
-  commentsList.innerHTML = items.map((comment) => `
-    <article class="comment-item">
-      <div class="comment-meta">
-        <a href="/${comment.post_content_type === 'page' ? 'pages' : 'posts'}/${escapeHtml(comment.post_slug)}">${escapeHtml(comment.post_title)}</a>
-        <span class="comment-status">${escapeHtml(comment.status)}</span>
-      </div>
-      <div class="comment-meta">
-        <span>${escapeHtml((comment.created_at || '').replace('T', ' ').slice(0, 16))}</span>
-      </div>
-      <p>${escapeHtml(comment.content)}</p>
-    </article>
-  `).join('');
+// 10.2 获取并渲染用户评论
+async function loadComments() {
+  try {
+    const data = await window.InkForgeApi.apiRequest('/api/me/comments?page=1&page_size=20');
+    const items = data.items || [];
+
+    if (items.length === 0) {
+      commentsEmpty.style.display = 'block';
+      commentsList.innerHTML = '';
+      return;
+    }
+
+    commentsEmpty.style.display = 'none';
+    commentsList.innerHTML = items.map((comment) => `
+      <article class="comment-item">
+        <div class="comment-meta">
+          <a href="/${comment.post_content_type === 'page' ? 'pages' : 'posts'}/${escapeHtml(comment.post_slug)}">${escapeHtml(comment.post_title)}</a>
+          <span class="comment-status">${escapeHtml(comment.status)}</span>
+        </div>
+        <div class="comment-meta">
+          <span>${escapeHtml((comment.created_at || '').replace('T', ' ').slice(0, 16))}</span>
+        </div>
+        <p>${escapeHtml(comment.content)}</p>
+      </article>
+    `).join('');
+  } catch (error) {
+    // 10.2 显示错误消息
+    commentsEmpty.style.display = 'block';
+    commentsEmpty.textContent = window.I18n ? window.I18n.t('loadCommentsError') : 'Unable to load comments right now.';
+    commentsList.innerHTML = '';
+  }
 }
 
 document.getElementById('profileForm').addEventListener('submit', async (event) => {
@@ -199,7 +430,7 @@ document.getElementById('profileForm').addEventListener('submit', async (event) 
   button.disabled = true;
 
   try {
-    await window.InkForgeApi.apiRequest('/api/me/profile', {
+    await window.InkForgeApi.apiRequest('/api/v1/me/profile', {
       method: 'PATCH',
       body: {
         display_name: document.getElementById('displayName').value.trim(),
@@ -207,7 +438,7 @@ document.getElementById('profileForm').addEventListener('submit', async (event) 
         theme_preference: document.getElementById('themePreference').value,
       },
     });
-    showAlert('profileAlert', 'Profile updated.', 'success');
+    showAlert('profileAlert', window.I18n ? window.I18n.t('profileUpdated') : 'Profile updated.', 'success');
   } catch (error) {
     showAlert('profileAlert', error.message || 'Unable to update profile.', 'error');
   } finally {
@@ -222,13 +453,13 @@ document.getElementById('passwordForm').addEventListener('submit', async (event)
   const confirmPassword = document.getElementById('confirmPassword').value;
 
   if (newPassword !== confirmPassword) {
-    showAlert('passwordAlert', 'Password confirmation does not match.', 'error');
+    showAlert('passwordAlert', window.I18n ? window.I18n.t('passwordMismatch') : 'Password confirmation does not match.', 'error');
     return;
   }
 
   button.disabled = true;
   try {
-    await window.InkForgeApi.apiRequest('/api/me/password', {
+    await window.InkForgeApi.apiRequest('/api/v1/me/password', {
       method: 'PATCH',
       body: {
         current_password: document.getElementById('currentPassword').value,
@@ -236,7 +467,7 @@ document.getElementById('passwordForm').addEventListener('submit', async (event)
       },
     });
     event.target.reset();
-    showAlert('passwordAlert', 'Password updated.', 'success');
+    showAlert('passwordAlert', window.I18n ? window.I18n.t('passwordUpdated') : 'Password updated.', 'success');
   } catch (error) {
     showAlert('passwordAlert', error.message || 'Unable to update password.', 'error');
   } finally {
@@ -252,35 +483,41 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   }
 });
 
-loadComments().catch(() => {
-  commentsEmpty.style.display = 'block';
-  commentsEmpty.textContent = window.I18n ? window.I18n.t('loadCommentsError') : 'Unable to load comments right now.';
-});
+// 初始化
+loadStats();
+loadComments();
 
-// 初始化国际化
+// 9.3 初始化国际化系统
 document.addEventListener('DOMContentLoaded', () => {
   if (window.I18n) {
+    // 9.1 使用用户保存的语言偏好初始化
     window.I18n.init(currentLang);
     window.I18n.updatePage();
   }
 
-  // 语言切换按钮事件
+  // 9.3 语言切换按钮事件 - 集成后端持久化
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.addEventListener('click', async () => {
       const newLang = btn.dataset.lang;
       if (newLang === currentLang) return;
 
-      // 更新后端语言设置
+      // 9.3 发送PATCH请求更新语言偏好
       try {
-        await window.InkForgeApi.apiRequest('/api/me/profile', {
+        await window.InkForgeApi.apiRequest('/api/v1/me/profile', {
           method: 'PATCH',
           body: {
             language: newLang,
           },
         });
+        // 9.3 更新成功后重新加载页面
         window.location.reload();
       } catch (error) {
         console.error('Failed to update language:', error);
+        // 即使后端更新失败,也更新前端显示
+        if (window.I18n) {
+          window.I18n.init(newLang);
+          window.I18n.updatePage();
+        }
       }
     });
   });

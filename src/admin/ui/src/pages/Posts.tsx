@@ -365,7 +365,7 @@ export default function Posts() {
                     </td>
                     <td style={{ ...T.td }}>
                       <button
-                        onClick={() => navigate(`/admin/posts/${post.id}/edit`)}
+                        onClick={() => navigate(`/posts/${post.id}/edit`)}
                         title={post.title}
                         style={{
                           display: 'inline-flex', alignItems: 'center', gap: '7px',
@@ -400,7 +400,7 @@ export default function Posts() {
                         <button type="button"
                           title={t('editPost')}
                           style={T.iconBtn('var(--md-on-surface-variant)')}
-                          onClick={() => navigate(`/admin/posts/${post.id}/edit`)}
+                          onClick={() => navigate(`/posts/${post.id}/edit`)}
                           onMouseEnter={e => { e.currentTarget.style.background = 'var(--md-surface-container)'; }}
                           onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
                         ><IconPencil size={16} /></button>

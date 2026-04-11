@@ -435,8 +435,9 @@ export default function Setup() {
                 <Field label="公开站点 URL" hint="例如 http://localhost:2000 或 https://www.example.com">
                   <input value={form.site_url} onChange={(e) => handleSiteUrlChange(e.target.value)} className="md3-input" placeholder="http://localhost:2000" />
                 </Field>
-                <Field label="后台入口 URL" hint="必须是完整后台入口，例如 http://localhost:5173/admin">
-                  <input value={form.admin_url} onChange={(e) => update('admin_url', e.target.value)} className="md3-input" placeholder="http://localhost:5173/admin" />
+                <Field label="后台入口 URL" hint="必须是完整后台入口，例如 http://localhost:2000/admin">
+                  <input value={form.admin_url} onChange={(e) => update('admin_url', e.target.value)} className="md3-input" placeholder="http://localhost:2000/admin" />
+
                 </Field>
                 <Field label="公开注册">
                   <select value={form.allow_register ? 'true' : 'false'} onChange={(e) => update('allow_register', e.target.value === 'true')} className="md3-input">

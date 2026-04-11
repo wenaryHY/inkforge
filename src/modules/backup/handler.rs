@@ -96,16 +96,11 @@ pub async fn delete_backup(
 }
 
 pub async fn download_backup(
-    State(state): State<Arc<AppState>>,
+    State(_state): State<Arc<AppState>>,
     _admin: AdminUser,
     Path(id): Path<String>,
 ) -> Result<impl IntoResponse, AppError> {
-    let backup_dir = state
-        .db_path
-        .parent()
-        .ok_or(AppError::NotFound)?
-        .join("backups");
-    let backup_path = backup_dir.join(&id).join("backup.zip");
+    let backup_path = AppState::backup_root_dir()?.join(&id).join("backup.zip");
 
     if !backup_path.exists() {
         return Err(AppError::NotFound);

@@ -191,7 +191,12 @@ pub async fn render_custom_page(
                 })
                 .map_err(|e| AppError::Anyhow(anyhow::anyhow!("render error: {}", e)))?;
 
-            Ok(axum::response::Html(html).into_response())
+            let mut response = axum::response::Html(html).into_response();
+            crate::shared::security::mark_response_security_profile(
+                &mut response,
+                crate::shared::security::SECURITY_PROFILE_THEME_HTML,
+            );
+            Ok(response)
         }
     }
 }

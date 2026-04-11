@@ -1,0 +1,13 @@
+{
+  "name": "inkforge-frontend-tests",
+  "version": "1.0.0",
+  "description": "Property-based tests for InkForge frontend templates",
+  "private": true,
+  "scripts": {
+    "test": "node profile.test.js"
+  },
+  "devDependencies": {
+    "fast-check": "3.23.2",
+    "jsdom": "24.1.3"
+  }
+}

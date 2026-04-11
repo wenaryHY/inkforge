@@ -30,12 +30,8 @@ const BACKUP_DB_ENTRY: &str = "database/inkforge.db";
 const BACKUP_MANIFEST_VERSION: i64 = 2;
 const CURRENT_SCHEMA_VERSION: i64 = 7;
 
-fn backup_root_dir() -> AppResult<PathBuf> {
-    Ok(std::env::current_dir()?.join("backups"))
-}
-
 fn local_backend() -> AppResult<LocalBackupStorage> {
-    Ok(LocalBackupStorage::new(backup_root_dir()?))
+    Ok(LocalBackupStorage::new(AppState::backup_root_dir()?))
 }
 
 fn hash_bytes(data: &[u8]) -> String {
@@ -49,7 +45,7 @@ fn quote_sqlite_literal(value: &str) -> String {
 }
 
 async fn export_consistent_db_snapshot_strict(state: &AppState) -> AppResult<Vec<u8>> {
-    let backups_dir = backup_root_dir()?;
+    let backups_dir = AppState::backup_root_dir()?;
     fs::create_dir_all(&backups_dir).await?;
 
     let snapshot_path = backups_dir.join(format!("snapshot-{}.db", uuid::Uuid::new_v4()));
@@ -75,7 +71,7 @@ async fn export_consistent_db_snapshot_strict(state: &AppState) -> AppResult<Vec
 
 #[allow(dead_code)]
 async fn export_consistent_db_snapshot(state: &AppState) -> AppResult<Vec<u8>> {
-    let backups_dir = backup_root_dir()?;
+    let backups_dir = AppState::backup_root_dir()?;
     fs::create_dir_all(&backups_dir).await?;
 
     let snapshot_path = backups_dir.join(format!("snapshot-{}.db", uuid::Uuid::new_v4()));
@@ -249,7 +245,9 @@ fn is_malformed_sqlite_error(err: &sqlx::Error) -> bool {
 }
 
 async fn validate_sqlite_image_bytes(state: &AppState, db_bytes: &[u8]) -> AppResult<()> {
-    let tmp_path = backup_root_dir()?.join(format!("validate-{}.db", uuid::Uuid::new_v4()));
+    let backup_dir = AppState::backup_root_dir()?;
+    fs::create_dir_all(&backup_dir).await?;
+    let tmp_path = backup_dir.join(format!("validate-{}.db", uuid::Uuid::new_v4()));
     fs::write(&tmp_path, db_bytes).await?;
 
     let tmp_literal = quote_sqlite_literal(tmp_path.to_string_lossy().as_ref());
