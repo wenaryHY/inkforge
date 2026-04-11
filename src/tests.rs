@@ -150,3 +150,9 @@ mod theme_domain_tests {
         assert!(manifest.preview_image.is_none());
     }
 }
+
+// 新增集成测试模块
+mod auth_tests;
+mod post_tests;
+mod setup_tests;
+mod backup_tests;
