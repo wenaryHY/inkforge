@@ -99,10 +99,10 @@
 - [x] 添加编译优化配置（`lto`、`opt-level`）
 - [x] 建立最小 CI
 - [x] 摘除 legacy `/api` 兼容层
+- [x] 启用 Tauri 打包配置
 
 **待完成项**：
 - [ ] 补充主链路回归测试
-- [ ] 启用 Tauri 打包配置
 
 **退出条件**：
 - Rust workspace 构建通过 ✅
